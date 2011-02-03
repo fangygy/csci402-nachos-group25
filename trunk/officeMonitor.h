@@ -6,10 +6,14 @@
 
 #include "synch.h"
 
-class officeMonitor() {
+class OfficeMonitor() {
  private:
+  //No private variables
+
  public:
-  officeMonitor(int numAC, int numPC, int numPassC, int numCash);
+  OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
+  
+  // Amount of each kind of Clerk
   int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
   // Line Lengths
@@ -18,9 +22,9 @@ class officeMonitor() {
   int cashLineLength;
 
   // Line Locks
-  Lock *acpcLineLock[MAX_CLERKS];
-  Lock *passLineLock[MAX_CLERKS];
-  Lock *cashLineLock[MAX_CLERKS];
+  Lock *acpcLineLock;
+  Lock *passLineLock;
+  Lock *cashLineLock;
 
   // Line Condition Variables
   Condition *regACLineCV, *regPCLineCV, *regPassLineCV;
@@ -48,4 +52,6 @@ class officeMonitor() {
   clerkState picState[MAX_CLERKS];
   clerkState passState[MAX_CLERKS];
   clerkState cashState[MAX_CLERKS];
-}
+};
+
+#endif // OFFICEMONITOR_H
