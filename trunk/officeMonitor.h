@@ -45,6 +45,7 @@ class OfficeMonitor() {
 
   // Clerk Data
   int appData[MAX_CLERKS];
+  
 
   // Clerk States
   enum clerkState {BUSY, AVAILABLE, BREAK};
@@ -52,6 +53,16 @@ class OfficeMonitor() {
   clerkState picState[MAX_CLERKS];
   clerkState passState[MAX_CLERKS];
   clerkState cashState[MAX_CLERKS];
+
+  // Clerk Money 
+  int appMoney;
+  Lock *appMoneyLock;
+  int picMoney;
+  Lock *picMoneyLock;
+  int passMoney;
+  Lock *passMoneyLock;
+  int cashMoney;
+  Lock *cashMoneyLock;
 };
 
 #endif // OFFICEMONITOR_H
