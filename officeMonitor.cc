@@ -51,5 +51,15 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		cashCV[i] = new Condition("cashCV" + i);
 		cashState[i] = BUSY;
 	}
+
+ 	appMoney = 0;
+        picMoney = 0;
+        passMoney = 0;
+  	cashMoney = 0;
+        
+	appMoneyLock = new Lock("appMoneyLock");
+        picMoneyLock = new Lock("picMoneyLock");
+  	passMoneyLock = new Lock("passMoneyLock");
+  	cashMoneyLock = new Lock("cashMoneyLock");
 }
 		
