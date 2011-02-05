@@ -248,14 +248,12 @@ void Office::PicClerk(int index){
 
 Office::PassClerk(int index) {
 	int myIndex = index;
-	// in case I need local flags
-	bool appDone = false;
-	bool picDone = false;
+	int myCust;
+	bool doPassport = false;
 
 	// set own state to busy
 	oMonitor.passLock[myIndex]->Acquire();
 	oMonitor.passState[myIndex] = oMonitor.clerkState.BUSY;
-	//oMonitor.passLock[myIndex]->Release();
 
 	while (true) {
 		// Check for customers in line
@@ -267,71 +265,85 @@ Office::PassClerk(int index) {
 
 			oMonitor.privPassLineCV->Signal(oMonitor.passLineLock);
 			oMonitor.passLineLock->Release();
-
 			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[index]);	// wait for customer to signal me
-
-			// DO CUSTOMER STUFF CORRECTLY
-			// check if customer has APPLICATION and PICTURE?
-			// or customer checks himself automatically
-
-			// customer tells me if he has app and pic
-			oMonitor.passCV[myIndex]->Acquire();
-			if (appDone && picDone) {
-				// "Do work"
-				for (int i = 0; i < 50) {
-					currentThread->Yield();
-				}
+			
+			myCust = oMonitor.passData[myIndex];	// customer gave me their SSN/index to check their file
+			oMonitor.fileLock[myCust]->Acquire();	// gain access to customer state
+			if (oMonitor.fileState[myCust] == APPPICDONE) {
+				// customer wasn't a dumbass, DO WORK
+				oMonitor.passDataBool[myIndex] = true;
+				doPassport = true;
 			} else {
-				// Customer is being a dumbass... make them wait
-				// 100 to 1000 yields
+				// customer WAS a dumbass.... MAKE THEM PAY
 				for (int i = 0; i < 500) {
 					currentThread->Yield();
 				}
 			}
+			oMonitor.fileLock[myCust]->Release();
 			
 			// add $500 to passClerk money amount for privilaged fee
+			// Dolla dolla bill, y'all
 			oMonitor.passMoneyLock->Acquire();
 			oMonitor.passMoney += 500;
 			oMonitor.passMoneyLock->Release();
 
 			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
 			oMonitor.passLock[myIndex]->Release();							// release clerk lock
+
+			//if customer wasn't an idiot, process their passport
+			if (doPassport) {
+				for (int i = 0; i < 500) {
+					currentThread->Yield();
+				}
+				// file dat passport
+				oMonitor.fileLock[myCust]->Acquire();
+				oMonitor.fileState[myCust] = PASSDONE;
+				oMonitor.fileLock[myCust]->Release();
+			}
 		} else if (regPassLineLength > 0) {
 			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
 			oMonitor.regPassLineLength --;
-			oMonitor.regState[myIndex] = AVAILABLE;
+			oMonitor.passState[myIndex] = AVAILABLE;
 
 			oMonitor.regPassLineCV->Signal(oMonitor.passLineLock);
 			oMonitor.passLineLock->Release();
-
-			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[myIndex]);	// wait for customer to signal me
-
-			// DO CUSTOMER STUFF CORRECTLY
-			// check if customer has APPLICATION and PICTURE?
-			// or customer checks himself automatically
-
-			// customer tells me if he has app and pic
-			oMonitor.passCV[myIndex]->Acquire();
-			if (appDone && picDone) {
-				// "Do work"
-				for (int i = 0; i < 50) {
-					currentThread->Yield();
-				}
+			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[index]);	// wait for customer to signal me
+			
+			myCust = oMonitor.passData[myIndex];	// customer gave me their SSN/index to check their file
+			oMonitor.fileLock[myCust]->Acquire();	// gain access to customer state
+			if (oMonitor.fileState[myCust] == APPPICDONE) {
+				// customer wasn't a dumbass, DO WORK
+				oMonitor.passDataBool[myIndex] = true;
+				doPassport = true;
 			} else {
-				// Customer is being a dumbass... make them wait
-				// 100 to 1000 yields
+				// customer WAS a dumbass.... MAKE THEM PAY
 				for (int i = 0; i < 500) {
 					currentThread->Yield();
 				}
 			}
+			oMonitor.fileLock[myCust]->Release();
 
 			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
 			oMonitor.passLock[myIndex]->Release();							// release clerk lock
+
+			//if customer wasn't an idiot, process their passport
+			if (doPassport) {
+				for (int i = 0; i < 500) {
+					currentThread->Yield();
+				}
+				// file dat passport
+				oMonitor.fileLock[myCust]->Acquire();
+				oMonitor.fileState[myCust] = PASSDONE;
+				oMonitor.fileLock[myCust]->Release();
+			}
 		} else {
 			// No one in line... Pull out your DS and take a break
-			oMonitor.passState[myIndex] = BREAK;
-			oMonitor.passLock[myIndex]->Release();
 			oMonitor.passLineLock->Release();
+			oMonitor.passLock[myIndex]->Acquire();
+			oMonitor.passState[myIndex] = BREAK;
+			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[myIndex]);
+
+			oMonitor.passLock[myIndex]->Release();
 		}
 	}
 }
@@ -345,8 +357,7 @@ Office::PassClerk(int index) {
 Office::Cashier(int index) {
 	int myIndex = index;
 	int myCust;
-	// in case I need local flags
-	bool passDone = false;
+	bool doCash = false;
 
 	// set own state to busy
 	oMonitor.cashLock[myIndex]->Acquire();
@@ -363,40 +374,40 @@ Office::Cashier(int index) {
 
 			oMonitor.cashLineCV->Signal(oMonitor.cashLineLock);		// signal the customer
 			oMonitor.cashLineLock->Release();
-
 			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);	// wait for customer to signal me
 
-			// identify customer by the index they gave us
-			myCust = cashData[myIndex];
-			// DO CUSTOMER STUFF CORRECTLY
-			// check if customer has PASSPORT?
-			// or customer checks himself automatically
-
-			// Check customer state IN DATABASE
-			oMonitor.cashLock[myIndex]->Acquire();
-			if (passDone) {
-				// "Do work"
-				for (int i = 0; i < 50; i++) {
+			myCust = cashData[myIndex];		// customer gave me their SSN
+			oMonitor.fileLock[myCust]->Acquire();	// gain access to customer state
+			if (oMonitor.fileState[myCust] == PASSDONE) {
+				// customer wasn't a dumbass, DO WORK
+				oMonitor.passDataBool[myIndex] = true;
+				for (int i = 0; i < 50) {
 					currentThread->Yield();
 				}
+				oMonitor.fileState[myCust] == ALLDONE;
+
 				// add $100 to passClerk money amount for passport fee
 				oMonitor.cashMoneyLock->Acquire();
 				oMonitor.cashMoney += 100;
 				oMonitor.cashMoneyLock->Release();
 			} else {
-				// Customer is being a dumbass... make them wait
-				for (int i = 0; i < 500; i++) {
+				// customer WAS a dumbass.... MAKE THEM PAY
+				for (int i = 0; i < 500) {
 					currentThread->Yield();
 				}
 			}
+			oMonitor.fileLock[myCust]->Release();
 
 			oMonitor.cashCV[myIndex]->Signal(oMonitor.cashLock[myIndex]);	// signal customer awake
 			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
 		} else {
 			// No one in line... Pull out your DS and take a break
-			oMonitor.cashState[myIndex] = BREAK;
-			oMonitor.cashLock[myIndex]->Release();
 			oMonitor.cashLineLock->Release();
+			oMonitor.cashLock[myIndex]->Acquire();
+			oMonitor.cashState[myIndex] = BREAK;
+			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);
+
+			oMonitor.cashLock[myIndex]->Release();
 		}
 	}
 }
