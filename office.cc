@@ -4,37 +4,37 @@
 Office::Office() { }
 
 void Office::startOffice(int numCust, int numApp, int numPic,
-		         int numPass, int numCash) {
-	oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
-	Thread *t;
+	int numPass, int numCash) {
+		oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
+		Thread *t;
 
-	for(int i = 0; i < numCust; i++) {
-		t = new Thread("Cust" + i);
-		t->Fork((VoidFunctionPtr) Customer, i);
-	} 
-	
-	for(int i = 0; i < numApp; i++) {
-		t = new Thread("AppClerk" + i);
-		t->Fork((VoidFunctionPtr) AppClerk, i);
-	}
+		for(int i = 0; i < numCust; i++) {
+			t = new Thread("Cust" + i);
+			t->Fork((VoidFunctionPtr) Customer, i);
+		} 
 
-	for(int i = 0; i < numPic; i++) {
-		t = new Thread("PicClerk" + i);
-		t->Fork((VoidFunctionPtr) PicClerk, i);
-	}
+		for(int i = 0; i < numApp; i++) {
+			t = new Thread("AppClerk" + i);
+			t->Fork((VoidFunctionPtr) AppClerk, i);
+		}
 
-	for(int i = 0; i < numPass; i++) {
-		t = new Thread("PassClerk" + i);
-		t->Fork((VoidFunctionPtr) PassClerk, i);
-	}
+		for(int i = 0; i < numPic; i++) {
+			t = new Thread("PicClerk" + i);
+			t->Fork((VoidFunctionPtr) PicClerk, i);
+		}
 
-	for(int i = 0; i < numCash; i++) {
-		t = new Thread("Cashier" + i);
-		t->Fork((VoidFunctionPtr) Cashier, i);
-	}
+		for(int i = 0; i < numPass; i++) {
+			t = new Thread("PassClerk" + i);
+			t->Fork((VoidFunctionPtr) PassClerk, i);
+		}
 
-	t = new Thread("Manager");
-	t->Fork((VoidFunctionPtr) Manager, i);  
+		for(int i = 0; i < numCash; i++) {
+			t = new Thread("Cashier" + i);
+			t->Fork((VoidFunctionPtr) Cashier, i);
+		}
+
+		t = new Thread("Manager");
+		t->Fork((VoidFunctionPtr) Manager, i);  
 }
 
 /*
@@ -239,4 +239,164 @@ void Office::PicClerk(int index){
 		}
 	}
 }
-   
+
+/*
+//	Antonio Cade:
+//	Passport Clerk function thread
+//	Records customer passport
+*/
+
+Office::PassClerk(int index) {
+	int myIndex = index;
+	// in case I need local flags
+	bool appDone = false;
+	bool picDone = false;
+
+	// set own state to busy
+	oMonitor.passLock[myIndex]->Acquire();
+	oMonitor.passState[myIndex] = oMonitor.clerkState.BUSY;
+	//oMonitor.passLock[myIndex]->Release();
+
+	while (true) {
+		// Check for customers in line
+		oMonitor.passLineLock->Acquire();
+		if (oMonitor.privPassLineLength > 0) {
+			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
+			oMonitor.privPassLineLength --;
+			oMonitor.passState[myIndex] = AVAILABLE;
+
+			oMonitor.privPassLineCV->Signal(oMonitor.passLineLock);
+			oMonitor.passLineLock->Release();
+
+			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[index]);	// wait for customer to signal me
+
+			// DO CUSTOMER STUFF CORRECTLY
+			// check if customer has APPLICATION and PICTURE?
+			// or customer checks himself automatically
+
+			// customer tells me if he has app and pic
+			oMonitor.passCV[myIndex]->Acquire();
+			if (appDone && picDone) {
+				// "Do work"
+				for (int i = 0; i < 50) {
+					currentThread->Yield();
+				}
+			} else {
+				// Customer is being a dumbass... make them wait
+				// 100 to 1000 yields
+				for (int i = 0; i < 500) {
+					currentThread->Yield();
+				}
+			}
+			
+			// add $500 to passClerk money amount for privilaged fee
+			oMonitor.passMoneyLock->Acquire();
+			oMonitor.passMoney += 500;
+			oMonitor.passMoneyLock->Release();
+
+			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
+			oMonitor.passLock[myIndex]->Release();							// release clerk lock
+		} else if (regPassLineLength > 0) {
+			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
+			oMonitor.regPassLineLength --;
+			oMonitor.regState[myIndex] = AVAILABLE;
+
+			oMonitor.regPassLineCV->Signal(oMonitor.passLineLock);
+			oMonitor.passLineLock->Release();
+
+			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[myIndex]);	// wait for customer to signal me
+
+			// DO CUSTOMER STUFF CORRECTLY
+			// check if customer has APPLICATION and PICTURE?
+			// or customer checks himself automatically
+
+			// customer tells me if he has app and pic
+			oMonitor.passCV[myIndex]->Acquire();
+			if (appDone && picDone) {
+				// "Do work"
+				for (int i = 0; i < 50) {
+					currentThread->Yield();
+				}
+			} else {
+				// Customer is being a dumbass... make them wait
+				// 100 to 1000 yields
+				for (int i = 0; i < 500) {
+					currentThread->Yield();
+				}
+			}
+
+			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
+			oMonitor.passLock[myIndex]->Release();							// release clerk lock
+		} else {
+			// No one in line... Pull out your DS and take a break
+			oMonitor.passState[myIndex] = BREAK;
+			oMonitor.passLock[myIndex]->Release();
+			oMonitor.passLineLock->Release();
+		}
+	}
+}
+
+/*
+//	Antonio Cade:
+//	Cashier function thread
+//	Takes the customer's monies
+*/
+
+Office::Cashier(int index) {
+	int myIndex = index;
+	int myCust;
+	// in case I need local flags
+	bool passDone = false;
+
+	// set own state to busy
+	oMonitor.cashLock[myIndex]->Acquire();
+	oMonitor.cashState[myIndex] = BUSY;
+	//oMonitor.passLock[index]->Release();
+
+	while (true) {
+		// Check for customers in line
+		oMonitor.cashLineLock->Acquire();
+		if (oMonitor.cashLineLength > 0) {
+			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
+			oMonitor.cashLineLength --;
+			oMonitor.cashState[myIndex] = AVAILABLE;
+
+			oMonitor.cashLineCV->Signal(oMonitor.cashLineLock);		// signal the customer
+			oMonitor.cashLineLock->Release();
+
+			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);	// wait for customer to signal me
+
+			// identify customer by the index they gave us
+			myCust = cashData[myIndex];
+			// DO CUSTOMER STUFF CORRECTLY
+			// check if customer has PASSPORT?
+			// or customer checks himself automatically
+
+			// Check customer state IN DATABASE
+			oMonitor.cashLock[myIndex]->Acquire();
+			if (passDone) {
+				// "Do work"
+				for (int i = 0; i < 50; i++) {
+					currentThread->Yield();
+				}
+				// add $100 to passClerk money amount for passport fee
+				oMonitor.cashMoneyLock->Acquire();
+				oMonitor.cashMoney += 100;
+				oMonitor.cashMoneyLock->Release();
+			} else {
+				// Customer is being a dumbass... make them wait
+				for (int i = 0; i < 500; i++) {
+					currentThread->Yield();
+				}
+			}
+
+			oMonitor.cashCV[myIndex]->Signal(oMonitor.cashLock[myIndex]);	// signal customer awake
+			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
+		} else {
+			// No one in line... Pull out your DS and take a break
+			oMonitor.cashState[myIndex] = BREAK;
+			oMonitor.cashLock[myIndex]->Release();
+			oMonitor.cashLineLock->Release();
+		}
+	}
+}
