@@ -90,14 +90,16 @@ void Office::AppClerk(int index){
 
 			// tell passport ssn
 
-			printf("Now filing application...");
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
+			printf("ApplicationClerk" + myIndex + " informs Customer" + mySSN + " that the application has been filed");
 
 
 			oMonitor.appMoneyLock->Acquire();
 			oMonitor.appMoney += 500;
+			printf("ApplicationClerk" + myIndex + " accepts money = $500 from Customer" + mySSN);
+
 			oMonitor.appMoneyLock->Release();
 
 			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
@@ -131,10 +133,10 @@ void Office::AppClerk(int index){
 
 			// tell passport ssn
 
-			printf("Now filing application...");
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
+			printf("ApplicationClerk" + myIndex + " informs Customer" + mySSN + " that the application has been filed");
 
 			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
@@ -145,8 +147,10 @@ void Office::AppClerk(int index){
 			oMonitor.acpcLineLock->Release();
 			oMonitor.appLock[myIndex]->Acquire();
 			oMonitor.appState[myIndex] = BREAK;
+			printf("ApplicationClerk" + myIndex + " is going on break");
 
 			oMonitor.appCV[myIndex]->Wait(oMonitor.appLock[myIndex]);
+			printf("ApplicationClerk" + myIndex + " returned from break");
 
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 
@@ -187,14 +191,17 @@ void Office::PicClerk(int index){
 
 			mySSN = oMonitor.picData[myIndex];
 
+			printf("PictureClerk" + myIndex + " takes picture of Customer" + mySSN);
 			while(oMonitor.picDataBool[myIndex] == false){
-				printf("PictureClerk " + myIndex + ": Taking picture.");
 				for(int i = 0; i < 4; i++){
 					currentThread->Yield();
 				}
 				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
-				
+
+				if(oMonitor.picDataBool[myIndex] ==false){
+					printf("PictureClerk" + myIndex + " takes picture of Customer" + mySSN + " again");
+				}
 				// yield to take picture
 				// print statement: "Taking picture"
 				// picCV->Signal then picCV->Wait to
@@ -219,10 +226,12 @@ void Office::PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
+			printf("PictureClerk" + myIndex + " informs Customer" + mySSN + " that the procedure has been completed");
 
 			// signal customer awake
 			oMonitor.picMoneyLock->Acquire();
 			oMonitor.picMoney += 500;
+			printf("PictureClerk" + myIndex + " accepts money = $500 from Customer" + mySSN);
 			oMonitor.picMoneyLock->Release();
 
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
@@ -240,14 +249,17 @@ void Office::PicClerk(int index){
 
 			mySSN = oMonitor.picData[myIndex];
 
+			printf("PictureClerk" + myIndex + " takes picture of Customer" + mySSN);
 			while(oMonitor.picDataBool[myIndex] == false){
-				printf("PictureClerk " + myIndex + ": Taking picture.");
 				for(int i = 0; i < 4; i++){
 					currentThread->Yield();
 				}
 				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
 				
+				if(oMonitor.picDataBool[myIndex] ==false){
+					printf("PictureClerk" + myIndex + " takes picture of Customer" + mySSN + " again");
+				}
 				// yield to take picture
 				// print statement: "Taking picture"
 				// picCV->Signal then picCV->Wait to
@@ -273,6 +285,7 @@ void Office::PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
+			printf("PictureClerk" + myIndex + " informs Customer" + mySSN + " that the procedure has been completed");
 
 			// signal customer awake
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
@@ -283,9 +296,11 @@ void Office::PicClerk(int index){
 			oMonitor.acpcLineLock->Release();
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = BREAK;
-
+			printf("ApplicationClerk" + myIndex + " is going on break");
+			oMonitor.picLock[myIndex]->Release();
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);
 
+			printf("ApplicationClerk" + myIndex + " returned from break");
 
 			oMonitor.picLock[myIndex]->Release();     // release clerk lock
 			// go on break
@@ -315,6 +330,7 @@ void Office::Manager(){
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
 					oMonitor.appState[i] = BUSY;
 					oMonitor.appLock[i]->Release();
+					printf("Manager calls back an ApplicationClerk from break");
 				}
 			}						
 		}
@@ -325,6 +341,7 @@ void Office::Manager(){
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
 					oMonitor.appState[i] = BUSY;
 					oMonitor.appLock[i]->Release();
+					printf("Manager calls back an ApplicationClerk from break");
 					break;
 				}
 			}						
@@ -337,6 +354,7 @@ void Office::Manager(){
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
 					oMonitor.picState[i] = BUSY;
 					oMonitor.picLock[i]->Release();
+					printf("Manager calls back an PictureClerk from break");
 				}
 			}						
 		}
@@ -347,6 +365,7 @@ void Office::Manager(){
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
 					oMonitor.picState[i] = BUSY;
 					oMonitor.picLock[i]->Release();
+					printf("Manager calls back an PictureClerk from break");
 					break;
 				}
 			}						
@@ -360,6 +379,7 @@ void Office::Manager(){
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
 					oMonitor.passState[i] = BUSY;
 					oMonitor.passLock[i]->Release();
+					printf("Manager calls back an PassportClerk from break");
 				}
 			}						
 		}
@@ -370,6 +390,7 @@ void Office::Manager(){
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
 					oMonitor.passState[i] = BUSY;
 					oMonitor.passLock[i]->Release();
+					printf("Manager calls back an PassportClerk from break");
 					break;
 				}
 			}						
@@ -383,6 +404,7 @@ void Office::Manager(){
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
 					oMonitor.cashState[i] = BUSY;
 					oMonitor.cashLock[i]->Release();
+					printf("Manager calls back an Cashier from break");
 				}
 			}						
 		}
@@ -393,6 +415,7 @@ void Office::Manager(){
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
 					oMonitor.cashState[i] = BUSY;
 					oMonitor.cashLock[i]->Release();
+					printf("Manager calls back an Cashier from break");
 					break;
 				}
 			}						
@@ -401,26 +424,26 @@ void Office::Manager(){
 		// Print out money periodically (must figure out Timer stuff)
 
 		oMonitor.appMoneyLock->Acquire();
-		printf("Application Clerk's Money: " + oMonitor.appMoney + "\n");
+		printf("Total money received from ApplicationClerk = " + oMonitor.appMoney + "\n");
 		totalMoney += oMonitor.appMoney;
 		oMonitor.appMoneyLock->Release();
 		
 		oMonitor.picMoneyLock->Acquire();
-		printf("Picture Clerk's Money: " + oMonitor.picMoney + "\n");
+		printf("Total money received from PictureClerk = " + oMonitor.picMoney + "\n");
 		totalMoney += oMonitor.picMoney;
 		oMonitor.picMoneyLock->Release();
 
 		oMonitor.passMoneyLock->Acquire();
-		printf("Passport Clerk's Money: " + oMonitor.passMoney + "\n");
+		printf("Total money received from PassportClerk = " + oMonitor.passMoney + "\n");
 		totalMoney += oMonitor.passMoney;
 		oMonitor.passMoneyLock->Release();
 
 		oMonitor.cashMoneyLock->Acquire();
-		printf("Cashier Clerk's Money: " + oMonitor.cashMoney + "\n");
+		printf("Total money received from Cashier = " + oMonitor.cashMoney + "\n");
 		totalMoney += oMonitor.cashMoney;
 		oMonitor.cashMoneyLock->Release();
 
-		printf("Total Money: " + totalMoney + "\n");
+		printf("Total money made by office = " + totalMoney + "\n");
 
 	}
 
