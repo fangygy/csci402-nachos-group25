@@ -38,7 +38,7 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		picLock[i] = new Lock("picLock" + i);
 		picCV[i] = new Condition("picCV" + i);
 		picData[i] = 0;
-		picDataBool[i] = 0;
+		picDataBool[i] = false;
 		picState[i] = BUSY;
 	}
 
@@ -46,6 +46,7 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		passLock[i] = new Lock("passLock" + i);
 		passCV[i] = new Condition("passCV" + i);
 		passData[i] = 0;
+		passDataBool[i] = false;
 		passState[i] = BUSY;
 	}
 
@@ -53,19 +54,23 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		cashLock[i] = new Lock("cashLock" + i);
 		cashCV[i] = new Condition("cashCV" + i);
 		cashData[i] = 0;
+		cashDataBool[i] = false;
 		cashState[i] = BUSY;
 	}
 
  	appMoney = 0;
-        picMoney = 0;
-        passMoney = 0;
+    picMoney = 0;
+    passMoney = 0;
   	cashMoney = 0;
         
 	appMoneyLock = new Lock("appMoneyLock");
-        picMoneyLock = new Lock("picMoneyLock");
+    picMoneyLock = new Lock("picMoneyLock");
   	passMoneyLock = new Lock("passMoneyLock");
   	cashMoneyLock = new Lock("cashMoneyLock");
 
-	fileLock = new Lock("fileLock");
+	for(int i = 0; i < 100; i++){
+		fileLock[i] = new Lock("fileLock" + i);
+	}
+
 }
 		

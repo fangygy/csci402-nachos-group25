@@ -51,6 +51,8 @@ class OfficeMonitor() {
   int cashData[MAX_CLERKS];
 
   bool picDataBool[MAX_CLERKS];
+  bool passDataBool[MAX_CLERKS];
+  bool cashDataBool[MAX_CLERKS];
   
 
   // Clerk States
@@ -71,7 +73,7 @@ class OfficeMonitor() {
   Lock *cashMoneyLock;
 
   // Customer States and Lock
-  Lock *fileLock;
+  Lock *fileLock[MAX_CUSTOMERS];
   enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
   custState fileState[MAX_CUSTOMERS];
 };
