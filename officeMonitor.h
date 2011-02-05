@@ -2,6 +2,7 @@
 #define OFFICEMONITOR_H
 
 #define MAX_CLERKS 10
+#define MAX_CUSTOMERS 100
 
 
 #include "synch.h"
@@ -45,6 +46,11 @@ class OfficeMonitor() {
 
   // Clerk Data
   int appData[MAX_CLERKS];
+  int picData[MAX_CLERKS];
+  int passData[MAX_CLERKS];
+  int cashData[MAX_CLERKS];
+
+  bool picDataBool[MAX_CLERKS];
   
 
   // Clerk States
@@ -63,6 +69,11 @@ class OfficeMonitor() {
   Lock *passMoneyLock;
   int cashMoney;
   Lock *cashMoneyLock;
+
+  // Customer States and Lock
+  Lock *fileLock;
+  enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
+  custState fileState[MAX_CUSTOMERS];
 };
 
 #endif // OFFICEMONITOR_H
