@@ -92,7 +92,7 @@ void OfficeMonitor::addCustomer(int numC) {
 	if (newTotal > 100) {
 		newTotal = 100;
 	}
-	for (int i = numC; i < newTotal; i++) {
+	for (int i = totalCustSen; i < newTotal; i++) {
 		fileLock[i] = new Lock("fileLock" + i);
 		fileState[i] = NONE;
 	}
@@ -100,12 +100,12 @@ void OfficeMonitor::addCustomer(int numC) {
 	totalCustSen = newTotal;
 }
 
-void Office::addSenator(int numS) {
+void OfficeMonitor::addSenator(int numS) {
 	int newTotal = totalCustSen + numS;
 	if (newTotal > 100) {
 		newTotal = 100;
 	}
-	for (int i = numS; i < newTotal; i++) {
+	for (int i = totalCustSen; i < newTotal; i++) {
 		fileLock[i] = new Lock("fileLock" + i);
 		fileState[i] = NONE;
 	}
