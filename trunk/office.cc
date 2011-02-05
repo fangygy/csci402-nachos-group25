@@ -1,13 +1,19 @@
 #include office.h
 #include officeMonitor.h
+#include <ctime>		// For seeding random
+#include <cstdlib>	// For generating random
 
-Office::Office() { }
+
+Office::Office() { 
+	srand(time(0));		//Initializing random number generator
+}
 
 void Office::startOffice(int numCust, int numApp, int numPic,
 		         int numPass, int numCash) {
 	oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
 	Thread *t;
 
+	oMonitor.addCustomer(numCust);
 	for(int i = 0; i < numCust; i++) {
 		t = new Thread("Cust" + i);
 		t->Fork((VoidFunctionPtr) Customer, i);
@@ -34,7 +40,7 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 	}
 
 	t = new Thread("Manager");
-	t->Fork((VoidFunctionPtr) Manager, i);  
+	t->Fork((VoidFunctionPtr) Manager, 0);  
 }
 
 /*
@@ -94,7 +100,7 @@ void Office::AppClerk(int index){
 			oMonitor.appMoney += 500;
 			oMonitor.appMoneyLock->Release();
 
-			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock); // signal customer awake
+			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 		}
 		// Check for regular customer line next
@@ -110,7 +116,7 @@ void Office::AppClerk(int index){
 			mySSN = appData[myIndex];
 			oMonitor.fileLock[mySSN]->Acquire();
 			if(oMonitor.fileState[mySSN] == NONE){
-				oMonitor.fileState[mySSN] = .APPDONE;
+				oMonitor.fileState[mySSN] = APPDONE;
 				oMonitor.fileLock[mySSN]->Release();
 
 			}
@@ -130,7 +136,7 @@ void Office::AppClerk(int index){
 				currentThread->Yield();
 			}
 
-			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock); // signal customer awake
+			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 		}
 		// If there are neither privileged or regular customers, go on break
@@ -139,8 +145,6 @@ void Office::AppClerk(int index){
 			oMonitor.acpcLineLock->Release();
 			oMonitor.appLock[myIndex]->Acquire();
 			oMonitor.appState[myIndex] = BREAK;
-
-			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 
 			oMonitor.appCV[myIndex]->Wait(oMonitor.appLock[myIndex]);
 
@@ -182,6 +186,74 @@ void Office::PicClerk(int index){
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Waits for the next customer
 
 			mySSN = oMonitor.picData[myIndex];
+
+			while(oMonitor.picDataBool[myIndex] == false){
+				printf("PictureClerk " + myIndex + ": Taking picture.");
+				for(int i = 0; i < 4; i++){
+					currentThread->Yield();
+				}
+				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
+				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
+				
+				// yield to take picture
+				// print statement: "Taking picture"
+				// picCV->Signal then picCV->Wait to
+				// show customer picture
+			}
+
+			oMonitor.fileLock[mySSN]->Acquire();
+			if(oMonitor.fileState[mySSN] == NONE){
+				oMonitor.fileState[mySSN] = PICDONE;
+				oMonitor.fileLock[mySSN]->Release();
+			}
+			else if(oMonitor.fileState[mySSN] == APPDONE){
+				oMonitor.fileState[mySSN] = APPPICDONE;
+				oMonitor.fileLock[mySSN]->Release();
+			}
+			else{
+				printf("Error. Customer does not have either an application or no application. What are you doing here?");
+				oMonitor.fileLock[mySSN]->Release();
+			}
+			// file picture using
+			// current thread yield
+			for(int i = 0; i < 20; i++){
+				currentThread->Yield();
+			}
+
+			// signal customer awake
+			oMonitor.picMoneyLock->Acquire();
+			oMonitor.picMoney += 500;
+			oMonitor.picMoneyLock->Release();
+
+			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
+			oMonitor.picLock[myIndex]->Release();// release clerk lock
+		}
+		// Check for the regular customer line next
+		// If there are regular customers, do PicClerk tasks
+		else if(oMonitor.regPCLineLength > 0){
+			oMonitor.regPCLineLength--;
+			oMonitor.picLock[myIndex]->Acquire();
+			oMonitor.picState[myIndex] = AVAILABLE;		// sets itself to AVAILABLE
+			oMonitor.regPCLineCV->Signal(oMonitor.acpcLineLock);			// Signals the next customer in line
+			oMonitor.acpcLineLock->Release();
+			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);		// Waits for next customer
+
+			mySSN = oMonitor.picData[myIndex];
+
+			while(oMonitor.picDataBool[myIndex] == false){
+				printf("PictureClerk " + myIndex + ": Taking picture.");
+				for(int i = 0; i < 4; i++){
+					currentThread->Yield();
+				}
+				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
+				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
+				
+				// yield to take picture
+				// print statement: "Taking picture"
+				// picCV->Signal then picCV->Wait to
+				// show customer picture
+			}
+
 			oMonitor.fileLock[mySSN]->Acquire();
 			if(oMonitor.fileState[mySSN] == NONE){
 				oMonitor.fileState[mySSN] = PICDONE;
@@ -196,20 +268,6 @@ void Office::PicClerk(int index){
 				oMonitor.fileLock[mySSN]->Release();
 			}
 
-			while(oMonitor.picDataBool[myIndex] == false){
-				printf("PictureClerk " + myIndex + ": Taking picture.");
-				for(int i = 0; i < 4; i++){
-					currentThread->Yield();
-				}
-				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
-				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
-				
-				// yield to take picture
-				// print statement: "Taking picture"
-				// picCV->Signal then picCV->Wait to
-				// show customer picture
-			}
-
 			// file picture using
 			// current thread yield
 			for(int i = 0; i < 20; i++){
@@ -217,60 +275,7 @@ void Office::PicClerk(int index){
 			}
 
 			// signal customer awake
-			oMonitor.picMoneyLock->Acquire();
-			oMonitor.picMoney += 500;
-			oMonitor.picMoneyLock->Release();
-
-			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock); // signal customer awake
-			oMonitor.picLock[myIndex]->Release();// release clerk lock
-		}
-		// Check for the regular customer line next
-		// If there are regular customers, do PicClerk tasks
-		else if(oMonitor.regPCLineLength > 0){
-			oMonitor.regPCLineLength--;
-			oMonitor.picLock[myIndex]->Acquire();
-			oMonitor.picState[myIndex] = AVAILABLE;		// sets itself to AVAILABLE
-			oMonitor.regPCLineCV->Signal(oMonitor.acpcLineLock);			// Signals the next customer in line
-			oMonitor.acpcLineLock->Release();
-			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);		// Waits for next customer
-
-			mySSN = oMonitor.picData[myIndex];
-			oMonitor.fileLock[mySSN]->Acquire();
-			if(oMonitor.fileState[mySSN] == NONE){
-				oMonitor.fileState[mySSN] = oMonitor.custState.PICDONE;
-				oMonitor.fileLock[mySSN]->Release();
-			}
-			else if(oMonitor.fileState[mySSN] == APPDONE){
-				oMonitor.fileState[mySSN] = APPPICDONE;
-				oMonitor.fileLock[mySSN]->Release();
-			}
-			else{
-				printf("Error. Customer does not have either an application or no application. What are you doing here?");
-				oMonitor.fileLock[mySSN]->Release();
-			}
-
-			while(oMonitor.picDataBool[myIndex] == false){
-				printf("PictureClerk " + myIndex + ": Taking picture.");
-				for(int i = 0; i < 4; i++){
-					currentThread->Yield();
-				}
-				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
-				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
-				
-				// yield to take picture
-				// print statement: "Taking picture"
-				// picCV->Signal then picCV->Wait to
-				// show customer picture
-			}
-
-			// file picture using
-			// current thread yield
-			for(int i = 0; i < 20; i++){
-				currentThread->Yield();
-			}
-
-			// signal customer awake
-			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock); // signal customer awake
+			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
 			oMonitor.picLock[myIndex]->Release();// release clerk lock
 		}
 		// If there are neither privileged or regular customers, go on break
@@ -278,7 +283,7 @@ void Office::PicClerk(int index){
 			oMonitor.acpcLineLock->Release();
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = BREAK;
-			oMonitor.picLock[myIndex]->Release();
+
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);
 
 
@@ -304,19 +309,21 @@ void Office::Manager(){
 
 		// Checks for AppClerk on break
 		if(oMonitor.privACLineLength > 3 || oMonitor.regACLineLength > 3){
-			for(int i = 0; i < 	oMonitor.numAppClerks; i++){
+			for(int i = 0; i < oMonitor.numAppClerks; i++){
 				if(oMonitor.appState[i] == BREAK){
 					oMonitor.appLock[i]->Acquire();
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
+					oMonitor.appState[i] = BUSY;
 					oMonitor.appLock[i]->Release();
 				}
 			}						
 		}
 		else if(oMonitor.privACLineLength > 1 || oMonitor.regACLineLength > 1){
-			for(int i = 0; i < 	oMonitor.numAppClerks; i++){
+			for(int i = 0; i < oMonitor.numAppClerks; i++){
 				if(oMonitor.appState[i] == BREAK){
 					oMonitor.appLock[i]->Acquire();
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
+					oMonitor.appState[i] = BUSY;
 					oMonitor.appLock[i]->Release();
 					break;
 				}
@@ -324,19 +331,21 @@ void Office::Manager(){
 		}
 		// Checks for PictureClerks on break
 		if(oMonitor.privPCLineLength > 3 || oMonitor.regPCLineLength > 3){
-			for(int i = 0; i < 	oMonitor.numPicClerks; i++){
+			for(int i = 0; i < oMonitor.numPicClerks; i++){
 				if(oMonitor.picState[i] == BREAK){
 					oMonitor.picLock[i]->Acquire();
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
+					oMonitor.picState[i] = BUSY;
 					oMonitor.picLock[i]->Release();
 				}
 			}						
 		}
 		else if(oMonitor.privPCLineLength > 1 || oMonitor.regPCLineLength > 1){
-			for(int i = 0; i < 	oMonitor.numPicClerks; i++){
+			for(int i = 0; i < oMonitor.numPicClerks; i++){
 				if(oMonitor.picState[i] == BREAK){
 					oMonitor.picLock[i]->Acquire();
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
+					oMonitor.picState[i] = BUSY;
 					oMonitor.picLock[i]->Release();
 					break;
 				}
@@ -345,10 +354,11 @@ void Office::Manager(){
 
 		// Checks for PassportClerks on break
 		if(oMonitor.privPassLineLength > 3 || oMonitor.regPassLineLength > 3){
-			for(int i = 0; i < 	oMonitor.numPassClerks; i++){
+			for(int i = 0; i < oMonitor.numPassClerks; i++){
 				if(oMonitor.passState[i] == BREAK){
 					oMonitor.passLock[i]->Acquire();
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
+					oMonitor.passState[i] = BUSY;
 					oMonitor.passLock[i]->Release();
 				}
 			}						
@@ -358,6 +368,7 @@ void Office::Manager(){
 				if(oMonitor.passState[i] == BREAK){
 					oMonitor.passLock[i]->Acquire();
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
+					oMonitor.passState[i] = BUSY;
 					oMonitor.passLock[i]->Release();
 					break;
 				}
@@ -370,6 +381,7 @@ void Office::Manager(){
 				if(oMonitor.cashState[i] == BREAK){
 					oMonitor.cashLock[i]->Acquire();
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
+					oMonitor.cashState[i] = BUSY;
 					oMonitor.cashLock[i]->Release();
 				}
 			}						
@@ -379,6 +391,7 @@ void Office::Manager(){
 				if(oMonitor.cashState[i] == BREAK){
 					oMonitor.cashLock[i]->Acquire();
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
+					oMonitor.cashState[i] = BUSY;
 					oMonitor.cashLock[i]->Release();
 					break;
 				}
@@ -449,9 +462,12 @@ Office::PassClerk(int index) {
 				doPassport = true;
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
-				for (int i = 0; i < 500) {
-					currentThread->Yield();
-				}
+				//for (int i = 0; i < 500) {
+				//	currentThread->Yield();
+				//}
+
+				oMonitor.passDataBool[myIndex] = false;
+				doPassport = false;
 			}
 			oMonitor.fileLock[myCust]->Release();
 			
@@ -466,7 +482,7 @@ Office::PassClerk(int index) {
 
 			//if customer wasn't an idiot, process their passport
 			if (doPassport) {
-				for (int i = 0; i < 500) {
+				for (int i = 0; i < 300; i++) {
 					currentThread->Yield();
 				}
 				// file dat passport
@@ -491,9 +507,12 @@ Office::PassClerk(int index) {
 				doPassport = true;
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
-				for (int i = 0; i < 500) {
-					currentThread->Yield();
-				}
+				//for (int i = 0; i < 500) {
+				//	currentThread->Yield();
+				//}
+
+				oMonitor.passDataBool[myIndex] = false;
+				doPassport = false;
 			}
 			oMonitor.fileLock[myCust]->Release();
 
@@ -502,7 +521,7 @@ Office::PassClerk(int index) {
 
 			//if customer wasn't an idiot, process their passport
 			if (doPassport) {
-				for (int i = 0; i < 500) {
+				for (int i = 0; i < 300; i++) {
 					currentThread->Yield();
 				}
 				// file dat passport
@@ -555,7 +574,7 @@ Office::Cashier(int index) {
 			if (oMonitor.fileState[myCust] == PASSDONE) {
 				// customer wasn't a dumbass, DO WORK
 				oMonitor.passDataBool[myIndex] = true;
-				for (int i = 0; i < 50) {
+				for (int i = 0; i < 50; i++) {
 					currentThread->Yield();
 				}
 				oMonitor.fileState[myCust] == ALLDONE;
@@ -566,9 +585,11 @@ Office::Cashier(int index) {
 				oMonitor.cashMoneyLock->Release();
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
-				for (int i = 0; i < 500) {
-					currentThread->Yield();
-				}
+				//for (int i = 0; i < 500) {
+				//	currentThread->Yield();
+				//}
+
+				oMonitor.passDataBool[myIndex] = false;
 			}
 			oMonitor.fileLock[myCust]->Release();
 
@@ -584,3 +605,365 @@ Office::Cashier(int index) {
 			oMonitor.cashLock[myIndex]->Release();
 		}
 	}
+}
+
+// Jasper Lee:
+//	Function for the customer thread
+//	Takes in an index that acts as the customer's unique ID
+//	Runs infinitely in a while loop until has visited all clerks
+
+void Office::Customer(int index) {
+	int myCash = doRandomCash(); // Random amount of cash: 100, 600, 1100, 1600
+	int SSN = index; // SSN is the index passed in, determined by order of creation
+	
+	// boolean flags to remember which clerks have been visited.
+	bool visitedApp = false, visitedPic = false, visitedPass = false, visitedCash = false; 
+
+	//Data for being a stupid customer and visiting passport before app/pic clerks
+	int chanceToBeStupid = rand() % 2; // 0 or 1
+	bool beenStupid = false; // Has only one chance to be stupid
+	
+	while(!visitedApp || !visitedPic || !visitedPass || !visitedCash) {	
+	//to keep thread running, while any of the visited bool flags are false
+
+		if (chanceToBeStupid == 1 && !beenStupid) {
+
+			linePassClerk(myCash, SSN, visitedPass);
+			beenStupid = true;
+		}
+		else {
+			beenStupid = true;
+		}
+
+		while (!visitedApp && !visitedPic) {
+
+			lineAppPicClerk(myCash, SSN, visitedApp, visitedPic);
+		}
+
+		while (!visitedPass) {
+
+			linePassClerk(myCash, SSN, visitedPass);
+		}
+
+		while (!visitedCash) {
+
+			lineCashier(myCash, SSN, visitedCash);
+		}
+	}
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/Senator to get in line for the
+// 	Application OR Picture clerks. Takes in reference to customer's cash
+// 	SSN, and visited boolean flags for these two clerks.
+void Office::lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
+							bool& visitedPic) {
+	oMonitor.acpcLineLock->Acquire();
+	if (myCash > 500) {
+	// If have enough cash to go into a priv line
+
+		if (oMonitor.regACLineLength == 0 && oMonitor.privACLineLength == 0 
+			&& !visitedApp) {
+		// If both priv and reg lines are empty for appClerk, and haven't
+		// visited him, just enter his regular line.
+			
+			oMonitor.regACLineLength++;
+			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			talkAppClerk(SSN, visitedApp);
+		}
+		else if (oMonitor.regPCLineLength == 0 && oMonitor.privPCLineLength == 0 
+				 && !visitedPic) {
+		// If both priv and reg lines are empty for picClerk, and haven't
+		// visited him, just enter his regular line.
+
+			oMonitor.regPCLineLength++;
+			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			talkPicClerk(SSN, visitedPic);
+		}
+		else if (visitedPic) {
+		// If already visited picClerk, go into privLine for appClerk
+
+			oMonitor.privACLineLength++;
+			oMonitor.privACLineCV->Wait(oMonitor.acpcLineLock);
+			talkAppClerk(SSN, visitedApp);
+
+			myCash -= 500;
+		}
+		else if (visitedApp) {
+		// If already visited appClerk, go into privLine for picClerk 
+
+			oMonitor.privPCLineLength++;
+			oMonitor.privPCLineCV->Wait(oMonitor.acpcLineLock);
+			talkPicClerk(SSN, visitedPic);
+
+			myCash -= 500;
+		}
+		else if (oMonitor.privACLineLength <= oMonitor.privPCLineLength) {
+		// If appClerk's privLine is less than  or equal to 
+		// picClerk's privLine, then go into appClerk's privLine
+
+			oMonitor.privACLineLength++;
+			oMonitor.privACLineCV->Wait(oMonitor.acpcLineLock);
+			talkAppClerk(SSN, visitedApp);
+
+			myCash -= 500;
+		}
+		else {
+		// Else picClerk's privLine is shorter, so go in there
+			
+			oMonitor.privPCLineLength++;
+			oMonitor.privPCLineCV->Wait(oMonitor.acpcLineLock);
+			talkPicClerk(SSN, visitedPic);
+
+			myCash -= 500;
+		}
+	}
+	else {
+	// Else don't have enough money, just go into regular lines
+		
+		if (visitedPic) {
+		// If already been to picClerk, go into appClerk's line
+
+			oMonitor.regACLineLength++;
+			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			talkAppClerk(SSN, visitedApp);
+		}
+		else if (visitedApp) {
+		// If already visited appClerk, go into picClerk's line
+
+			oMonitor.regPCLineLength++;
+			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			talkPicClerk(SSN, visitedPic);
+		}
+		else if (oMonitor.regACLineLength <= oMonitor.regPCLineLength) {
+		// If appClerk's regLine is shorter or equal to picClerk's
+		// regLine, go into appClerk's line
+			
+			oMonitor.regACLineLength++;
+			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			talkAppClerk(SSN, visitedApp);
+		}
+		else {
+		// Else picClerk's regLine is shorter than appClerk's, so
+		// go there
+			
+			oMonitor.regPCLineLength++;
+			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			talkPicClerk(SSN, visitedPic);
+		}
+	}
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/AppClerk interaction.
+// 	Called by lineAppPicClerk() after choosing which line to enter.
+void Office::talkAppClerk(int& SSN, bool& visitedApp) {
+	int myClerk = -1;
+	for (int i = 0; i < oMonitor.numAppClerks; i++) {
+		oMonitor.appLock[i]->Acquire(); // Prevents race condition for clerks
+		if (oMonitor.appState[i] != AVAILABLE) {
+			oMonitor.appLock[i]->Release(); // Release if not AVAILABLE
+		}
+		else {
+			// Otherwise, set that clerk's state to BUSY and keep index for
+			// future use
+			myClerk = i;
+			oMonitor.appState[i] = BUSY;
+			break;				
+		}
+	}
+
+	oMonitor.acpcLineLock->Release();
+	oMonitor.appData[myClerk] = SSN; // Giving appClerk my SSN
+	oMonitor.appCV[myClerk]->Signal(oMonitor.appLock[myClerk]);
+	oMonitor.appCV[myClerk]->Wait(oMonitor.appLock[myClerk]);
+	oMonitor.appLock[myClerk]->Release();
+		
+	visitedApp = true;
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/PicClerk interaction.
+// 	Called by lineAppPicClerk() after choosing which line to enter.
+void Office::talkPicClerk(int& SSN, bool& visitedPic) {
+	int myClerk = -1;
+	for (int i = 0; i < oMonitor.numPicClerks; i++) {
+		oMonitor.picLock[i]->Acquire(); // Prevents race condition for clerks
+		if (oMonitor.picState[i] != AVAILABLE) {
+			oMonitor.picLock[i]->Release(); // Release if not AVAILABLE
+		}
+		else {
+			// Otherwise, set that clerk's state to BUSY and keep index for
+			// future use
+			myClerk = i;
+			oMonitor.picState[i] = BUSY;
+			break;				
+		}
+	}
+
+	oMonitor.acpcLineLock->Release();
+	oMonitor.picData[myClerk] = SSN;
+	oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
+	oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]); // Ready for picture
+
+	while (true) {
+	// Loop for checking if customer hates his picture
+		int chanceToHate = rand() % 2; // 50/50 chance to hate his picture
+		if (chanceToHate == 0) {
+			// If hates his picture
+			oMonitor.picDataBool[myClerk] = false;
+			oMonitor.picCV[myClerk]->Signal();
+			oMonitor.picCV[myClerk]->Wait();
+		}
+		else {
+			// Else he decides not to be an ass and just accepts it
+			oMonitor.picDataBool[myClerk] = true;
+			oMonitor.picCV[myClerk]->Signal();
+			oMonitor.picCV[myClerk]->Wait();
+			break;
+		}
+	}
+	oMonitor.picLock[myClerk]->Release();
+		
+	visitedPic = true;
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/Senator to get in line for the
+// 	PassportClerk. Takes in a reference to the customer's cash, SSN, and 
+// 	visited boolean flags.
+void Office::linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
+	oMonitor.passLineLock->Acquire();
+	if (myCash > 500) {
+
+		if (oMonitor.regPassLineLength == 0 &&	
+		    oMonitor.privPassLineLength == 0) { 
+		// If both priv and reg lines are empty, just go into the
+		// the empty regular line and save money.
+			
+			oMonitor.regPassLineLength++;
+			oMonitor.regPassLineCV->Wait(oMonitor.passLineLock);
+			talkPassClerk(SSN, visitedPass);
+		}
+		else {
+		// Else, just go into the rich people line
+			
+			oMonitor.privPassLineLength++;
+			oMonitor.privPassLineCV->Wait(oMonitor.passLineLock);
+			talkPassClerk(SSN, visitedPass);
+			myCash -= 500;
+		}
+	}
+	else {
+		// Doesn't have enough cash for privileged, just go into regular
+		oMonitor.regPassLineLength++;
+		oMonitor.regPassLineCV->Wait(oMonitor.passLineLock);
+		talkPassClerk(SSN, visitedPass);
+	}
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/PassportClerk interaction.
+// 	Called by linePassClerk() after checking which line to enter
+void Office::talkPassClerk(int& SSN, bool& visitedPass) {
+	int myClerk = -1;
+	for (int i = 0; i < oMonitor.numPassClerks; i++) {
+		oMonitor.passLock[i]->Acquire(); // Prevents race condition for clerks
+		if (oMonitor.passState[i] != AVAILABLE) {
+			oMonitor.passLock[i]->Release(); // Release if not AVAILABLE
+		}
+		else {
+			// Otherwise, set that clerk's state to BUSY and keep index for
+			// future use
+			myClerk = i;
+			oMonitor.passState[i] = BUSY;
+			break;				
+		}
+	}
+
+	oMonitor.passLineLock->Release();
+	oMonitor.passData[myClerk] = SSN;
+	oMonitor.passCV[myClerk]->Signal(oMonitor.passLock[myClerk]);
+	oMonitor.passCV[myClerk]->Wait(oMonitor.passLock[myClerk]);
+
+	if (oMonitor.passDataBool) {
+	// If customer had previous files completed, go on
+		oMonitor.passLock[myClerk]->Release();
+		visitedPass = true;
+	}
+	else {
+	// Else am an idiot and is forced to wait several seconds before getting
+	// into another line.
+		oMonitor.passLock[myClerk]->Release();
+		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
+		for (int i = 0; i < randWait; i++) {
+			currentThread->Yield();
+		}
+	}
+}
+
+// Jasper Lee:
+// 	Helper function for Customer/Senator to get in line for the
+// 	Cashier. Takes in a reference to the customer's cash, SSN, and 
+// 	visited boolean flags.			
+void Office::lineCashier(int& myCash, int& SSN, bool& visitedCash) {
+	oMonitor.cashLineLock->Acquire();
+	oMonitor.cashLineLength++;
+	oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
+
+	int myClerk = -1;
+	for (int i = 0; i < oMonitor.numCashiers; i++) {
+		oMonitor.cashLock[i]->Acquire(); // Prevents race condition for clerks
+		if (oMonitor.cashState[i] != AVAILABLE) {
+			oMonitor.cashLock[i]->Release(); // Release if not AVAILABLE
+		}
+		else {
+			// Otherwise, set that clerk's state to BUSY and keep index for
+			// future use
+			myClerk = i;
+			oMonitor.cashState[i] = BUSY;
+			break;				
+		}
+	}
+
+	oMonitor.cashLineLock->Release();
+	oMonitor.cashData[myClerk] = SSN;
+	oMonitor.cashCV[myClerk]->Signal(oMonitor.passLock[myClerk]);
+	oMonitor.cashCV[myClerk]->Wait(oMonitor.passLock[myClerk]);
+
+	if (oMonitor.cashDataBool) {
+	// If customer had previous files completed, go on
+		oMonitor.cashLock[myClerk]->Release();
+		visitedCash = true;
+		myCash -= 100;
+	}
+	else {
+	// Else am an idiot and is forced to wait several seconds before getting
+	// into another line.
+		oMonitor.cashLock[myClerk]->Release();
+		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
+		for (int i = 0; i < randWait; i++) {
+			currentThread->Yield();
+		}
+	}
+}			
+
+// Jasper Lee:
+// 	Helper function for Customer that returns the amount of cash he/she has,
+// 	chosen between 100, 600, 1100, and 1600.
+int Office::doRandomCash() {
+	int randomCash = rand() % 4;
+	switch(randomCash) {
+		case 0:
+			return 100;
+		case 1:
+			return 600;
+		case 2:
+			return 1100;
+		case 3:
+			return 1600;
+		default:
+			printf("This shouldn't happen.");
+			return 1600;
+	}
+}

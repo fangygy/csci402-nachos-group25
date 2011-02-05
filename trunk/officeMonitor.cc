@@ -15,6 +15,11 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	privPassLineLength = 0;
 	cashLineLength = 0;
 
+	totalCust = 0;
+	totalSenator = 0;
+	officeCust = 0;
+	officeSenator = 0;
+
 	acpcLineLock = new Lock("acpcLineLock");
 	passLineLock = new Lock("passLineLock");
 	cashLineLock = new Lock("cashLineLock");
@@ -27,6 +32,9 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	privPassLineCV = new Condition("privPassLineCV");
 	cashLineCV = new Condition("cashLineCV");
 
+	if(numAppClerks > 10) {
+		numAppClerks = 10;
+	}
 	for(int i = 0; i < numAppClerks; i++) {
 		appLock[i] = new Lock("appLock" + i);
 		appCV[i] = new Condition("appCV" + i);
@@ -34,6 +42,9 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		appState[i] = BUSY;
 	}
 
+	if(numPicClerks > 10) {
+		numPicClerks = 10;
+	}
 	for(int i = 0; i < numPicClerks; i++) {
 		picLock[i] = new Lock("picLock" + i);
 		picCV[i] = new Condition("picCV" + i);
@@ -42,6 +53,9 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		picState[i] = BUSY;
 	}
 
+	if(numPassClerks > 10) {
+		numPassClerks = 10;
+	}
 	for(int i = 0; i < numPassClerks; i++) {
 		passLock[i] = new Lock("passLock" + i);
 		passCV[i] = new Condition("passCV" + i);
@@ -50,6 +64,9 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		passState[i] = BUSY;
 	}
 
+	if(numCashiers > 10) {
+		numCashiers = 10;
+	}
 	for(int i = 0; i < numCashiers; i++) {
 		cashLock[i] = new Lock("cashLock" + i);
 		cashCV[i] = new Condition("cashCV" + i);
@@ -59,18 +76,39 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	}
 
  	appMoney = 0;
-    picMoney = 0;
-    passMoney = 0;
+	picMoney = 0;
+	passMoney = 0;
   	cashMoney = 0;
         
 	appMoneyLock = new Lock("appMoneyLock");
-    picMoneyLock = new Lock("picMoneyLock");
+	picMoneyLock = new Lock("picMoneyLock");
   	passMoneyLock = new Lock("passMoneyLock");
   	cashMoneyLock = new Lock("cashMoneyLock");
 
-	for(int i = 0; i < 100; i++){
+}
+
+void OfficeMonitor::addCustomer(int numC) {	
+	int newTotal = totalCustSen + numC;
+	if (newTotal > 100) {
+		newTotal = 100;
+	}
+	for (int i = numC; i < newTotal; i++) {
 		fileLock[i] = new Lock("fileLock" + i);
+		fileState[i] = NONE;
 	}
 
+	totalCustSen = newTotal;
 }
-		
+
+void Office::addSenator(int numS) {
+	int newTotal = totalCustSen + numS;
+	if (newTotal > 100) {
+		newTotal = 100;
+	}
+	for (int i = numS; i < newTotal; i++) {
+		fileLock[i] = new Lock("fileLock" + i);
+		fileState[i] = NONE;
+	}
+
+	totalCustSen = newTotal;
+}
