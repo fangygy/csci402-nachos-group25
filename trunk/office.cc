@@ -287,7 +287,15 @@ void Office::PicClerk(int index){
 		}
 	}
 }
-   
+
+/*
+//	Yinlerthai Chan:
+//	Manager function thread
+//	Constantly checks over customer lines to see if there are any customers
+//	Wakes up Clerks on break if so
+// Also periodically prints out a money report, stating how much money each Clerk has, and total money overall
+*/
+
 void Office::Manager(){
 	int totalMoney;
 
