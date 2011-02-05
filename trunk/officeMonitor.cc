@@ -37,18 +37,22 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numPicClerks; i++) {
 		picLock[i] = new Lock("picLock" + i);
 		picCV[i] = new Condition("picCV" + i);
+		picData[i] = 0;
+		picDataBool[i] = 0;
 		picState[i] = BUSY;
 	}
 
 	for(int i = 0; i < numPassClerks; i++) {
 		passLock[i] = new Lock("passLock" + i);
 		passCV[i] = new Condition("passCV" + i);
+		passData[i] = 0;
 		passState[i] = BUSY;
 	}
 
 	for(int i = 0; i < numCashiers; i++) {
 		cashLock[i] = new Lock("cashLock" + i);
 		cashCV[i] = new Condition("cashCV" + i);
+		cashData[i] = 0;
 		cashState[i] = BUSY;
 	}
 
@@ -61,5 +65,7 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
         picMoneyLock = new Lock("picMoneyLock");
   	passMoneyLock = new Lock("passMoneyLock");
   	cashMoneyLock = new Lock("cashMoneyLock");
+
+	fileLock = new Lock("fileLock");
 }
 		
