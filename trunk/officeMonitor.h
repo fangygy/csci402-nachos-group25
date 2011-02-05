@@ -71,7 +71,7 @@ class OfficeMonitor() {
   clerkState passState[MAX_CLERKS];
   clerkState cashState[MAX_CLERKS];
 
-  // Clerk Money 
+  // Clerk Money
   int appMoney;
   Lock *appMoneyLock;
   int picMoney;
