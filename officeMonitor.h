@@ -13,11 +13,19 @@ class OfficeMonitor() {
 
  public:
   OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
+  void addCustomer(int numC);
+  void addSenator(int numS);
   
   // Amount of each kind of Clerk
   int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
-  // Line Lengths
+  // Amount of each customer/senator in total (used for instantiation)
+  int totalCustSen;
+
+  // Amount of each customer/senator currently in office
+  int officeCust, officeSenator;
+
+  // Line Lengths (Cashier has no privileged line)
   int regACLineLength, regPCLineLength, regPassLineLength;
   int privACLineLength, privPCLineLength, privPassLineLength;
   int cashLineLength;
@@ -44,12 +52,13 @@ class OfficeMonitor() {
   Condition *passCV[MAX_CLERKS];
   Condition *cashCV[MAX_CLERKS];
 
-  // Clerk Data
+  // Clerk Data used for passing customer index
   int appData[MAX_CLERKS];
   int picData[MAX_CLERKS];
   int passData[MAX_CLERKS];
   int cashData[MAX_CLERKS];
 
+  // Clerk Data used for passing true/false statements
   bool picDataBool[MAX_CLERKS];
   bool passDataBool[MAX_CLERKS];
   bool cashDataBool[MAX_CLERKS];
