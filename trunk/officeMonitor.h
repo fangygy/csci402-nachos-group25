@@ -8,97 +8,100 @@
 #include "synch.h"
 
 class OfficeMonitor {
- private:
-  //No private variables
+private:
+	//No private variables
 
- public:
-  OfficeMonitor();
-  ~OfficeMonitor();
-  OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
-  //void addCustomer(int numC);
-  //void addSenator(int numS);
-  
-  // Amount of each kind of Clerk
-  int numAppClerks, numPicClerks, numPassClerks, numCashiers;
+public:
+	static int MAX_CLERKS = 10;
+	static int MAX_CLERKS = 100;
 
-  // Amount of each customer/senator in total (used for instantiation)
-  int totalCust;
-  int totalSen;
-  int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
+	OfficeMonitor();
+	~OfficeMonitor();
+	OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
+	//void addCustomer(int numC);
+	//void addSenator(int numS);
 
-  // Amount of each customer/senator currently in office or waiting room
-  int officeCust, waitCust, officeSenator;
-  
-  // Locks for customer/senator checking
-  Lock *customerLock;
-  Lock *senatorLock;
-  
-  // Waiting room locks/CVs
-  Lock *custWaitLock;
-  Lock *senWaitLock;
-  Condition *custWaitCV;
-  Condition *senWaitCV;
+	// Amount of each kind of Clerk
+	int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
-  // Line Lengths (Cashier has no privileged line)
-  int regACLineLength, regPCLineLength, regPassLineLength;
-  int privACLineLength, privPCLineLength, privPassLineLength;
-  int cashLineLength;
+	// Amount of each customer/senator in total (used for instantiation)
+	int totalCust;
+	int totalSen;
+	int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
 
-  // Line Locks
-  Lock *acpcLineLock;
-  Lock *passLineLock;
-  Lock *cashLineLock;
+	// Amount of each customer/senator currently in office or waiting room
+	int officeCust, waitCust, officeSenator;
 
-  // Line Condition Variables
-  Condition *regACLineCV, *regPCLineCV, *regPassLineCV;
-  Condition *privACLineCV, *privPCLineCV, *privPassLineCV;
-  Condition *cashLineCV;
+	// Locks for customer/senator checking
+	Lock *customerLock;
+	Lock *senatorLock;
 
-  // Clerk Locks
-  Lock *appLock[MAX_CLERKS];
-  Lock *picLock[MAX_CLERKS];
-  Lock *passLock[MAX_CLERKS];
-  Lock *cashLock[MAX_CLERKS];
+	// Waiting room locks/CVs
+	Lock *custWaitLock;
+	Lock *senWaitLock;
+	Condition *custWaitCV;
+	Condition *senWaitCV;
 
-  // Clerk Condition Variables
-  Condition *appCV[MAX_CLERKS];
-  Condition *picCV[MAX_CLERKS];
-  Condition *passCV[MAX_CLERKS];
-  Condition *cashCV[MAX_CLERKS];
+	// Line Lengths (Cashier has no privileged line)
+	int regACLineLength, regPCLineLength, regPassLineLength;
+	int privACLineLength, privPCLineLength, privPassLineLength;
+	int cashLineLength;
 
-  // Clerk Data used for passing customer index
-  int appData[MAX_CLERKS];
-  int picData[MAX_CLERKS];
-  int passData[MAX_CLERKS];
-  int cashData[MAX_CLERKS];
+	// Line Locks
+	Lock *acpcLineLock;
+	Lock *passLineLock;
+	Lock *cashLineLock;
 
-  // Clerk Data used for passing true/false statements
-  bool picDataBool[MAX_CLERKS];
-  bool passDataBool[MAX_CLERKS];
-  bool cashDataBool[MAX_CLERKS];
-  
+	// Line Condition Variables
+	Condition *regACLineCV, *regPCLineCV, *regPassLineCV;
+	Condition *privACLineCV, *privPCLineCV, *privPassLineCV;
+	Condition *cashLineCV;
 
-  // Clerk States
-  enum clerkState {BUSY, AVAILABLE, BREAK};
-  clerkState appState[MAX_CLERKS];
-  clerkState picState[MAX_CLERKS];
-  clerkState passState[MAX_CLERKS];
-  clerkState cashState[MAX_CLERKS];
+	// Clerk Locks
+	Lock *appLock[MAX_CLERKS];
+	Lock *picLock[MAX_CLERKS];
+	Lock *passLock[MAX_CLERKS];
+	Lock *cashLock[MAX_CLERKS];
 
-  // Clerk Money
-  int appMoney;
-  Lock *appMoneyLock;
-  int picMoney;
-  Lock *picMoneyLock;
-  int passMoney;
-  Lock *passMoneyLock;
-  int cashMoney;
-  Lock *cashMoneyLock;
+	// Clerk Condition Variables
+	Condition *appCV[MAX_CLERKS];
+	Condition *picCV[MAX_CLERKS];
+	Condition *passCV[MAX_CLERKS];
+	Condition *cashCV[MAX_CLERKS];
 
-  // Customer States and Lock
-  Lock *fileLock[MAX_CUSTOMERS];
-  enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
-  custState fileState[MAX_CUSTOMERS];
+	// Clerk Data used for passing customer index
+	int appData[MAX_CLERKS];
+	int picData[MAX_CLERKS];
+	int passData[MAX_CLERKS];
+	int cashData[MAX_CLERKS];
+
+	// Clerk Data used for passing true/false statements
+	bool picDataBool[MAX_CLERKS];
+	bool passDataBool[MAX_CLERKS];
+	bool cashDataBool[MAX_CLERKS];
+
+
+	// Clerk States
+	enum clerkState {BUSY, AVAILABLE, BREAK};
+	clerkState appState[MAX_CLERKS];
+	clerkState picState[MAX_CLERKS];
+	clerkState passState[MAX_CLERKS];
+	clerkState cashState[MAX_CLERKS];
+
+	// Clerk Money
+	int appMoney;
+	Lock *appMoneyLock;
+	int picMoney;
+	Lock *picMoneyLock;
+	int passMoney;
+	Lock *passMoneyLock;
+	int cashMoney;
+	Lock *cashMoneyLock;
+
+	// Customer States and Lock
+	Lock *fileLock[MAX_CUSTOMERS];
+	enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
+	custState fileState[MAX_CUSTOMERS];
 
 
 
