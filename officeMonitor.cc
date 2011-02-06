@@ -106,20 +106,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	printf("Number of Cashiers = " + numCashiers + "\n");
 
 }
-
-void OfficeMonitor::addCustomer(int numC) {	
-	int newTotal = totalCustSen + numC;
-	if (newTotal > 100) {
-		newTotal = 100;
-	}
-	for (int i = totalCustSen; i < newTotal; i++) {
-		fileLock[i] = new Lock("fileLock" + i);
-		fileState[i] = NONE;
-	}
-
-	totalCustSen = newTotal;
-}
-
 void OfficeMonitor::addSenator(int numS) {
 	int newTotal = totalCustSen + numS;
 	if (newTotal > 100) {
