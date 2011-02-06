@@ -4,8 +4,8 @@
 #include "officeMonitor.h"
 
 class Office {
-private:
-	OfficeMonitor oMonitor;
+ private:
+  OfficeMonitor* oMonitor;
 
 	// Helper functions for Customer
 	void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp, bool& visitedPic);
