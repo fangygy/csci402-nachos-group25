@@ -15,14 +15,15 @@ class OfficeMonitor {
   OfficeMonitor();
   ~OfficeMonitor();
   OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
-  void addCustomer(int numC);
-  void addSenator(int numS);
+  //void addCustomer(int numC);
+  //void addSenator(int numS);
   
   // Amount of each kind of Clerk
   int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
   // Amount of each customer/senator in total (used for instantiation)
-  int totalCustSen;
+  int totalCust, totalSenator;
+  int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
 
   // Amount of each customer/senator currently in office or waiting room
   int officeCust, waitCust, officeSenator;
