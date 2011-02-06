@@ -80,6 +80,11 @@ public:
 	bool passDataBool[MAX_CLERKS];
 	bool cashDataBool[MAX_CLERKS];
 
+	// Clerk Data for distinguishing between Customer/Senator
+	int appCust[MAX_CLERKS];
+	int picCust[MAX_CLERKS];
+	int passCust[MAX_CLERKS];
+	int cashCust[MAX_CLERKS];
 
 	// Clerk States
 	enum clerkState {BUSY, AVAILABLE, BREAK};
@@ -98,14 +103,13 @@ public:
 	int cashMoney;
 	Lock *cashMoneyLock;
 
-	// Customer States and Lock
+	// Customer States, Types and Lock
 	Lock *fileLock[MAX_CUSTOMERS];
 	enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
 	custState fileState[MAX_CUSTOMERS];
 
-
-
-
+	enum custType {CUSTOMER, SENATOR};
+	custType fileType[MAX_CUSTOMERS];
 };
 
 #endif // OFFICEMONITOR_H
