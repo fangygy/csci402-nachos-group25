@@ -1,8 +1,8 @@
 #ifndef OFFICEMONITOR_H
 #define OFFICEMONITOR_H
 
-//#define MAX_CLERKS 10
-//#define MAX_CUSTOMERS 100
+#define MAX_CLERKS 10
+#define MAX_CUSTOMERS 100
 
 
 #include "synch.h"
@@ -12,8 +12,8 @@ private:
 	//No private variables
 
 public:
-	static const int MAX_CLERKS = 10;
-	static const int MAX_CUSTOMERS = 100;
+	static const int MAX_CLERK = MAX_CLERKS;
+	static const int MAX_CUSTOMER = MAX_CUSTOMERS;
 
 	OfficeMonitor();
 	~OfficeMonitor();
@@ -25,8 +25,6 @@ public:
 	int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
 	// Amount of each customer/senator in total (used for instantiation)
-	int totalCust;
-	int totalSen;
 	int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
 
 	// Amount of each customer/senator currently in office or waiting room

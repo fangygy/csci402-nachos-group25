@@ -3,11 +3,13 @@
 #include <ctime>		// For seeding random
 #include <cstdlib>	// For generating random
 
-extern int MAX_CUSTOMERS;
-extern int MAX_CLERKS;
+#define MAX_CLERK 10
+#define MAX_CUSTOMER 100
+//extern int MAX_CUSTOMER;
+//extern int MAX_CLERK;
 
 
-srand(time(0));		//Initializing random number generator
+//srand(time(0));		//Initializing random number generator
 OfficeMonitor oMonitor(3, 3, 3, 3);	 //Initial office monitor has 3 of each type of clerk
 
 // Jasper Lee:
@@ -570,60 +572,6 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 		oMonitor.regPassLineCV->Wait(oMonitor.passLineLock);
 		talkPassClerk(SSN, visitedPass);
 	}
-}
-
-/*
-// Antonio Cade
-// Add Customer
-*/
-void addCustomer(int numC) {
-	// place a cap on numC
-	if ((oMonitor.totalCustSen + numC) > MAX_CUSTOMERS) {
-		numC = MAX_CUSTOMERS - oMonitor.totalCustSen;
-	}
-
-	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
-		// add the monitor variables
-		oMonitor.fileLock[i] = new Lock("fileLock%d", i);
-		oMonitor.fileState[i] = oMonitor.NONE;
-
-		// add the threads
-		char* name = "Cust" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) Customer, i);
-		currentThread->Yield();
-	}
-
-	// Update totals
-	oMonitor.totalCust += numC;
-	oMonitor.totalCustSen += numC;
-}
-
-/*
-// Antonio Cade
-// Add Senator
-*/
-void addSenator(int numS) {
-	// place a cap on numS
-	if (oMonitor.totalCustSen + numS > MAX_CUSTOMERS) {
-		numS = MAX_CUSTOMERS - oMonitor.totalCustSen;
-	}
-
-	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numS; i++) {
-		// add the monitor variables
-		oMonitor.fileLock[i] = new Lock("fileLock%d", i);
-		oMonitor.fileState[i] = oMonitor.NONE;
-
-		// add the threads
-		char* name = "Senator" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) Senator, i);
-		currentThread->Yield();
-	}
-
-	// Update totals
-	oMonitor.totalSenator += numS;
-	oMonitor.totalCustSen += numS;
 }
 
 /*
@@ -1312,6 +1260,7 @@ void Cashier(int index) {
 //	Runs infinitely in a while loop until has visited all clerks
 
 void Customer(int index) {
+
 	int myCash = doRandomCash(); // Random amount of cash: 100, 600, 1100, 1600
 	int SSN = index; // SSN is the index passed in, determined by order of creation
 	
@@ -1451,6 +1400,65 @@ void Senator(int index) {
 	oMonitor.senatorLock->Release();
 }
 
+/*
+// Antonio Cade
+// Add Customer
+*/
+void addCustomer(int numC) {
+	// place a cap on numC
+	if ((oMonitor.totalCustSen + numC) > MAX_CUSTOMER) {
+		numC = MAX_CUSTOMER - oMonitor.totalCustSen;
+	}
+
+	Thread* t;
+	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
+		// add the monitor variables
+		char* lockName = "fileLock" + i;
+		oMonitor.fileLock[i] = new Lock(lockName);
+		oMonitor.fileState[i] = oMonitor.NONE;
+
+		// add the threads
+		char* name = "Cust" + i;
+		printf("Making ");
+		printf(name);
+		printf("\n");
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Customer, i);
+		currentThread->Yield();
+	}
+
+	// Update totals
+	oMonitor.totalCustSen += numC;
+}
+
+/*
+// Antonio Cade
+// Add Senator
+*/
+void addSenator(int numS) {
+	// place a cap on numS
+	if (oMonitor.totalCustSen + numS > MAX_CUSTOMER) {
+		numS = MAX_CUSTOMER - oMonitor.totalCustSen;
+	}
+
+	Thread* t;
+	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numS; i++) {
+		// add the monitor variables
+		char* lockName = "fileLock" + i;
+		oMonitor.fileLock[i] = new Lock(lockName);
+		oMonitor.fileState[i] = oMonitor.NONE;
+
+		// add the threads
+		char* name = "Senator" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Senator, i);
+		currentThread->Yield();
+	}
+
+	// Update totals
+	oMonitor.totalCustSen += numS;
+}
+
 // ======================================
 //			PassportOffice
 // ======================================
@@ -1462,44 +1470,37 @@ void PassportOffice() {
 	//oMonitor = new OfficeMonitor();
 	Thread *t;
 
-	addCustomer(numCust);
-	/*oMonitor.addCustomer(numCust);
-	for(int i = 0; i < numCust; i++) {
-		char* name = "Cust" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) Customer, i);
-		currentThread->Yield();
-	*/
-	/*
-	for(int i = 0; i < numApp; i++) {
+	addCustomer(3);
+	
+	
+	for(int i = 0; i < oMonitor.numAppClerks; i++) {
 		char* name = "AppClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) AppClerk, i);
 		//currentThread->Yield();
 	}
 
-	for(int i = 0; i < numPic; i++) {
+	for(int i = 0; i < oMonitor.numPicClerks; i++) {
 		char* name = "PicClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PicClerk, i);
 		//currentThread->Yield();
 	}
 
-	for(int i = 0; i < numPass; i++) {
+	for(int i = 0; i < oMonitor.numPassClerks; i++) {
 		char* name = "PassClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PassClerk, i);
 		//currentThread->Yield();
 	}
 
-	for(int i = 0; i < numCash; i++) {
+	for(int i = 0; i < oMonitor.numCashiers; i++) {
 		char* name = "Cashier" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Cashier, i);
 		//currentThread->Yield();
 	}
-
+	
 	t = new Thread("Manager");
-	t->Fork((VoidFunctionPtr) Manager, 0);  
-	*/
+	t->Fork((VoidFunctionPtr) Manager, 0);
 }
