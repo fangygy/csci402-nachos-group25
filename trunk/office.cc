@@ -1407,7 +1407,7 @@ void Office::checkSenator() {
 		oMonitor.customerLock->Release();
 		oMonitor.custWaitLock->Acquire();
 		oMonitor.custWaitCV->Wait(oMonitor.custWaitLock);
-		oMonitor.custWautLock->Release();
+		oMonitor.custWaitLock->Release();
 		
 		oMonitor.customerLock->Acquire();
 		oMonitor.officeCust++;
