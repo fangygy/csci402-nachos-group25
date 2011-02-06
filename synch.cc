@@ -113,14 +113,12 @@ Lock::Lock(char* debugName)
 	name = debugName;
 	free = true;
 	holder = NULL;
-	semaphore = new Semaphore(name, 0);
 	queue = new List;
 }
 
 Lock::~Lock() 
 {
 	delete queue;
-	delete semaphore;
 	delete holder;
 }
 
@@ -146,7 +144,7 @@ void Lock::Acquire()
 	}
 	else {
 		queue->Append((void *)currentThread);
-		semaphore->P();
+		currentThread->Sleep();
 	}
 
 	(void) interrupt->SetLevel(oldLevel); //restore interrupts
@@ -172,7 +170,7 @@ void Lock::Release()
 
 	if (!(queue->IsEmpty())) { //If there are threads waiting
 		holder = (Thread *) queue->Remove(); //Pass ownership
-		semaphore->V();
+		scheduler->ReadyToRun(holder);
 	}
 	else { //No threads waiting
 		free = true; //This lock is available
