@@ -29,28 +29,28 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 		char* name = "AppClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) AppClerk&, i);
-		currentThread->Yield();
+		//currentThread->Yield();
 	}
 
 	for(int i = 0; i < numPic; i++) {
 		char* name = "PicClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PicClerk, i);
-		currentThread->Yield();
+		//currentThread->Yield();
 	}
 
 	for(int i = 0; i < numPass; i++) {
 		char* name = "PassClerk" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PassClerk, i);
-		currentThread->Yield();
+		//currentThread->Yield();
 	}
 
 	for(int i = 0; i < numCash; i++) {
 		char* name = "Cashier" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Cashier, i);
-		currentThread->Yield();
+		//currentThread->Yield();
 	}
 
 	t = new Thread("Manager");
@@ -76,6 +76,7 @@ Office::addCustomer(int numC) {
 		char* name = "Cust" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Customer, i);
+		currentThread->Yield();
 	}
 
 	// Update totals
@@ -101,6 +102,7 @@ Office::addSenator(int numS) {
 		char* name = "Senator" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Senator, i);
+		currentThread->Yield();
 	}
 
 	// Update totals
