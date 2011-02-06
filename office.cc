@@ -111,7 +111,7 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	oMonitor.cashLineLength++;
 	oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
 	
-	oMonitor.officeSenator->Acquire();
+	oMonitor.senatorLock->Acquire();
 	if (oMonitor.officeSenator > 0) {
 		printf("Customer%d was in the regular wait queue for Cashier\n", SSN);
 		printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
@@ -122,7 +122,6 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 		oMonitor.senatorLock->Release();
 	}
 
-	oMonitor.cashLineLock->Release();
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numCashiers; i++) {
 		oMonitor.cashLock[i]->Acquire(); // Prevents race condition for clerks
@@ -139,7 +138,7 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	}
 	printf("Customer%d goes to Cashier%d\n",SSN,myClerk);
 
-	//oMonitor.cashLineLock->Release();
+	oMonitor.cashLineLock->Release();
 	oMonitor.cashData[myClerk] = SSN;
 	oMonitor.cashCV[myClerk]->Signal(oMonitor.cashLock[myClerk]);
 	oMonitor.cashCV[myClerk]->Wait(oMonitor.cashLock[myClerk]);
@@ -171,7 +170,6 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 // 	Called by linePassClerk() and senLinePassClerk() after checking which line to enter
 void talkPassClerk(int& SSN, bool& visitedPass, bool inPrivLine) {
 
-	oMonitor.passLineLock->Release();
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numPassClerks; i++) {
 		oMonitor.passLock[i]->Acquire(); // Prevents race condition for clerks
@@ -187,7 +185,7 @@ void talkPassClerk(int& SSN, bool& visitedPass, bool inPrivLine) {
 		}
 	}
 	printf("Customer%d goes to PassportClerk%d\n",SSN,myClerk);
-	//oMonitor.passLineLock->Release();
+	oMonitor.passLineLock->Release();
 	oMonitor.passData[myClerk] = SSN;
 	if (inPrivLine) {
 		printf("Customer%d is willing to pay 500 money to the PassportClerk%d for moving ahead in the line\n", SSN, myClerk);
@@ -219,7 +217,7 @@ void talkPassClerk(int& SSN, bool& visitedPass, bool inPrivLine) {
 // 	Called by lineAppPicClerk() and senLineAppPicClerk()after choosing which line to enter.
 void talkAppClerk(int& SSN, bool& visitedApp, bool inPrivLine) {
 
-	oMonitor.acpcLineLock->Release();
+	//oMonitor.acpcLineLock->Release();
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numAppClerks; i++) {
 		oMonitor.appLock[i]->Acquire(); // Prevents race condition for clerks
@@ -235,7 +233,7 @@ void talkAppClerk(int& SSN, bool& visitedApp, bool inPrivLine) {
 		}
 	}
 
-	//oMonitor.acpcLineLock->Release();
+	oMonitor.acpcLineLock->Release();
 	oMonitor.appData[myClerk] = SSN; // Giving appClerk my SSN
 	if (inPrivLine) {
 		printf("Customer%d is willing to pay 500 money to the ApplicationClerk%d for moving ahead in the line\n", SSN, myClerk);
@@ -253,7 +251,7 @@ void talkAppClerk(int& SSN, bool& visitedApp, bool inPrivLine) {
 // 	Called by lineAppPicClerk()  and senLineAppPicClerk() after choosing which line to enter.
 void talkPicClerk(int& SSN, bool& visitedPic, bool inPrivLine) {
 
-	oMonitor.acpcLineLock->Release();
+	//oMonitor.acpcLineLock->Release();
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numPicClerks; i++) {
 		oMonitor.picLock[i]->Acquire(); // Prevents race condition for clerks
@@ -272,7 +270,7 @@ void talkPicClerk(int& SSN, bool& visitedPic, bool inPrivLine) {
 	if (inPrivLine) {
 		printf("Customer%d is willing to pay 500 money to the PictureClerk%d for moving ahead in the line\n", SSN, myClerk);
 	}
-	//oMonitor.acpcLineLock->Release();
+	oMonitor.acpcLineLock->Release();
 	oMonitor.picData[myClerk] = SSN;
 	oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 	oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]); // Ready for picture
@@ -762,7 +760,7 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 void AppClerk(int index){
 	int myIndex = index;		// index of AppClerk	
 	int mySSN;			// current SSN being filed + index of Customer
-	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = oMonitor.CUSTOMER;	// current type of customer
 
 	oMonitor.appLock[myIndex]->Acquire();
 	oMonitor.appState[myIndex] = oMonitor.BUSY;	// start off AppClerk state being BUSY
@@ -786,10 +784,10 @@ void AppClerk(int index){
 			oMonitor.fileLock[mySSN]->Acquire();
 
 			// check the customer type
-			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
-				cType = OfficeMonitor::CUSTOMER;
+			if (oMonitor.fileType[mySSN] == oMonitor.CUSTOMER) {
+				cType = oMonitor.CUSTOMER;
 			} else {
-				cType = OfficeMonitor::SENATOR;
+				cType = oMonitor.SENATOR;
 			}
 
 			if(oMonitor.fileState[mySSN] == oMonitor.NONE){
@@ -810,7 +808,7 @@ void AppClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
 				printf("ApplicationClerk%d informs Senator%d that the application has been filed\n", myIndex, mySSN);
@@ -820,7 +818,7 @@ void AppClerk(int index){
 			oMonitor.appMoneyLock->Acquire();
 			oMonitor.appMoney += 500;
 
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("ApplicationClerk%d accepts money = $500 from Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("ApplicationClerk%d accepts money = $500 from Senator%d\n",myIndex,mySSN);
@@ -845,10 +843,10 @@ void AppClerk(int index){
 			oMonitor.fileLock[mySSN]->Acquire();
 			
 			// check the customer type
-			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
-				cType = OfficeMonitor::CUSTOMER;
+			if (oMonitor.fileType[mySSN] ==oMonitor.CUSTOMER) {
+				cType = oMonitor.CUSTOMER;
 			} else {
-				cType = OfficeMonitor::SENATOR;
+				cType =oMonitor.SENATOR;
 			}
 
 			if(oMonitor.fileState[mySSN] == oMonitor.NONE){
@@ -870,7 +868,7 @@ void AppClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
 				printf("ApplicationClerk%d informs Senator%d that the application has been filed\n", myIndex, mySSN);
@@ -908,7 +906,7 @@ void AppClerk(int index){
 void PicClerk(int index){
 	int myIndex = index;		// index of PicClerk
 	int mySSN;			// index of Customer
-	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = oMonitor.CUSTOMER;	// current type of customer
 
 	oMonitor.picLock[myIndex]->Acquire();
 	oMonitor.picState[myIndex] = oMonitor.BUSY;	// start off PicClerk state being BUSY
@@ -920,23 +918,23 @@ void PicClerk(int index){
 
 		// Check for the privileged customer line first
 		// If there are privileged customers, do PicClerk tasks, then received $500
-		if(oMonitor.privACLineLength > 0){
+		if(oMonitor.privPCLineLength > 0){
 			oMonitor.privPCLineLength--;
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = oMonitor.AVAILABLE;	// Sets itself to AVAILABLE
 			oMonitor.privPCLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in line
 			oMonitor.acpcLineLock->Release();		
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Waits for the next customer
-
+			printf("WOKEN FROM PRIV\n");
 			mySSN = oMonitor.picData[myIndex];
 			// check the customer type
 			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
-				cType = OfficeMonitor::CUSTOMER;
+				cType = oMonitor.CUSTOMER;
 			} else {
-				cType = OfficeMonitor::SENATOR;
+				cType = oMonitor.SENATOR;
 			}
 
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("PictureClerk%d takes picture of Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d takes picture of Senator%d\n",myIndex,mySSN);
@@ -949,7 +947,7 @@ void PicClerk(int index){
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
 
 				if(oMonitor.picDataBool[myIndex] ==false){
-					if (cType == OfficeMonitor::CUSTOMER) {
+					if (cType == oMonitor.CUSTOMER) {
 						printf("PictureClerk%d takes picture of Customer%d again\n",myIndex,mySSN);
 					} else {
 						printf("PictureClerk%d takes picture of Senator%d again\n",myIndex,mySSN);
@@ -979,7 +977,7 @@ void PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("Picture%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
 				printf("Picture%d informs Senator%d that the procedure has been completed\n", myIndex, mySSN);
@@ -989,7 +987,7 @@ void PicClerk(int index){
 			oMonitor.picMoneyLock->Acquire();
 			oMonitor.picMoney += 500;
 
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("PictureClerk%d accepts money = $500 from Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d accepts money = $500 from Senator%d\n",myIndex,mySSN);
@@ -997,7 +995,7 @@ void PicClerk(int index){
 
 			oMonitor.picMoneyLock->Release();
 
-			oMonitor.picDataBool(false);
+			oMonitor.picDataBool[myIndex] = false;
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
 			oMonitor.picLock[myIndex]->Release();// release clerk lock
 		}
@@ -1010,16 +1008,16 @@ void PicClerk(int index){
 			oMonitor.regPCLineCV->Signal(oMonitor.acpcLineLock);			// Signals the next customer in line
 			oMonitor.acpcLineLock->Release();
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);		// Waits for next customer
-
+			printf("WOKEN FROM REG\n");
 			mySSN = oMonitor.picData[myIndex];
 			// check the customer type
-			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
-				cType = OfficeMonitor::CUSTOMER;
+			if (oMonitor.fileType[mySSN] == oMonitor.CUSTOMER) {
+				cType = oMonitor.CUSTOMER;
 			} else {
-				cType = OfficeMonitor::SENATOR;
+				cType = oMonitor.SENATOR;
 			}
 
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("PictureClerk%d takes picture of Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d takes picture of Senator%d\n",myIndex,mySSN);
@@ -1032,7 +1030,7 @@ void PicClerk(int index){
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
 				
 				if(oMonitor.picDataBool[myIndex] ==false){
-					if (cType == OfficeMonitor::CUSTOMER) {
+					if (cType == oMonitor.CUSTOMER) {
 						printf("PictureClerk%d takes picture of Customer%d again\n",myIndex,mySSN);
 					} else {
 						printf("PictureClerk%d takes picture of Senator%d again\n",myIndex,mySSN);
@@ -1063,13 +1061,13 @@ void PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == OfficeMonitor::CUSTOMER) {
+			if (cType == oMonitor.CUSTOMER) {
 				printf("PictureClerk%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
 				printf("PictureClerk%d informs Senator%d that the procedure has been completed\n", myIndex, mySSN);
 			}
 
-			oMonitor.picDataBool[myClerk] = false;
+			oMonitor.picDataBool[myIndex] = false;
 			// signal customer awake
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
 			oMonitor.picLock[myIndex]->Release();// release clerk lock
@@ -1079,11 +1077,11 @@ void PicClerk(int index){
 			oMonitor.acpcLineLock->Release();
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = oMonitor.BREAK;
-			printf("ApplicationClerk%d is going on break\n",myIndex);
+			printf("PictureClerk%d is going on break\n",myIndex);
 			//oMonitor.picLock[myIndex]->Release();
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);
 
-			printf("ApplicationClerk%d returned from break\n",myIndex);
+			printf("PictureClerk%d returned from break\n",myIndex);
 
 			oMonitor.picLock[myIndex]->Release();     // release clerk lock
 			// go on break
@@ -1172,8 +1170,8 @@ void Manager(){
 		if(oMonitor.privACLineLength > 3 || oMonitor.regACLineLength > 3){
 			oMonitor.acpcLineLock->Release();
 			for(int i = 0; i < oMonitor.numAppClerks; i++){
-				oMonitor.appLock[i]->Acquire();
 				if(oMonitor.appState[i] == oMonitor.BREAK){
+					oMonitor.appLock[i]->Acquire();
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
 					oMonitor.appState[i] = oMonitor.BUSY;
 					oMonitor.appLock[i]->Release();
@@ -1185,12 +1183,15 @@ void Manager(){
 			oMonitor.acpcLineLock->Release();
 			for(int i = 0; i < oMonitor.numAppClerks; i++){
 				oMonitor.appLock[i]->Acquire();
-				if(oMonitor.appState[i] == oMonitor.BREAK){
+				if(oMonitor.appState[i] != oMonitor.BREAK){
+					oMonitor.appLock[i]->Release();
+					break;
+				}
+				else {
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
 					oMonitor.appState[i] = oMonitor.BUSY;
 					oMonitor.appLock[i]->Release();
 					printf("Manager calls back an ApplicationClerk from break\n");
-					break;
 				}
 			}						
 		}
@@ -1203,8 +1204,8 @@ void Manager(){
 		if(oMonitor.privPCLineLength > 3 || oMonitor.regPCLineLength > 3){
 			oMonitor.acpcLineLock->Release();
 			for(int i = 0; i < oMonitor.numPicClerks; i++){
-				oMonitor.picLock[i]->Acquire();
 				if(oMonitor.picState[i] == oMonitor.BREAK){
+					oMonitor.picLock[i]->Acquire();
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
 					oMonitor.picState[i] = oMonitor.BUSY;
 					oMonitor.picLock[i]->Release();
@@ -1216,12 +1217,15 @@ void Manager(){
 			oMonitor.acpcLineLock->Release();
 			for(int i = 0; i < oMonitor.numPicClerks; i++){
 				oMonitor.picLock[i]->Acquire();
-				if(oMonitor.picState[i] == oMonitor.BREAK){
+				if(oMonitor.picState[i] != oMonitor.BREAK){
+					oMonitor.picLock[i]->Release();
+					break;
+				}
+				else {
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
 					oMonitor.picState[i] = oMonitor.BUSY;
 					oMonitor.picLock[i]->Release();
 					printf("Manager calls back an PictureClerk from break\n");
-					break;
 				}
 			}						
 		}
@@ -1234,8 +1238,8 @@ void Manager(){
 		if(oMonitor.privPassLineLength > 3 || oMonitor.regPassLineLength > 3){
 			oMonitor.passLineLock->Release();
 			for(int i = 0; i < oMonitor.numPassClerks; i++){
-				oMonitor.passLock[i]->Acquire();
 				if(oMonitor.passState[i] == oMonitor.BREAK){
+					oMonitor.passLock[i]->Acquire();
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
 					oMonitor.passState[i] = oMonitor.BUSY;
 					oMonitor.passLock[i]->Release();
@@ -1246,8 +1250,8 @@ void Manager(){
 		else if(oMonitor.privPassLineLength >= 1 || oMonitor.regPassLineLength >= 1){
 			oMonitor.passLineLock->Release();
 			for(int i = 0; i < 	oMonitor.numPassClerks; i++){
-				oMonitor.passLock[i]->Acquire();
 				if(oMonitor.passState[i] == oMonitor.BREAK){
+					oMonitor.passLock[i]->Acquire();
 					oMonitor.passCV[i]->Signal(oMonitor.passLock[i]);
 					oMonitor.passState[i] = oMonitor.BUSY;
 					oMonitor.passLock[i]->Release();
@@ -1265,8 +1269,8 @@ void Manager(){
 		if(oMonitor.cashLineLength > 3){
 			oMonitor.cashLineLock->Release();
 			for(int i = 0; i < 	oMonitor.numCashiers; i++){
-				oMonitor.cashLock[i]->Acquire();
 				if(oMonitor.cashState[i] == oMonitor.BREAK){
+					oMonitor.cashLock[i]->Acquire();
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
 					oMonitor.cashState[i] = oMonitor.BUSY;
 					oMonitor.cashLock[i]->Release();
@@ -1365,9 +1369,9 @@ void PassClerk(int index) {
 				doPassport = true;
 
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("PassportClerk %d gives valid certification to Customer %d", myIndex, mySSN);
+					printf("PassportClerk %d gives valid certification to Customer %d\n", myIndex, mySSN);
 				} else {
-					printf("PassportClerk %d gives valid certification to Senator %d", myIndex, mySSN);
+					printf("PassportClerk %d gives valid certification to Senator %d\n", myIndex, mySSN);
 				}
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
@@ -1379,18 +1383,18 @@ void PassClerk(int index) {
 				doPassport = false;
 
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("PassportClerk %d gives invalid certification to Customer %d", myIndex, mySSN);
-					printf("PassportClerk %d punishes Customer %d to wait", myIndex, mySSN);
+					printf("PassportClerk %d gives invalid certification to Customer %d\n", myIndex, mySSN);
+					printf("PassportClerk %d punishes Customer %d to wait\n", myIndex, mySSN);
 				} else {
-					printf("PassportClerk %d gives invalid certification to Senator %d", myIndex, mySSN);
-					printf("PassportClerk %d punishes Senator %d to wait", myIndex, mySSN);
+					printf("PassportClerk %d gives invalid certification to Senator %d\n", myIndex, mySSN);
+					printf("PassportClerk %d punishes Senator %d to wait\n", myIndex, mySSN);
 				}
 			}
 
 			if (cType == OfficeMonitor::CUSTOMER) {
-				printf("PassportClerk %d informs Customer %d that the procedure has been completed", myIndex, mySSN);
+				printf("PassportClerk %d informs Customer %d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
-				printf("PassportClerk %d informs Senator %d that the procedure has been completed", myIndex, mySSN);
+				printf("PassportClerk %d informs Senator %d that the procedure has been completed\n", myIndex, mySSN);
 			}
 
 			oMonitor.fileLock[mySSN]->Release();
@@ -1402,9 +1406,9 @@ void PassClerk(int index) {
 			oMonitor.passMoneyLock->Release();
 
 			if (cType == OfficeMonitor::CUSTOMER) {
-				printf("PassportClerk %d accepts money = $500 from Customer %d", myIndex, mySSN);
+				printf("PassportClerk %d accepts money = $500 from Customer %d\n", myIndex, mySSN);
 			} else {
-				printf("PassportClerk %d accepts money = $500 from Senator %d", myIndex, mySSN);
+				printf("PassportClerk %d accepts money = $500 from Senator %d\n", myIndex, mySSN);
 			}
 
 			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
@@ -1445,9 +1449,9 @@ void PassClerk(int index) {
 				oMonitor.passDataBool[myIndex] = true;
 				doPassport = true;
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("PassportClerk %d gives valid certification to Customer %d", myIndex, mySSN);
+					printf("PassportClerk %d gives valid certification to Customer %d\n", myIndex, mySSN);
 				} else {
-					printf("PassportClerk %d gives valid certification to Senator %d", myIndex, mySSN);
+					printf("PassportClerk %d gives valid certification to Senator %d\n", myIndex, mySSN);
 				}
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
@@ -1458,18 +1462,18 @@ void PassClerk(int index) {
 				oMonitor.passDataBool[myIndex] = false;
 				doPassport = false;
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("PassportClerk %d gives invalid certification to Customer %d", myIndex, mySSN);
-					printf("PassportClerk %d punishes Customer %d to wait", myIndex, mySSN);
+					printf("PassportClerk %d gives invalid certification to Customer %d\n", myIndex, mySSN);
+					printf("PassportClerk %d punishes Customer %d to wait\n", myIndex, mySSN);
 				} else {
-					printf("PassportClerk %d gives invalid certification to Senator %d", myIndex, mySSN);
-					printf("PassportClerk %d punishes Senator %d to wait", myIndex, mySSN);
+					printf("PassportClerk %d gives invalid certification to Senator %d\n", myIndex, mySSN);
+					printf("PassportClerk %d punishes Senator %d to wait\n", myIndex, mySSN);
 				}
 			}
 
 			if (cType == OfficeMonitor::CUSTOMER) {
-				printf("PassportClerk %d informs Customer %d that the procedure has been completed", myIndex, mySSN);
+				printf("PassportClerk %d informs Customer %d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
-				printf("PassportClerk %d informs Senator %d that the procedure has been completed", myIndex, mySSN);
+				printf("PassportClerk %d informs Senator %d that the procedure has been completed\n", myIndex, mySSN);
 			}
 			oMonitor.fileLock[mySSN]->Release();
 
@@ -1478,7 +1482,7 @@ void PassClerk(int index) {
 
 			//if customer wasn't an idiot, process their passport
 			if (doPassport) {
-				for (int i = 0; i < 300; i++) {
+				for (int i = 0; i < 20; i++) {
 					currentThread->Yield();
 				}
 				// file dat passport
@@ -1489,14 +1493,14 @@ void PassClerk(int index) {
 			}
 		} else {
 			// No one in line... take a break
-			printf("PassportClerk %d is going on break", myIndex);
+			printf("PassportClerk %d is going on break\n", myIndex);
 
 			oMonitor.passLineLock->Release();
 			oMonitor.passLock[myIndex]->Acquire();
 			oMonitor.passState[myIndex] = oMonitor.BREAK;
 			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[myIndex]);
 
-			printf("PassportClerk %d returned from break", myIndex);
+			printf("PassportClerk %d returned from break\n", myIndex);
 			oMonitor.passLock[myIndex]->Release();
 		}
 	}
@@ -1557,22 +1561,22 @@ void Cashier(int index) {
 				// MAY NEED TO CHANGE if cashier has privileged line, or just have 2 print statements
 				// one for $500 privileged fee and one for the passport fee
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("Cashier %d gives valid certification to Customer %d", myIndex, mySSN);
-					printf("Cashier %d accepts money = $100 from Customer %d", myIndex, mySSN);
+					printf("Cashier %d gives valid certification to Customer %d\n", myIndex, mySSN);
+					printf("Cashier %d accepts money = $100 from Customer %d\n", myIndex, mySSN);
 				} else {
-					printf("Cashier %d gives valid certification to Senator %d", myIndex, mySSN);
-					printf("Cashier %d accepts money = $100 from Senator %d", myIndex, mySSN);
+					printf("Cashier %d gives valid certification to Senator %d\n", myIndex, mySSN);
+					printf("Cashier %d accepts money = $100 from Senator %d\n", myIndex, mySSN);
 				}
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				
 				oMonitor.passDataBool[myIndex] = false;
 				if (cType == OfficeMonitor::CUSTOMER) {
-					printf("Cashier %d gives invalid certification to Customer %d", myIndex, mySSN);
-					printf("Cashier %d punishes Customer %d to wait", myIndex, mySSN);
+					printf("Cashier %d gives invalid certification to Customer %d\n", myIndex, mySSN);
+					printf("Cashier %d punishes Customer %d to wait\n", myIndex, mySSN);
 				} else {
-					printf("Cashier %d gives invalid certification to Senator %d", myIndex, mySSN);
-					printf("Cashier %d punishes Senator %d to wait", myIndex, mySSN);
+					printf("Cashier %d gives invalid certification to Senator %d\n", myIndex, mySSN);
+					printf("Cashier %d punishes Senator %d to wait\n", myIndex, mySSN);
 				}
 			}
 			oMonitor.fileLock[mySSN]->Release();
@@ -1581,13 +1585,13 @@ void Cashier(int index) {
 			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
 		} else {
 			// No one in line... Pull out your DS and take a break
-			printf("Cashier %d is going on break", myIndex);
+			printf("Cashier %d is going on break\n", myIndex);
 			oMonitor.cashLineLock->Release();
 			oMonitor.cashLock[myIndex]->Acquire();
 			oMonitor.cashState[myIndex] = oMonitor.BREAK;
 			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);
 
-			printf("Cashier %d returned from break", myIndex);
+			printf("Cashier %d returned from break\n", myIndex);
 			oMonitor.cashLock[myIndex]->Release();
 		}
 	}
@@ -1608,7 +1612,7 @@ void Customer(int index) {
 
 	//Data for being a stupid customer and visiting passport before app/pic clerks
 	int chanceToBeStupid = rand() % 2; // 0 or 1
-	bool beenStupid = false; // Has only one chance to be stupid
+	bool beenStupid = true; // Has only one chance to be stupid
 	
 	// Does not call checkSenator() function because customer is not inside
 	// the office yet
@@ -1655,17 +1659,35 @@ void Customer(int index) {
 
 		while (!visitedApp || !visitedPic) {
 			printf("Customer%d Entering app/pic loop\n", SSN);
-			//checkSenator();
+			oMonitor.senatorLock->Acquire();
+			if (oMonitor.officeSenator > 0) {
+				checkSenator();
+			}
+			else {
+				oMonitor.senatorLock->Release();
+			}
 			lineAppPicClerk(myCash, SSN, visitedApp, visitedPic);
 		}
 
 		while (!visitedPass) {
-			checkSenator();
+			oMonitor.senatorLock->Acquire();
+			if (oMonitor.officeSenator > 0) {
+				checkSenator();
+			}
+			else {
+				oMonitor.senatorLock->Release();
+			}
 			linePassClerk(myCash, SSN, visitedPass);
 		}
 
 		while (!visitedCash) {
-			checkSenator();
+			oMonitor.senatorLock->Acquire();
+			if (oMonitor.officeSenator > 0) {
+				checkSenator();
+			}
+			else {
+				oMonitor.senatorLock->Release();
+			}
 			lineCashier(myCash, SSN, visitedCash);
 		}
 	}
@@ -1754,17 +1776,23 @@ void addCustomer(int numC) {
 
 	Thread* t;
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char lockName[50] = "fileLock";
 		// add the monitor variables
-		char* lockName = "fileLock" + i;
+		//char* lockName = "fileLock" + i;
+		strcat(lockName, index);
 		oMonitor.fileLock[i] = new Lock(lockName);
 		oMonitor.fileState[i] = oMonitor.NONE;
 		oMonitor.fileType[i] = OfficeMonitor::CUSTOMER;
 
 		// add the threads
-		char* name = "Cust" + i;
-		printf("Making ");
-		printf(name);
-		printf("\n");
+		//char* name = "Cust" + i;
+		char name[50] = "Cust";
+		strcat(name, index);
+		//printf("Making ");
+		//printf(name);
+		//printf("\n");
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Customer, i);
 		currentThread->Yield();
@@ -1812,38 +1840,54 @@ void PassportOffice() {
 	//oMonitor = thisMon;
 	//OfficeMonitor oMonitor(numApp, numPic, numPass, numCash);
 	//oMonitor = new OfficeMonitor();
-	srand(time(0));
+	//srand(time(0));
 	Thread *t;
 
 	addCustomer(3);
 	
 	
 	for(int i = 0; i < oMonitor.numAppClerks; i++) {
-		char* name = "AppClerk" + i;
+		//char* name = "AppClerk" + i;
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "AppClerk";
+		strcat(name, index);
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) AppClerk, i);
-		//currentThread->Yield();
+		currentThread->Yield();
 	}
 
 	for(int i = 0; i < oMonitor.numPicClerks; i++) {
-		char* name = "PicClerk" + i;
+		//char* name = "PicClerk" + i;
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PicClerk";
+		strcat(name, index);
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PicClerk, i);
-		//currentThread->Yield();
+		currentThread->Yield();
 	}
 
 	for(int i = 0; i < oMonitor.numPassClerks; i++) {
-		char* name = "PassClerk" + i;
+		//char* name = "PassClerk" + i;
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PassClerk";
+		strcat(name, index);
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PassClerk, i);
-		//currentThread->Yield();
+		currentThread->Yield();
 	}
 
 	for(int i = 0; i < oMonitor.numCashiers; i++) {
-		char* name = "Cashier" + i;
+		//char* name = "Cashier" + i;
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "Cashier";
+		strcat(name, index);
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Cashier, i);
-		//currentThread->Yield();
+		currentThread->Yield();
 	}
 	
 	t = new Thread("Manager");

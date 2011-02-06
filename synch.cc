@@ -162,7 +162,7 @@ void Lock::Release()
 	IntStatus oldLevel = interrupt->SetLevel(IntOff); //disable interrupts
 
 	if (currentThread != holder) {	//If non-lockowner is calling release, exit function
-		printf("%d:Non-lockowner attempting to release lock. Preventing.", currentThread->getName());
+		printf("%s: Non-lockowner attempting to release lock. Preventing.", currentThread->getName());
 		printf("\n");
 		(void) interrupt->SetLevel(oldLevel);
 		return;
