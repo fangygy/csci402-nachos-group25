@@ -7,11 +7,13 @@
 
 #include "synch.h"
 
-class OfficeMonitor() {
+class OfficeMonitor {
  private:
   //No private variables
 
  public:
+  OfficeMonitor();
+  ~OfficeMonitor();
   OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
   void addCustomer(int numC);
   void addSenator(int numS);
