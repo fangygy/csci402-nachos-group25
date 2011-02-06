@@ -12,8 +12,8 @@ private:
 	//No private variables
 
 public:
-	static int MAX_CLERKS = 10;
-	static int MAX_CUSTOMERS = 100;
+	static const int MAX_CLERKS = 10;
+	static const int MAX_CUSTOMERS = 100;
 
 	OfficeMonitor();
 	~OfficeMonitor();
