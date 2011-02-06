@@ -18,11 +18,21 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	privPassLineLength = 0;
 	cashLineLength = 0;
 
-	totalCust = 0;
-	totalSenator = 0;
+	totalCustSen = 0;
+	
 	officeCust = 0;
+	waitCust = 0;
 	officeSenator = 0;
-
+	
+	customerLock = new Lock("customerLock");
+	senatorLock = new Lock("senatorLock");
+	
+	custWaitLock = new Lock("custWaitLock");
+	senWaitLock = new Lock("senWaitLock");
+	
+	custWaitCV = new Condition("custWaitCV");
+	senWaitCV = new Condition("senWaitCV");
+	
 	acpcLineLock = new Lock("acpcLineLock");
 	passLineLock = new Lock("passLineLock");
 	cashLineLock = new Lock("cashLineLock");

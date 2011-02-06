@@ -8,14 +8,23 @@ class Office {
   OfficeMonitor oMonitor;
 
   // Helper functions for Customer
-  int doRandomCash();
   void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp, bool& visitedPic);
-  void talkAppClerk(int& SSN, bool& visitedApp);
-  void talkPicClerk(int& SSN, bool& visitedPic);
-  void linePassClerk(int& myCash, int& SSN, bool& visitedPass); 
-  void talkPassClerk(int& SSN, bool& visitedPass);
+  void linePassClerk(int& myCash, int& SSN, bool& visitedPass);
   void lineCashier(int& myCash, int& SSN, bool& visitedCash);
-
+  
+  // Helper functions for Senator
+  void senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp, bool& visitedPic);
+  void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass);
+  void senLineCashier(int& myCash, int& SSN, bool& visitedCash);
+  
+  // Helper functions shared by Customer and Senator
+  int doRandomCash();
+  void talkAppClerk(int& SSN, bool& visitedApp);
+  void talkPicClerk(int& SSN, bool& visitedPic); 
+  void talkPassClerk(int& SSN, bool& visitedPass);
+  
+  // Helper function for Customers/Senators/WaitRooms implementation
+  void checkSenator();
 
  public:
   Office();

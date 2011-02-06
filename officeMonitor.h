@@ -24,8 +24,15 @@ class OfficeMonitor {
   // Amount of each customer/senator in total (used for instantiation)
   int totalCustSen;
 
-  // Amount of each customer/senator currently in office
-  int officeCust, officeSenator;
+  // Amount of each customer/senator currently in office or waiting room
+  int officeCust, waitCust, officeSenator;
+  
+  // Locks for customer/senator checking
+  Lock *customerLock, *senatorLock;
+  
+  // Waiting room locks/CVs
+  Lock *custWaitLock, senWaitLock;
+  Condition *custWaitCV, senWaitCV;
 
   // Line Lengths (Cashier has no privileged line)
   int regACLineLength, regPCLineLength, regPassLineLength;
