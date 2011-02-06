@@ -1,8 +1,8 @@
 #ifndef OFFICEMONITOR_H
 #define OFFICEMONITOR_H
 
-#define MAX_CLERKS 10
-#define MAX_CUSTOMERS 100
+//#define MAX_CLERKS 10
+//#define MAX_CUSTOMERS 100
 
 
 #include "synch.h"
