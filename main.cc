@@ -91,7 +91,7 @@ main(int argc, char **argv)
     (void) Initialize(argc, argv);
     
 #ifdef THREADS
-	PassportOffice();
+//	PassportOffice();
 //    ThreadTest();
 //    TestSuite();
 #endif
@@ -105,8 +105,8 @@ main(int argc, char **argv)
             TestSuite();
 		if (!strcmp(*argv, "-N"))               // ThreadTest
             ThreadTest();
-//		if (!strcmp(*argv, "-P2"))               // PassportOffice
-//           PassportOffice();
+		if (!strcmp(*argv, "-P2"))               // PassportOffice
+           PassportOffice();
 
 #endif
 #ifdef USER_PROGRAM

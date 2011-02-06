@@ -229,9 +229,12 @@ void Condition::Wait(Lock* conditionLock)
 	}
 
 	//OK to start doing actual waiting
+	printf("About to append %s to queue\n",currentThread->getName());
 	queue->Append((void*)currentThread);
 	conditionLock->Release();
+	printf("Released lock %s in CV and sleeping\n", name);
 	currentThread->Sleep();
+	printf("Woken and Acquiring lock %s...\n", name);
 	conditionLock->Acquire();
 
 	(void) interrupt->SetLevel(oldLevel); //restore interrupts
@@ -252,8 +255,9 @@ void Condition::Signal(Lock* conditionLock)
 		(void) interrupt->SetLevel(oldLevel); //restore interrupts
 		return;
 	}
-	
-	scheduler->ReadyToRun((Thread *)queue->Remove());
+	Thread* t = (Thread *)queue->Remove();
+	t->setStatus(READY);
+	scheduler->ReadyToRun(t);
 	//conditionLock->Release();
 
 	if (queue->IsEmpty()) {
