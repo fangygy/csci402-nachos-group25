@@ -67,15 +67,14 @@ THREAD_C =../threads/main.cc\
 	../machine/timer.cc\
 	../threads/test_code.cc\
 	../threads/office.cc\
-	../threads/officeMonitor.cc\
-	../threads/officeTest.cc
+	../threads/officeMonitor.cc
 
 
 THREAD_S = ../threads/switch.s
 
 THREAD_O =main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
 	utility.o threadtest.o interrupt.o stats.o sysdep.o timer.o test_code.o \
-	office.o officeMonitor.o officeTest.o
+	office.o officeMonitor.o
 
 USERPROG_H = ../userprog/addrspace.h\
 	../userprog/bitmap.h\
