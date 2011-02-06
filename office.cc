@@ -585,7 +585,7 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 void AppClerk(int index){
 	int myIndex = index;		// index of AppClerk	
 	int mySSN;			// current SSN being filed + index of Customer
-	custType cType = oMonitor.CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
 
 	oMonitor.appLock[myIndex]->Acquire();
 	oMonitor.appState[myIndex] = oMonitor.BUSY;	// start off AppClerk state being BUSY
@@ -609,10 +609,10 @@ void AppClerk(int index){
 			oMonitor.fileLock[mySSN]->Acquire();
 
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 
 			if(oMonitor.fileState[mySSN] == oMonitor.NONE){
@@ -633,7 +633,7 @@ void AppClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
 				printf("ApplicationClerk%d informs Senator%d that the application has been filed\n", myIndex, mySSN);
@@ -643,7 +643,7 @@ void AppClerk(int index){
 			oMonitor.appMoneyLock->Acquire();
 			oMonitor.appMoney += 500;
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("ApplicationClerk%d accepts money = $500 from Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("ApplicationClerk%d accepts money = $500 from Senator%d\n",myIndex,mySSN);
@@ -668,10 +668,10 @@ void AppClerk(int index){
 			oMonitor.fileLock[mySSN]->Acquire();
 			
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 
 			if(oMonitor.fileState[mySSN] == oMonitor.NONE){
@@ -693,7 +693,7 @@ void AppClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
 				printf("ApplicationClerk%d informs Senator%d that the application has been filed\n", myIndex, mySSN);
@@ -731,7 +731,7 @@ void AppClerk(int index){
 void PicClerk(int index){
 	int myIndex = index;		// index of PicClerk
 	int mySSN;			// index of Customer
-	custType cType = oMonitor.CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
 
 	oMonitor.picLock[myIndex]->Acquire();
 	oMonitor.picState[myIndex] = oMonitor.BUSY;	// start off PicClerk state being BUSY
@@ -753,13 +753,13 @@ void PicClerk(int index){
 
 			mySSN = oMonitor.picData[myIndex];
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PictureClerk%d takes picture of Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d takes picture of Senator%d\n",myIndex,mySSN);
@@ -772,7 +772,7 @@ void PicClerk(int index){
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
 
 				if(oMonitor.picDataBool[myIndex] ==false){
-					if (cType == oMonitor.CUSTOMER) {
+					if (cType == OfficeMonitor::CUSTOMER) {
 						printf("PictureClerk%d takes picture of Customer%d again\n",myIndex,mySSN);
 					} else {
 						printf("PictureClerk%d takes picture of Senator%d again\n",myIndex,mySSN);
@@ -802,7 +802,7 @@ void PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("Picture%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
 				printf("Picture%d informs Senator%d that the procedure has been completed\n", myIndex, mySSN);
@@ -812,7 +812,7 @@ void PicClerk(int index){
 			oMonitor.picMoneyLock->Acquire();
 			oMonitor.picMoney += 500;
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PictureClerk%d accepts money = $500 from Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d accepts money = $500 from Senator%d\n",myIndex,mySSN);
@@ -835,13 +835,13 @@ void PicClerk(int index){
 
 			mySSN = oMonitor.picData[myIndex];
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PictureClerk%d takes picture of Customer%d\n",myIndex,mySSN);
 			} else {
 				printf("PictureClerk%d takes picture of Senator%d\n",myIndex,mySSN);
@@ -854,7 +854,7 @@ void PicClerk(int index){
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
 				
 				if(oMonitor.picDataBool[myIndex] ==false){
-					if (cType == oMonitor.CUSTOMER) {
+					if (cType == OfficeMonitor::CUSTOMER) {
 						printf("PictureClerk%d takes picture of Customer%d again\n",myIndex,mySSN);
 					} else {
 						printf("PictureClerk%d takes picture of Senator%d again\n",myIndex,mySSN);
@@ -885,7 +885,7 @@ void PicClerk(int index){
 			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
 			}
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PictureClerk%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
 				printf("PictureClerk%d informs Senator%d that the procedure has been completed\n", myIndex, mySSN);
@@ -1150,7 +1150,7 @@ void Manager(){
 void PassClerk(int index) {
 	int myIndex = index;
 	int mySSN;		// SSN of current customer
-	custType cType = oMonitor.CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
 	bool doPassport = false;
 
 	// set own state to busy
@@ -1172,17 +1172,17 @@ void PassClerk(int index) {
 			mySSN = oMonitor.passData[myIndex];	// customer gave me their SSN/index to check their file
 			oMonitor.fileLock[mySSN]->Acquire();	// gain access to customer state
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 			if (oMonitor.fileState[mySSN] == oMonitor.APPPICDONE) {
 				// customer wasn't a dumbass, DO WORK
 				oMonitor.passDataBool[myIndex] = true;
 				doPassport = true;
 
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("PassportClerk %d gives valid certification to Customer %d", myIndex, mySSN);
 				} else {
 					printf("PassportClerk %d gives valid certification to Senator %d", myIndex, mySSN);
@@ -1196,7 +1196,7 @@ void PassClerk(int index) {
 				oMonitor.passDataBool[myIndex] = false;
 				doPassport = false;
 
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("PassportClerk %d gives invalid certification to Customer %d", myIndex, mySSN);
 					printf("PassportClerk %d punishes Customer %d to wait", myIndex, mySSN);
 				} else {
@@ -1205,7 +1205,7 @@ void PassClerk(int index) {
 				}
 			}
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PassportClerk %d informs Customer %d that the procedure has been completed", myIndex, mySSN);
 			} else {
 				printf("PassportClerk %d informs Senator %d that the procedure has been completed", myIndex, mySSN);
@@ -1219,7 +1219,7 @@ void PassClerk(int index) {
 			oMonitor.passMoney += 500;
 			oMonitor.passMoneyLock->Release();
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PassportClerk %d accepts money = $500 from Customer %d", myIndex, mySSN);
 			} else {
 				printf("PassportClerk %d accepts money = $500 from Senator %d", myIndex, mySSN);
@@ -1251,16 +1251,16 @@ void PassClerk(int index) {
 			mySSN = oMonitor.passData[myIndex];	// customer gave me their SSN/index to check their file
 			oMonitor.fileLock[mySSN]->Acquire();	// gain access to customer state
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 			if (oMonitor.fileState[mySSN] == oMonitor.APPPICDONE) {
 				// customer wasn't a dumbass, DO WORK
 				oMonitor.passDataBool[myIndex] = true;
 				doPassport = true;
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("PassportClerk %d gives valid certification to Customer %d", myIndex, mySSN);
 				} else {
 					printf("PassportClerk %d gives valid certification to Senator %d", myIndex, mySSN);
@@ -1273,7 +1273,7 @@ void PassClerk(int index) {
 
 				oMonitor.passDataBool[myIndex] = false;
 				doPassport = false;
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("PassportClerk %d gives invalid certification to Customer %d", myIndex, mySSN);
 					printf("PassportClerk %d punishes Customer %d to wait", myIndex, mySSN);
 				} else {
@@ -1282,7 +1282,7 @@ void PassClerk(int index) {
 				}
 			}
 
-			if (cType == oMonitor.CUSTOMER) {
+			if (cType == OfficeMonitor::CUSTOMER) {
 				printf("PassportClerk %d informs Customer %d that the procedure has been completed", myIndex, mySSN);
 			} else {
 				printf("PassportClerk %d informs Senator %d that the procedure has been completed", myIndex, mySSN);
@@ -1327,7 +1327,7 @@ void PassClerk(int index) {
 void Cashier(int index) {
 	int myIndex = index;
 	int mySSN;		// SSN of current customer
-	custType cType = oMonitor.CUSTOMER;	// current type of customer
+	OfficeMonitor::custType cType = OfficeMonitor::CUSTOMER;	// current type of customer
 	bool doCash = false;
 
 	// set own state to busy
@@ -1350,10 +1350,10 @@ void Cashier(int index) {
 			mySSN = oMonitor.cashData[myIndex];		// customer gave me their SSN
 			oMonitor.fileLock[mySSN]->Acquire();	// gain access to customer state
 			// check the customer type
-			if (oMonitor.custType[mySSN] == oMonitor.CUSTOMER) {
-				cType = oMonitor.CUSTOMER;
+			if (oMonitor.fileType[mySSN] == OfficeMonitor::CUSTOMER) {
+				cType = OfficeMonitor::CUSTOMER;
 			} else {
-				cType = oMonitor.SENATOR;
+				cType = OfficeMonitor::SENATOR;
 			}
 			if (oMonitor.fileState[mySSN] == oMonitor.PASSDONE) {
 				// customer wasn't a dumbass, DO WORK
@@ -1370,7 +1370,7 @@ void Cashier(int index) {
 
 				// MAY NEED TO CHANGE if cashier has privileged line, or just have 2 print statements
 				// one for $500 privileged fee and one for the passport fee
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("Cashier %d gives valid certification to Customer %d", myIndex, mySSN);
 					printf("Cashier %d accepts money = $100 from Customer %d", myIndex, mySSN);
 				} else {
@@ -1381,7 +1381,7 @@ void Cashier(int index) {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				
 				oMonitor.passDataBool[myIndex] = false;
-				if (cType == oMonitor.CUSTOMER) {
+				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("Cashier %d gives invalid certification to Customer %d", myIndex, mySSN);
 					printf("Cashier %d punishes Customer %d to wait", myIndex, mySSN);
 				} else {
@@ -1569,7 +1569,7 @@ void addCustomer(int numC) {
 		char* lockName = "fileLock" + i;
 		oMonitor.fileLock[i] = new Lock(lockName);
 		oMonitor.fileState[i] = oMonitor.NONE;
-		oMonitor.fileType[i] = oMonitor.CUSTOMER;
+		oMonitor.fileType[i] = OfficeMonitor::CUSTOMER;
 
 		// add the threads
 		char* name = "Cust" + i;
@@ -1601,7 +1601,7 @@ void addSenator(int numS) {
 		char* lockName = "fileLock" + i;
 		oMonitor.fileLock[i] = new Lock(lockName);
 		oMonitor.fileState[i] = oMonitor.NONE;
-		oMonitor.fileType[i] = oMonitor.SENATOR;
+		oMonitor.fileType[i] = OfficeMonitor::SENATOR;
 
 		// add the threads
 		char* name = "Senator" + i;
