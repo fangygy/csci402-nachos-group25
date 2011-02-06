@@ -18,31 +18,36 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 
 	oMonitor.addCustomer(numCust);
 	for(int i = 0; i < numCust; i++) {
-		t = new Thread("Cust%d",i);
+		char* name = "Cust" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Customer, i);
 		currentThread->Yield();
 	} 
 	
 	for(int i = 0; i < numApp; i++) {
-		t = new Thread("AppClerk%d",i);
+		char* name = "AppClerk" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) AppClerk, i);
 		currentThread->Yield();
 	}
 
 	for(int i = 0; i < numPic; i++) {
-		t = new Thread("PicClerk%d",i);
+		char* name = "PicClerk" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PicClerk, i);
 		currentThread->Yield();
 	}
 
 	for(int i = 0; i < numPass; i++) {
-		t = new Thread("PassClerk%d",i);
+		char* name = "PassClerk" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) PassClerk, i);
 		currentThread->Yield();
 	}
 
 	for(int i = 0; i < numCash; i++) {
-		t = new Thread("Cashier%d",i);
+		char* name = "Cashier" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Cashier, i);
 		currentThread->Yield();
 	}

@@ -134,6 +134,8 @@ void OfficeMonitor::addSenator(int numS) {
 
 }
 
+////////////////////////////Operator= override
+
 OfficeMonitor& OfficeMonitor::operator=(const OfficeMonitor& o) {
     if (this != &o) {  // make sure not same object
         //delete [] _name;                     // Delete old name's memory.
