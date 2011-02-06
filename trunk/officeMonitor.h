@@ -80,12 +80,6 @@ public:
 	bool passDataBool[MAX_CLERKS];
 	bool cashDataBool[MAX_CLERKS];
 
-	// Clerk Data for distinguishing between Customer/Senator
-	int appCust[MAX_CLERKS];
-	int picCust[MAX_CLERKS];
-	int passCust[MAX_CLERKS];
-	int cashCust[MAX_CLERKS];
-
 	// Clerk States
 	enum clerkState {BUSY, AVAILABLE, BREAK};
 	clerkState appState[MAX_CLERKS];
