@@ -820,6 +820,7 @@ void Customer(int index) {
 	// Completely finished, leave the office
 	oMonitor.customerLock->Acquire();
 	oMonitor.officeCust--;
+	printf("Customer%d leaves the passport office",SSN);
 	oMonitor.customerLock->Release();
 }
 
@@ -956,10 +957,11 @@ void talkAppClerk(int& SSN, bool& visitedApp) {
 
 	oMonitor.acpcLineLock->Release();
 	oMonitor.appData[myClerk] = SSN; // Giving appClerk my SSN
+	printf("Customer%d gives applicaiton to ApplicationClerk%d = %d",SSN, myClerk, SSN);
 	oMonitor.appCV[myClerk]->Signal(oMonitor.appLock[myClerk]);
 	oMonitor.appCV[myClerk]->Wait(oMonitor.appLock[myClerk]);
 	oMonitor.appLock[myClerk]->Release();
-		
+	printf("Customer%d is informed by the ApplicationClerk%d that the applicaiton has been filed.",SSN, myClerk);
 	visitedApp = true;
 }
 
@@ -981,7 +983,7 @@ void talkPicClerk(int& SSN, bool& visitedPic) {
 			break;				
 		}
 	}
-
+	printf("Customer%d goes to PictureClerk%d", SSN, myClerk);
 	oMonitor.acpcLineLock->Release();
 	oMonitor.picData[myClerk] = SSN;
 	oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
@@ -993,19 +995,22 @@ void talkPicClerk(int& SSN, bool& visitedPic) {
 		if (chanceToHate == 0) {
 			// If hates his picture
 			oMonitor.picDataBool[myClerk] = false;
+			printf("Customer%d doesn't like the picture provided by PictureClerk%d",SSN,myClerk);
 			oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 			oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]);
+			printf("The picture of Customer%d is taken again",SSN);
 		}
 		else {
 			// Else he decides not to be an ass and just accepts it
 			oMonitor.picDataBool[myClerk] = true;
+			printf("Customer%d likes the picture provided by PictureClerk%d",SSN,myClerk);
 			oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 			oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]);
 			break;
 		}
 	}
 	oMonitor.picLock[myClerk]->Release();
-		
+	printf("Customer%d is told by PictureClerk%d that the procedure has been completed",SSN, myClerk);	
 	visitedPic = true;
 }
 
@@ -1064,7 +1069,7 @@ void talkPassClerk(int& SSN, bool& visitedPass) {
 			break;				
 		}
 	}
-
+	printf("Customer%d goes to PassportClerk%d",SSN,myClerk);
 	oMonitor.passLineLock->Release();
 	oMonitor.passData[myClerk] = SSN;
 	oMonitor.passCV[myClerk]->Signal(oMonitor.passLock[myClerk]);
@@ -1073,13 +1078,16 @@ void talkPassClerk(int& SSN, bool& visitedPass) {
 	if (oMonitor.passDataBool) {
 	// If customer had previous files completed, go on
 		oMonitor.passLock[myClerk]->Release();
+		printf("Customer%d is certified by PassportClerk%d",SSN,myClerk);
 		visitedPass = true;
 	}
 	else {
 	// Else am an idiot and is forced to wait several seconds before getting
 	// into another line.
 		oMonitor.passLock[myClerk]->Release();
+		printf("Customer%d is not certified by PassportClerk%d",SSN,myClerk);
 		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
+		printf("Customer%d is being forced to wait by PassportClerk%d",SSN, myClerk);
 		for (int i = 0; i < randWait; i++) {
 			currentThread->Yield();
 		}
@@ -1111,6 +1119,7 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 			break;				
 		}
 	}
+	printf("Customer%d goes to Cashier%d",SSN,myClerk);
 
 	oMonitor.cashLineLock->Release();
 	oMonitor.cashData[myClerk] = SSN;
@@ -1120,6 +1129,8 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	if (oMonitor.cashDataBool) {
 	// If customer had previous files completed, go on
 		oMonitor.cashLock[myClerk]->Release();
+		printf("Customer%d gets valid certification Cashier%d",SSN,myClerk);
+		printf("Customer%d pays $100 to Cashier%d for their passport",SSN,myClerk);
 		visitedCash = true;
 		myCash -= 100;
 	}
@@ -1128,10 +1139,13 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	// into another line.
 		oMonitor.cashLock[myClerk]->Release();
 		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
+		printf("Customer%d gets invalid certification Cashier%d",SSN,myClerk);
+		printf("Customer%d is punished to wait by Cashier%d",SSN,myClerk);
 		for (int i = 0; i < randWait; i++) {
 			currentThread->Yield();
 		}
 	}
+	printf("Customer%d's passport is now recorded by Cashier%d",SSN, myClerk);
 }			
 
 // Jasper Lee:
