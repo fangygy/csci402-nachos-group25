@@ -16,13 +16,14 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 	//oMonitor = new OfficeMonitor();
 	Thread *t;
 
-	oMonitor.addCustomer(numCust);
+	addCustomer(numCust);
+	/*oMonitor.addCustomer(numCust);
 	for(int i = 0; i < numCust; i++) {
 		char* name = "Cust" + i;
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Customer, i);
 		currentThread->Yield();
-	} 
+	*/
 	
 	for(int i = 0; i < numApp; i++) {
 		char* name = "AppClerk" + i;
@@ -54,6 +55,31 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 
 	t = new Thread("Manager");
 	t->Fork((VoidFunctionPtr) Manager, 0);  
+}
+
+/*
+// Antonio Cade
+// Add Customer
+*/
+Office::addCustomer(int numC) {
+	// place a cap on numC
+	if (oMonitor.totalCust + numC > oMonitor.MAX_CUSTOMERS) {
+		numC = oMonitor.MAX_CUSTOMERS - oMonitor.totalCust;
+	}
+
+	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
+		// add the monitor variables
+		oMonitor.fileLock[i] = new Lock("fileLock" + i);
+		oMonitor.fileState[i] = oMonitor.NONE;
+
+		// add the threads
+		t = new Thread("Cust" + i);
+		t->Fork((VoidFunctionPtr) Customer, i);
+	}
+
+	// Update totals
+	oMonitor.totalCust += numC;
+	oMonitor.totalCustSen += numC;
 }
 
 /*
@@ -581,6 +607,7 @@ void Office::PassClerk(int index) {
 			oMonitor.fileLock[myCust]->Acquire();	// gain access to customer state
 			if (oMonitor.fileState[myCust] == oMonitor.APPPICDONE) {
 				// customer wasn't a dumbass, DO WORK
+				printf("PassportClerk " + myIndex + ": Filing passport...");
 				oMonitor.passDataBool[myIndex] = true;
 				doPassport = true;
 			} else {
@@ -612,6 +639,7 @@ void Office::PassClerk(int index) {
 				oMonitor.fileLock[myCust]->Acquire();
 				oMonitor.fileState[myCust] = oMonitor.PASSDONE;
 				oMonitor.fileLock[myCust]->Release();
+				printf("PassportClerk " + myIndex + ": Passport Filed.");
 			}
 		} else if (oMonitor.regPassLineLength > 0) {
 			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
@@ -626,6 +654,7 @@ void Office::PassClerk(int index) {
 			oMonitor.fileLock[myCust]->Acquire();	// gain access to customer state
 			if (oMonitor.fileState[myCust] == oMonitor.APPPICDONE) {
 				// customer wasn't a dumbass, DO WORK
+				printf("PassportClerk " + myIndex + ": Filing passport...");
 				oMonitor.passDataBool[myIndex] = true;
 				doPassport = true;
 			} else {
@@ -651,9 +680,10 @@ void Office::PassClerk(int index) {
 				oMonitor.fileLock[myCust]->Acquire();
 				oMonitor.fileState[myCust] = oMonitor.PASSDONE;
 				oMonitor.fileLock[myCust]->Release();
+				printf("PassportClerk " + myIndex + ": Passport Filed.");
 			}
 		} else {
-			// No one in line... Pull out your DS and take a break
+			// No one in line... take a break
 			oMonitor.passLineLock->Release();
 			oMonitor.passLock[myIndex]->Acquire();
 			oMonitor.passState[myIndex] = oMonitor.BREAK;
@@ -706,6 +736,8 @@ void Office::Cashier(int index) {
 				oMonitor.cashMoneyLock->Acquire();
 				oMonitor.cashMoney += 100;
 				oMonitor.cashMoneyLock->Release();
+
+				printf("Cashier " + myIndex + ": Accepted payment.");
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				//for (int i = 0; i < 500) {
