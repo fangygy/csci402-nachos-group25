@@ -29,12 +29,13 @@ class OfficeMonitor {
   int officeCust, waitCust, officeSenator;
   
   // Locks for customer/senator checking
-  Lock *customerLock, *senatorLock;
+  Lock *customerLock;
+  Lock *senatorLock;
   
   // Waiting room locks/CVs
   Lock *custWaitLock;
   Lock *senWaitLock;
-  Condition *custWaitCV
+  Condition *custWaitCV;
   Condition *senWaitCV;
 
   // Line Lengths (Cashier has no privileged line)

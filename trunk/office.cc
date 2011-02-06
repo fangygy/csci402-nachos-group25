@@ -28,7 +28,7 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 	for(int i = 0; i < numApp; i++) {
 		char* name = "AppClerk" + i;
 		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) AppClerk, i);
+		t->Fork((VoidFunctionPtr) AppClerk&, i);
 		currentThread->Yield();
 	}
 
@@ -69,11 +69,12 @@ Office::addCustomer(int numC) {
 
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
 		// add the monitor variables
-		oMonitor.fileLock[i] = new Lock("fileLock" + i);
+		oMonitor.fileLock[i] = new Lock("fileLock%d", i);
 		oMonitor.fileState[i] = oMonitor.NONE;
 
 		// add the threads
-		t = new Thread("Cust" + i);
+		char* name = "Cust" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Customer, i);
 	}
 
@@ -93,11 +94,12 @@ Office::addSenator(int numS) {
 
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numS; i++) {
 		// add the monitor variables
-		oMonitor.fileLock[i] = new Lock("fileLock" + i);
+		oMonitor.fileLock[i] = new Lock("fileLock%d", i);
 		oMonitor.fileState[i] = oMonitor.NONE;
 
 		// add the threads
-		t = new Thread("Senator" + i);
+		char* name = "Senator" + i;
+		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Senator, i);
 	}
 
@@ -805,7 +807,7 @@ void Office::Customer(int index) {
 	// Does not call checkSenator() function because customer is not inside
 	// the office yet
 	oMonitor.senatorLock->Acquire();
-	if (officeSenator > 0) {
+	if (oMonitor.officeSenator > 0) {
 	// If there are senators present in the office, go to the customer waiting room
 		oMonitor.senatorLock->Release();
 		oMonitor.customerLock->Acquire();
@@ -1412,14 +1414,14 @@ void Office::senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numCashiers; i++) {
 		oMonitor.cashLock[i]->Acquire(); // Prevents race condition for clerks
-		if (oMonitor.cashState[i] != AVAILABLE) {
+		if (oMonitor.cashState[i] != oMonitor.AVAILABLE) {
 			oMonitor.cashLock[i]->Release(); // Release if not AVAILABLE
 		}
 		else {
 			// Otherwise, set that clerk's state to BUSY and keep index for
 			// future use
 			myClerk = i;
-			oMonitor.cashState[i] = BUSY;
+			oMonitor.cashState[i] = oMonitor.BUSY;
 			break;				
 		}
 	}
@@ -1451,7 +1453,7 @@ void Office::senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 //	Only called when the customer is already inside the office.
 void Office::checkSenator() {
 	oMonitor.senatorLock->Acquire();
-	if (officeSenator > 0) {
+	if (oMonitor.officeSenator > 0) {
 	// If there are senators present in the office, go to the customer waiting room
 		oMonitor.senatorLock->Release();
 		oMonitor.customerLock->Acquire();
