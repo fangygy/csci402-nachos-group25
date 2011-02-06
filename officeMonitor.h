@@ -31,8 +31,10 @@ class OfficeMonitor {
   Lock *customerLock, *senatorLock;
   
   // Waiting room locks/CVs
-  Lock *custWaitLock, senWaitLock;
-  Condition *custWaitCV, senWaitCV;
+  Lock *custWaitLock;
+  Lock *senWaitLock;
+  Condition *custWaitCV
+  Condition *senWaitCV;
 
   // Line Lengths (Cashier has no privileged line)
   int regACLineLength, regPCLineLength, regPassLineLength;
