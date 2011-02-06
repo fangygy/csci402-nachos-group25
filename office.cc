@@ -1,70 +1,20 @@
-#include "office.h"
 #include "officeMonitor.h"
 #include "system.h"
 #include <ctime>		// For seeding random
 #include <cstdlib>	// For generating random
 
+extern int MAX_CUSTOMERS;
+extern int MAX_CLERKS;
 
-Office::Office(){
-	srand(time(0));		//Initializing random number generator
-}
 
-void Office::startOffice(int numCust, int numApp, int numPic,
-		         int numPass, int numCash) {
-	//OfficeMonitor thisMon = new OfficeMonitor(numApp, numPic, numPass, numCash);
-	//oMonitor = thisMon;
-	oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
-	//OfficeMonitor oMonitor(numApp, numPic, numPass, numCash);
-	//oMonitor = new OfficeMonitor();
-	Thread *t;
-
-	addCustomer(numCust);
-	/*oMonitor.addCustomer(numCust);
-	for(int i = 0; i < numCust; i++) {
-		char* name = "Cust" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) Customer, i);
-		currentThread->Yield();
-	*/
-	/*
-	for(int i = 0; i < numApp; i++) {
-		char* name = "AppClerk" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) AppClerk, i);
-		//currentThread->Yield();
-	}
-
-	for(int i = 0; i < numPic; i++) {
-		char* name = "PicClerk" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) PicClerk, i);
-		//currentThread->Yield();
-	}
-
-	for(int i = 0; i < numPass; i++) {
-		char* name = "PassClerk" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) PassClerk, i);
-		//currentThread->Yield();
-	}
-
-	for(int i = 0; i < numCash; i++) {
-		char* name = "Cashier" + i;
-		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) Cashier, i);
-		//currentThread->Yield();
-	}
-
-	t = new Thread("Manager");
-	t->Fork((VoidFunctionPtr) Manager, 0);  
-	*/
-}
+srand(time(0));		//Initializing random number generator
+OfficeMonitor* oMonitor(3, 3, 3, 3);	 //Initial office monitor has 3 of each type of clerk
 
 /*
 // Antonio Cade
 // Add Customer
 */
-void Office::addCustomer(int numC) {
+void addCustomer(int numC) {
 	// place a cap on numC
 	if ((oMonitor.totalCustSen + numC) > MAX_CUSTOMERS) {
 		numC = MAX_CUSTOMERS - oMonitor.totalCustSen;
@@ -86,11 +36,12 @@ void Office::addCustomer(int numC) {
 	oMonitor.totalCust += numC;
 	oMonitor.totalCustSen += numC;
 }
+
 /*
 // Antonio Cade
 // Add Senator
 */
-void Office::addSenator(int numS) {
+void addSenator(int numS) {
 	// place a cap on numS
 	if (oMonitor.totalCustSen + numS > MAX_CUSTOMERS) {
 		numS = MAX_CUSTOMERS - oMonitor.totalCustSen;
@@ -121,7 +72,7 @@ void Office::addSenator(int numS) {
 //	Files the Customer's application, then dismisses the Customer
 //	
 */
-void Office::AppClerk(int index){
+void AppClerk(int index){
 	int myIndex = index;		// index of AppClerk	
 	int mySSN;			// current SSN being filed + index of Customer
 
@@ -237,7 +188,7 @@ void Office::AppClerk(int index){
 //	Once approved, the Picture Clerk will file the picture, then dismiss the Customer
 */
 
-void Office::PicClerk(int index){
+void PicClerk(int index){
 	int myIndex = index;		// index of PicClerk
 	int mySSN;			// index of Customer
 
@@ -386,7 +337,7 @@ void Office::PicClerk(int index){
 // Also periodically prints out a money report, stating how much money each Clerk has, and total money overall
 */
 
-void Office::Manager(){
+void Manager(){
 	int totalMoney;
 
 	while(true){
@@ -613,7 +564,7 @@ void Office::Manager(){
 //	Records customer passport
 */
 
-void Office::PassClerk(int index) {
+void PassClerk(int index) {
 	int myIndex = index;
 	int myCust;
 	bool doPassport = false;
@@ -731,7 +682,7 @@ void Office::PassClerk(int index) {
 //	Takes the customer's monies
 */
 
-void Office::Cashier(int index) {
+void Cashier(int index) {
 	int myIndex = index;
 	int myCust;
 	bool doCash = false;
@@ -798,7 +749,7 @@ void Office::Cashier(int index) {
 //	Takes in an index that acts as the customer's unique ID
 //	Runs infinitely in a while loop until has visited all clerks
 
-void Office::Customer(int index) {
+void Customer(int index) {
 	int myCash = doRandomCash(); // Random amount of cash: 100, 600, 1100, 1600
 	int SSN = index; // SSN is the index passed in, determined by order of creation
 	
@@ -876,7 +827,7 @@ void Office::Customer(int index) {
 // 	Helper function for Customer to get in line for the
 // 	Application OR Picture clerks. Takes in reference to customer's cash
 // 	SSN, and visited boolean flags for these two clerks.
-void Office::lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
+void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 							bool& visitedPic) {
 	oMonitor.acpcLineLock->Acquire();
 	if (myCash > 500) {
@@ -987,7 +938,7 @@ void Office::lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 // Jasper Lee:
 // 	Helper function for Customer/AppClerk interaction.
 // 	Called by lineAppPicClerk() and senLineAppPicClerk()after choosing which line to enter.
-void Office::talkAppClerk(int& SSN, bool& visitedApp) {
+void talkAppClerk(int& SSN, bool& visitedApp) {
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numAppClerks; i++) {
 		oMonitor.appLock[i]->Acquire(); // Prevents race condition for clerks
@@ -1015,7 +966,7 @@ void Office::talkAppClerk(int& SSN, bool& visitedApp) {
 // Jasper Lee:
 // 	Helper function for Customer/PicClerk interaction.
 // 	Called by lineAppPicClerk()  and senLineAppPicClerk() after choosing which line to enter.
-void Office::talkPicClerk(int& SSN, bool& visitedPic) {
+void talkPicClerk(int& SSN, bool& visitedPic) {
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numPicClerks; i++) {
 		oMonitor.picLock[i]->Acquire(); // Prevents race condition for clerks
@@ -1062,7 +1013,7 @@ void Office::talkPicClerk(int& SSN, bool& visitedPic) {
 // 	Helper function for Customer to get in line for the
 // 	PassportClerk. Takes in a reference to the customer's cash, SSN, and 
 // 	visited boolean flags.
-void Office::linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
+void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 	oMonitor.passLineLock->Acquire();
 	if (myCash > 500) {
 
@@ -1098,7 +1049,7 @@ void Office::linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 // Jasper Lee:
 // 	Helper function for Customer/PassportClerk interaction.
 // 	Called by linePassClerk() and senLinePassClerk() after checking which line to enter
-void Office::talkPassClerk(int& SSN, bool& visitedPass) {
+void talkPassClerk(int& SSN, bool& visitedPass) {
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numPassClerks; i++) {
 		oMonitor.passLock[i]->Acquire(); // Prevents race condition for clerks
@@ -1139,7 +1090,7 @@ void Office::talkPassClerk(int& SSN, bool& visitedPass) {
 // 	Helper function for Customer to get in line for the
 // 	Cashier. Takes in a reference to the customer's cash, SSN, and 
 // 	visited boolean flags.			
-void Office::lineCashier(int& myCash, int& SSN, bool& visitedCash) {
+void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	oMonitor.cashLineLock->Acquire();
 	oMonitor.cashLineLength++;
 	oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
@@ -1186,7 +1137,7 @@ void Office::lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 // Jasper Lee:
 // 	Helper function for Customer that returns the amount of cash he/she has,
 // 	chosen between 100, 600, 1100, and 1600.
-int Office::doRandomCash() {
+int doRandomCash() {
 	int randomCash = rand() % 4;
 	switch(randomCash) {
 		case 0:
@@ -1207,7 +1158,7 @@ int Office::doRandomCash() {
 //	Function for the Senator thread
 //	Runs identical to the Customer thread, but only enters passport office once 
 //	all customers are gone, or IF another senator is present
-void Office::Senator(int index) {
+void Senator(int index) {
 	int myCash = doRandomCash(); // Random amount of cash: 100, 600, 1100, 1600
 	int SSN = index; // SSN is the index passed in, determined by order of creation
 	
@@ -1273,7 +1224,7 @@ void Office::Senator(int index) {
 // 	SSN, and visited boolean flags for these two clerks. Differs from
 //  customer's line function in that the senator doesn't need to check 
 //  if senators are present.	
-void Office::senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
+void senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 							bool& visitedPic) {
 	oMonitor.acpcLineLock->Acquire();
 	if (myCash > 500) {
@@ -1376,7 +1327,7 @@ void Office::senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 // 	PassportClerk. Takes in a reference to the customer's cash, SSN, and 
 // 	visited boolean flags. Differs from customer's line function in that
 //  the senator doesn't need to check if senators are present.		
-void Office::senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
+void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 	oMonitor.passLineLock->Acquire();
 	if (myCash > 500) {
 
@@ -1411,7 +1362,7 @@ void Office::senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 // 	Cashier. Takes in a reference to the customer's cash, SSN, and 
 // 	visited boolean flags. Differs from customer's line function in that
 //  the senator doesn't need to check if senators are present.		
-void Office::senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
+void senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	oMonitor.cashLineLock->Acquire();
 	oMonitor.cashLineLength++;
 	oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
@@ -1456,7 +1407,7 @@ void Office::senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 // Jasper Lee:
 //	Helper function for customer for when he checks if a senator is present.
 //	Only called when the customer is already inside the office.
-void Office::checkSenator() {
+void checkSenator() {
 	oMonitor.senatorLock->Acquire();
 	if (oMonitor.officeSenator > 0) {
 	// If there are senators present in the office, go to the customer waiting room
@@ -1481,4 +1432,57 @@ void Office::checkSenator() {
 	// Else, just proceed on
 		oMonitor.senatorLock->Release();
 	}
+}
+
+// ======================================
+//			PassportOffice
+// ======================================
+
+void PassportOffice() {
+	//OfficeMonitor thisMon = new OfficeMonitor(numApp, numPic, numPass, numCash);
+	//oMonitor = thisMon;
+	//OfficeMonitor oMonitor(numApp, numPic, numPass, numCash);
+	//oMonitor = new OfficeMonitor();
+	Thread *t;
+
+	addCustomer(numCust);
+	/*oMonitor.addCustomer(numCust);
+	for(int i = 0; i < numCust; i++) {
+		char* name = "Cust" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Customer, i);
+		currentThread->Yield();
+	*/
+	/*
+	for(int i = 0; i < numApp; i++) {
+		char* name = "AppClerk" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) AppClerk, i);
+		//currentThread->Yield();
+	}
+
+	for(int i = 0; i < numPic; i++) {
+		char* name = "PicClerk" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PicClerk, i);
+		//currentThread->Yield();
+	}
+
+	for(int i = 0; i < numPass; i++) {
+		char* name = "PassClerk" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PassClerk, i);
+		//currentThread->Yield();
+	}
+
+	for(int i = 0; i < numCash; i++) {
+		char* name = "Cashier" + i;
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Cashier, i);
+		//currentThread->Yield();
+	}
+
+	t = new Thread("Manager");
+	t->Fork((VoidFunctionPtr) Manager, 0);  
+	*/
 }

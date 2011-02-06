@@ -13,7 +13,7 @@ private:
 
 public:
 	static int MAX_CLERKS = 10;
-	static int MAX_CLERKS = 100;
+	static int MAX_CUSTOMERS = 100;
 
 	OfficeMonitor();
 	~OfficeMonitor();
