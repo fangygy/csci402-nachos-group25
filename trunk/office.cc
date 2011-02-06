@@ -63,8 +63,8 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 */
 Office::addCustomer(int numC) {
 	// place a cap on numC
-	if (oMonitor.totalCust + numC > oMonitor.MAX_CUSTOMERS) {
-		numC = oMonitor.MAX_CUSTOMERS - oMonitor.totalCust;
+	if (oMonitor.totalCustSen + numC > oMonitor.MAX_CUSTOMERS) {
+		numC = oMonitor.MAX_CUSTOMERS - oMonitor.totalCustSen;
 	}
 
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
@@ -80,6 +80,30 @@ Office::addCustomer(int numC) {
 	// Update totals
 	oMonitor.totalCust += numC;
 	oMonitor.totalCustSen += numC;
+}
+/*
+// Antonio Cade
+// Add Senator
+*/
+Office::addSenator(int numS) {
+	// place a cap on numS
+	if (oMonitor.totalCustSen + numS > oMonitor.MAX_CUSTOMERS) {
+		numS = oMonitor.MAX_CUSTOMERS - oMonitor.totalCustSen;
+	}
+
+	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numS; i++) {
+		// add the monitor variables
+		oMonitor.fileLock[i] = new Lock("fileLock" + i);
+		oMonitor.fileState[i] = oMonitor.NONE;
+
+		// add the threads
+		t = new Thread("Senator" + i);
+		t->Fork((VoidFunctionPtr) Senator, i);
+	}
+
+	// Update totals
+	oMonitor.totalSenator += numS;
+	oMonitor.totalCustSen += numS;
 }
 
 /*
