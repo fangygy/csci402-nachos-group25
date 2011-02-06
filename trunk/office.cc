@@ -11,12 +11,14 @@ Office::Office(){
 
 void Office::startOffice(int numCust, int numApp, int numPic,
 		         int numPass, int numCash) {
-	//oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
-	OfficeMonitor oMonitor(numApp, numPic, numPass, numCash);
+	//OfficeMonitor thisMon = new OfficeMonitor(numApp, numPic, numPass, numCash);
+	//oMonitor = thisMon;
+	oMonitor = new OfficeMonitor(numApp, numPic, numPass, numCash);
+	//OfficeMonitor oMonitor(numApp, numPic, numPass, numCash);
 	//oMonitor = new OfficeMonitor();
-	Thread *t;}
+	Thread *t;
 
-//	addCustomer(numCust);
+	addCustomer(numCust);
 	/*oMonitor.addCustomer(numCust);
 	for(int i = 0; i < numCust; i++) {
 		char* name = "Cust" + i;
@@ -24,11 +26,11 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 		t->Fork((VoidFunctionPtr) Customer, i);
 		currentThread->Yield();
 	*/
-/*	
+	/*
 	for(int i = 0; i < numApp; i++) {
 		char* name = "AppClerk" + i;
 		t = new Thread(name);
-		t->Fork((VoidFunctionPtr) AppClerk&, i);
+		t->Fork((VoidFunctionPtr) AppClerk, i);
 		//currentThread->Yield();
 	}
 
@@ -55,8 +57,9 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 
 	t = new Thread("Manager");
 	t->Fork((VoidFunctionPtr) Manager, 0);  
+	*/
 }
-*/
+
 /*
 // Antonio Cade
 // Add Customer
