@@ -37,6 +37,9 @@ class Office {
   void Cashier(int index);
   void Manager();
   void Senator(int index);
+
+  void addSenator(int numS);
+  void addCustomer(int numC);
 };
 
 #endif // OFFICE_H

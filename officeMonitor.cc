@@ -19,6 +19,8 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	cashLineLength = 0;
 
 	totalCustSen = 0;
+	totalCust = 0;
+	totalSen = 0;
 	
 	officeCust = 0;
 	waitCust = 0;
@@ -98,14 +100,15 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
   	passMoneyLock = new Lock("passMoneyLock");
   	cashMoneyLock = new Lock("cashMoneyLock");
 
-	printf("Number of Customers = " + officeCust + "\n");
-	printf("Number of Senators = " + officeSen + "\n");
-	printf("Number of ApplicationClerks = " + numAppClerks + "\n");
-	printf("Number of PictureClerks = " + numPicClerks + "\n");
-	printf("Number of PassportClerks = " + numPassClerks + "\n");
-	printf("Number of Cashiers = " + numCashiers + "\n");
+	printf("Number of Customers = %d\n", officeCust);
+	printf("Number of Senators = %d\n",officeSen);
+	printf("Number of ApplicationClerks = %d\n",numAppClerks);
+	printf("Number of PictureClerks = %d\n",numPicClerks);
+	printf("Number of PassportClerks = %d\n",numPassClerks);
+	printf("Number of Cashiers = %d\n",numCashiers);
 
 }
+/*
 void OfficeMonitor::addSenator(int numS) {
 	int newTotal = totalCustSen + numS;
 	if (newTotal > 100) {
@@ -119,9 +122,9 @@ void OfficeMonitor::addSenator(int numS) {
 	totalCustSen = newTotal;
 
 }
-
+*/
 ////////////////////////////Operator= override
-
+/*
 OfficeMonitor& OfficeMonitor::operator=(const OfficeMonitor& o) {
     if (this != &o) {  // make sure not same object
         //delete [] _name;                     // Delete old name's memory.
@@ -133,9 +136,9 @@ OfficeMonitor& OfficeMonitor::operator=(const OfficeMonitor& o) {
 		numPassClerks = o.numPassClerks;
 		numCashiers = o.numCashiers;
 
-		regACLineLength = o.reACLineLength;
-		regPCLineLength = o.rePCLineLength;
-		regPassLineLength = o.rePassLineLength;
+		regACLineLength = o.regACLineLength;
+		regPCLineLength = o.regPCLineLength;
+		regPassLineLength = o.regPassLineLength;
 		privACLineLength = o.privACLineLength;
 		privPCLineLength = o.privPCLineLength;
 		privPassLineLength = o.privPassLineLength;
@@ -213,3 +216,4 @@ OfficeMonitor& OfficeMonitor::operator=(const OfficeMonitor& o) {
 
 		return *this;    // Return ref for multiple assignment
 }
+*/

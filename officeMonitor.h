@@ -22,7 +22,8 @@ class OfficeMonitor {
   int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
   // Amount of each customer/senator in total (used for instantiation)
-  int totalCust, totalSenator;
+  int totalCust;
+  int totalSen;
   int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
 
   // Amount of each customer/senator currently in office or waiting room
@@ -98,6 +99,10 @@ class OfficeMonitor {
   Lock *fileLock[MAX_CUSTOMERS];
   enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
   custState fileState[MAX_CUSTOMERS];
+
+
+
+
 };
 
 #endif // OFFICEMONITOR_H
