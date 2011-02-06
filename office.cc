@@ -63,8 +63,8 @@ void Office::startOffice(int numCust, int numApp, int numPic,
 */
 void Office::addCustomer(int numC) {
 	// place a cap on numC
-	if ((oMonitor.totalCustSen + numC) > oMonitor.MAX_CUSTOMERS) {
-		numC = oMonitor.MAX_CUSTOMERS - oMonitor.totalCustSen;
+	if ((oMonitor.totalCustSen + numC) > MAX_CUSTOMERS) {
+		numC = MAX_CUSTOMERS - oMonitor.totalCustSen;
 	}
 
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numC; i++) {
@@ -89,8 +89,8 @@ void Office::addCustomer(int numC) {
 */
 void Office::addSenator(int numS) {
 	// place a cap on numS
-	if (oMonitor.totalCustSen + numS > oMonitor.MAX_CUSTOMERS) {
-		numS = oMonitor.MAX_CUSTOMERS - oMonitor.totalCustSen;
+	if (oMonitor.totalCustSen + numS > MAX_CUSTOMERS) {
+		numS = MAX_CUSTOMERS - oMonitor.totalCustSen;
 	}
 
 	for (int i = oMonitor.totalCustSen; i < oMonitor.totalCustSen + numS; i++) {
