@@ -81,7 +81,6 @@ class Lock {
     char* name;				// for debugging
     bool  free; 
     Thread* holder;			// holder of this lock
-    Semaphore* semaphore;
     List *queue; 
 };
 
