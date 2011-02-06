@@ -19,8 +19,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	cashLineLength = 0;
 
 	totalCustSen = 0;
-	totalCust = 0;
-	totalSen = 0;
 	
 	officeCust = 0;
 	waitCust = 0;
@@ -51,8 +49,10 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		numAppClerks = 10;
 	}
 	for(int i = 0; i < numAppClerks; i++) {
-		appLock[i] = new Lock("appLock" + i);
-		appCV[i] = new Condition("appCV" + i);
+		char* lockName = "appLock" + i;
+		char* cvName = "appCV" + i;
+		appLock[i] = new Lock(lockName);
+		appCV[i] = new Condition(cvName);
 		appData[i] = 0;
 		appState[i] = BUSY;
 	}
@@ -61,8 +61,10 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		numPicClerks = 10;
 	}
 	for(int i = 0; i < numPicClerks; i++) {
-		picLock[i] = new Lock("picLock" + i);
-		picCV[i] = new Condition("picCV" + i);
+		char* lockName = "picLock" + i;
+		char* cvName = "picCV" + i;
+		picLock[i] = new Lock(lockName);
+		picCV[i] = new Condition(cvName);
 		picData[i] = 0;
 		picDataBool[i] = false;
 		picState[i] = BUSY;
@@ -72,8 +74,10 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		numPassClerks = 10;
 	}
 	for(int i = 0; i < numPassClerks; i++) {
-		passLock[i] = new Lock("passLock" + i);
-		passCV[i] = new Condition("passCV" + i);
+		char* lockName = "passLock" + i;
+		char* cvName = "passCV" + i;
+		passLock[i] = new Lock(lockName);
+		passCV[i] = new Condition(cvName);
 		passData[i] = 0;
 		passDataBool[i] = false;
 		passState[i] = BUSY;
@@ -83,8 +87,10 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		numCashiers = 10;
 	}
 	for(int i = 0; i < numCashiers; i++) {
-		cashLock[i] = new Lock("cashLock" + i);
-		cashCV[i] = new Condition("cashCV" + i);
+		char* lockName = "cashLock" + i;
+		char* cvName = "cashCV" + i;
+		cashLock[i] = new Lock(lockName);
+		cashCV[i] = new Condition(cvName);
 		cashData[i] = 0;
 		cashDataBool[i] = false;
 		cashState[i] = BUSY;
@@ -101,7 +107,7 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
   	cashMoneyLock = new Lock("cashMoneyLock");
 
 	printf("Number of Customers = %d\n", officeCust);
-	printf("Number of Senators = %d\n",officeSen);
+	printf("Number of Senators = %d\n",officeSenator);
 	printf("Number of ApplicationClerks = %d\n",numAppClerks);
 	printf("Number of PictureClerks = %d\n",numPicClerks);
 	printf("Number of PassportClerks = %d\n",numPassClerks);
