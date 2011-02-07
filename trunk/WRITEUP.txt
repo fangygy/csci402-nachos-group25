@@ -62,19 +62,25 @@ III. Design:
 	- PassClerk
 		- Keep track of the SSN and type of the current customer
 		- WHILE this thread is running
-			- If there's a customer in line:
+			- check to see if the privileged line has customers first, then check the regular line
+			- when checking each line:
+				- decrease the line length
+				- set itself to available
+				- Signal the customer to let it know the clerk is ready
 				- set state to BUSY
 				- Signal the first customer and wait for them
 				
 				- record their SSN and type
-				- if custState == APPPICDONE
-					- doPassport = true
+				- if customer has filed their application and taken their picture
+					- make a note to do their passport
 					- Signal the customer
 				- else
-					- punish the customer
-				- If doPassport
+					- punish and signal the customer
+				- If I'm supposed to file the passport
 					- Yield (to simulate doing work)
-					- change their custState to PASSDONE
+					- file the passport
+			- If no customers in either line, go on break
+				- Wake up when Manager sees that there are customers in line
 	- Cashier
 	- Manager
 		- keeps track of the total money made by the office
@@ -97,7 +103,8 @@ IV. Implementation:
 	+ office.cc
 	
 	+ Data Structures added, and the file they were added to.
-		class Lock                -- in file threads.cc/threads.h
+		-- in file threads.cc/threads.h
+		class Lock
  		{
 			public:
 				
@@ -108,8 +115,8 @@ IV. Implementation:
 		}
 		
 		-- in file office.cc
-		-- HELPER FUNCTIONS
-		void doRandomCash ()
+		-- CUSTOMER/SENATOR HELPER FUNCTIONS
+		int doRandomCash ()
 		void checkSenator ()
 		void senLineCashier (int& myCash, int& SSN, bool& visitedCash)
 		void lineCashier (int& myCash, int& SSN, bool& visitedCash)
@@ -122,11 +129,12 @@ IV. Implementation:
 		void senLinePassClerk (int& myCash, int& SSN, bool& visitedPass)
 		
 		-- THREAD FUNCTIONS
-		AppClerk (int index)
-		PicClerk (int index)
-		PassClerk (int index)
-		Cashier (int index)
-		Manager ()
+		void AppClerk (int index)
+		void PicClerk (int index)
+		void PassClerk (int index)
+		void Cashier (int index)
+		void Manager ()
+		
 	+ Data Structures modified, and the file they were added to.
 		- For example,
 			class Lock                -- in file threads.cc/threads.h
