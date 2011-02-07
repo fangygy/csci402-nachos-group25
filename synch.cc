@@ -170,6 +170,7 @@ void Lock::Release()
 
 	if (!(queue->IsEmpty())) { //If there are threads waiting
 		holder = (Thread *) queue->Remove(); //Pass ownership
+		holder->setStatus(READY);
 		scheduler->ReadyToRun(holder);
 	}
 	else { //No threads waiting
@@ -229,12 +230,12 @@ void Condition::Wait(Lock* conditionLock)
 	}
 
 	//OK to start doing actual waiting
-	printf("About to append %s to queue\n",currentThread->getName());
+	//printf("About to append %s to queue\n",currentThread->getName());
 	queue->Append((void*)currentThread);
 	conditionLock->Release();
-	printf("Released lock %s in CV and sleeping\n", name);
+	//printf("Released lock %s in CV and sleeping\n", name);
 	currentThread->Sleep();
-	printf("Woken and Acquiring lock %s...\n", name);
+	//printf("Woken and Acquiring lock %s...\n", name);
 	conditionLock->Acquire();
 
 	(void) interrupt->SetLevel(oldLevel); //restore interrupts
@@ -259,7 +260,7 @@ void Condition::Signal(Lock* conditionLock)
 	t->setStatus(READY);
 	scheduler->ReadyToRun(t);
 	//conditionLock->Release();
-
+	//printf("Signal %s signalled thread %s\n", name, t->getName());
 	if (queue->IsEmpty()) {
 		waitingLock = NULL;
 	}
