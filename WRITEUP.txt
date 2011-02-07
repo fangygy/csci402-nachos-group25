@@ -82,28 +82,46 @@ III. Design:
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
 	- PassClerk
-		- Keep track of the SSN and type of the current customer
-		- WHILE this thread is running
+		- Keep track of the SSN (also the index) and type of the current customer
+		- While this thread is running
 			- check to see if the privileged line has customers first, then check the regular line
 			- when checking each line:
 				- decrease the line length
-				- set itself to available
+				- set self to available
 				- Signal the customer to let it know the clerk is ready
+				- Wait for the customer's response
 				- set state to BUSY
 				- Signal the first customer and wait for them
-				
 				- record their SSN and type
 				- if customer has filed their application and taken their picture
 					- make a note to do their passport
 					- Signal the customer
 				- else
 					- punish and signal the customer
+				- If customer was in privileged line, accept their payment
 				- If I'm supposed to file the passport
 					- Yield (to simulate doing work)
 					- file the passport
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
 	- Cashier
+		- Keep track of the SSN (also the index) and type of the current customer
+		- While this thread is running
+			- When checking the line:
+				- decrease the line length
+				- set self to available
+				- Signal the customer to let it know the cashier is ready
+				- Wait for the customer's response
+				- set state to BUSY
+				- Signal the first customer and wait for them
+				- record their SSN and type
+				- if customer's passport has been filed
+					- accept the customer's passport fee
+					- Signal the customer
+				- else
+					- punish and signal the customer
+			- If no customers in either line, go on break
+				- Wake up when Manager sees that there are customers in line
 	- Manager
 		- keeps track of the total money made by the office
 		- while this thread is running
