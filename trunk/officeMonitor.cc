@@ -51,13 +51,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numAppClerks; i++) {
 		char* lockName = "appLock" + i;
 		char* cvName = "appCV" + i;
-/*		char index[50];
-		sprintf(index, "%d", i);
-		char* lockName = "appLock";
-		char* cvName = "appCV";
-		strcat(lockName, index);
-		strcat(cvName, index);
-*/
 		appLock[i] = new Lock(lockName);
 		appCV[i] = new Condition(cvName);
 		appData[i] = 0;
@@ -71,13 +64,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numPicClerks; i++) {
 		char* lockName = "picLock" + i;
 		char* cvName = "picCV" + i;
-/*		char index[50];
-		sprintf(index, "%d", i);
-		char* lockName = "picLock";
-		char* cvName = "picCV";
-		strcat(lockName, index);
-		strcat(cvName, index);
-*/
 		picLock[i] = new Lock(lockName);
 		picCV[i] = new Condition(cvName);
 		picData[i] = 0;
@@ -92,13 +78,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numPassClerks; i++) {
 		char* lockName = "passLock" + i;
 		char* cvName = "passCV" + i;
-/*		char index[50];
-		sprintf(index, "%d", i);
-		char* lockName = "passLock";
-		char* cvName = "passCV";
-		strcat(lockName, index);
-		strcat(cvName, index);
-*/
 		passLock[i] = new Lock(lockName);
 		passCV[i] = new Condition(cvName);
 		passData[i] = 0;
@@ -113,13 +92,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numCashiers; i++) {
 		char* lockName = "cashLock" + i;
 		char* cvName = "cashCV" + i;
-/*		char index[50];
-		sprintf(index, "%d", i);
-		char* lockName = "cashLock";
-		char* cvName = "cashCV";
-		strcat(lockName, index);
-		strcat(cvName, index);
-*/
 		cashLock[i] = new Lock(lockName);
 		cashCV[i] = new Condition(cvName);
 		cashData[i] = 0;
@@ -146,98 +118,3 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	printf("Number of Cashiers = %d\n",numCashiers);
 
 }
-
-////////////////////////////Operator= override
-/*
-OfficeMonitor& OfficeMonitor::operator=(const OfficeMonitor& o) {
-    if (this != &o) {  // make sure not same object
-        //delete [] _name;                     // Delete old name's memory.
-        //_name = new char[strlen(p._name)+1]; // Get new space
-        //strcpy(_name, p._name);              // Copy new name
-        //_id = p._id;                         // Copy id
-		numAppClerks = o.numAppClerks;
-		numPicClerks = o.numPicClerks;
-		numPassClerks = o.numPassClerks;
-		numCashiers = o.numCashiers;
-
-		regACLineLength = o.regACLineLength;
-		regPCLineLength = o.regPCLineLength;
-		regPassLineLength = o.regPassLineLength;
-		privACLineLength = o.privACLineLength;
-		privPCLineLength = o.privPCLineLength;
-		privPassLineLength = o.privPassLineLength;
-		cashLineLength = o.cashLineLength;
-
-		totalCust = o.totalCust;
-		totalSenator = o.totalSenator;
-		officeCust = o.officeCust;
-		officeSenator = o.officeSenator;
-
-		acpcLineLock = o.acpcLineLock;
-		passLineLock = o.passLineLock;
-		cashLineLock = o.cashLineLock;
-
-		regACLineCV = o.regACLineCV;
-		regPCLineCV = o.regPCLineCV;
-		regPassLineCV = o.regPassLineCV;
-		privACLineCV = o.privACLineCV;
-		privPCLineCV = o.privPCLineCV;
-		privPassLineCV o.privPassLineCV;
-		cashLineCV = o.cashLineCV;
-
-		if(numAppClerks > 10) {
-			numAppClerks = 10;
-		}
-
-		for(int i = 0; i < numAppClerks; i++) {
-			appLock[i] = o.appLock[i];
-			appCV[i] = o.appCV[i];
-			appData[i] = o.appData;
-			appState[i] = BUSY;
-		}
-
-		if(numPicClerks > 10) {
-			numPicClerks = 10;
-		}
-		for(int i = 0; i < numPicClerks; i++) {
-			picLock[i] = o.picLock[i];
-			picCV[i] = o.picCV[i];
-			picData[i] = o.picData[i];
-			picDataBool[i] = o.picDataBool[i];
-			picState[i] = BUSY;
-		}
-		if(numPassClerks > 10) {
-			numPassClerks = 10;
-		}
-		for(int i = 0; i < numPassClerks; i++) {
-			passLock[i] = o.passLock[i];
-			passCV[i] = o.passCV[i];
-			passData[i] = o.passData[i];
-			passDataBool[i] = o.passDataBool[i];
-			passState[i] = BUSY;
-		}
-		if(numCashiers > 10) {
-			numCashiers = 10;
-		}
-		for(int i = 0; i < numCashiers; i++) {
-			cashLock[i] = o.cashLock[i];
-			cashCV[i] = o.cashCV[i];
-			cashData[i] = o.cashData[i];
-			cashDataBool[i] = o.cashDataBool[i];
-			cashState[i] = BUSY;
-		}
-
-
- 		appMoney = o.appMoney;
-		picMoney = o.picMoney;
-		passMoney = o.passMoney;
-  		cashMoney = o.cashMoney;
-        
-		appMoneyLock = o.appMoneyLock;
-		picMoneyLock = o.picMoneyLock;
-  		passMoneyLock = o.passMoneyLock;
-  		cashMoneyLock = o.cashMoneyLock;
-
-		return *this;    // Return ref for multiple assignment
-}
-*/
