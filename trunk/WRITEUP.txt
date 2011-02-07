@@ -9,7 +9,8 @@ I. Requirements:
 
 	- Describe what's your understanding of the requirements from the assignment statement. 
 	  With the requirement analysis, you would be clear about what you are supposed to do.
-	- Build a synchronized, multi-threaded system #SARCASM
+	- Build a synchronized, multi-threaded system utilizing shared data and a monitor
+	- Use this system to simulate a passport office, with customer prioritizarion and clerks
 	
 II. Assumptions:
 

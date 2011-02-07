@@ -23,7 +23,7 @@ public:
 	int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
 	// Amount of each customer/senator in total (used for instantiation)
-	int totalCustSen;		// shouldn't need, just use (totalCust + totalSen)
+	int totalCustSen;
 
 	// Amount of each customer/senator currently in office or waiting room
 	int officeCust, waitCust, officeSenator;
