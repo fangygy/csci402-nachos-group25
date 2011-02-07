@@ -1,5 +1,5 @@
 Title: Writeup for Project 1, Spring 2011
-Date: 02/07/11
+Date: 02/06/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
 	Jasper Lee			jklol					iono
