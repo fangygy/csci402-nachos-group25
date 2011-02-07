@@ -54,6 +54,7 @@ III. Design:
 			of clerk
 		- After all senators are finished, the Manager alerts all Customers to continue doing
 			whatever they were already doing
+	
 	- AppClerk
 		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
 		- While this thread is running
@@ -69,6 +70,7 @@ III. Design:
 				- Process the application, then signal the customer and release it
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
+	
 	- PicClerk
 		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
 		- While this thread is running
@@ -89,6 +91,7 @@ III. Design:
 				- Process the picture then signal the customer and release it
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
+	
 	- PassClerk
 		- Keep track of the SSN (also the index) and type of the current customer
 		- While this thread is running
@@ -112,6 +115,7 @@ III. Design:
 					- file the passport
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
+	
 	- Cashier
 		- Keep track of the SSN (also the index) and type of the current customer
 		- While this thread is running
@@ -130,6 +134,7 @@ III. Design:
 					- punish and signal the customer
 			- If no customers in either line, go on break
 				- Wake up when Manager sees that there are customers in line
+	
 	- Manager
 		- keeps track of the total money made by the office
 		- while this thread is running
@@ -144,11 +149,13 @@ III. Design:
 IV. Implementation:
 
 	+ Files Modified
-	+ synch.h, synch.cc
+		+ synch.h, synch.cc
+		+ main.cc
+		+ Makefile.common
 	
 	+ Files added
-	+ officeMonitor.h, officeMonitor.cc
-	+ office.cc
+		+ officeMonitor.h, officeMonitor.cc
+		+ office.cc
 	
 	+ Data Structures added, and the file they were added to.
 		-- in file threads.cc/threads.h
