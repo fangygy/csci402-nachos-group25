@@ -18,8 +18,6 @@ public:
 	OfficeMonitor();
 	~OfficeMonitor();
 	OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
-	//void addCustomer(int numC);
-	//void addSenator(int numS);
 
 	// Amount of each kind of Clerk
 	int numAppClerks, numPicClerks, numPassClerks, numCashiers;
