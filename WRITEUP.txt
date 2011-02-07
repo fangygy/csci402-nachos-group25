@@ -2,25 +2,20 @@ Title: Writeup for Project 1, Spring 2011
 Date: 02/06/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
-	Jasper Lee			jklol					iono
+	Jasper Lee			jasperkl@usc.edu		3483925510
 	Yinlerthai Chan		yinlertc@usc.edu		4550945929
 
 I. Requirements:
 
-	- Describe what's your understanding of the requirements from the assignment statement. 
-	  With the requirement analysis, you would be clear about what you are supposed to do.
 	- Build a synchronized, multi-threaded system utilizing shared data and a monitor
 	- Use this system to simulate a passport office, with customer prioritizarion and clerks
 	
 II. Assumptions:
 
-	- Reasonable assumptions you take for your scheme.
+	- We assumed that using the pseudocode given during lecures as a guideline for Locks and Condition Variables
+		would provide a smooth implementation for our threads
 
 III. Design:
-
-	- This section is to cover your logic and ideas as to how 
-	you are going to solve the problem presented. 
-	This should include a description of classes, algorithms, etc.
 	
 	- Customer
 		- Local variables include a unique identifier (SSN), cash on hand (randomly chosen increments of
