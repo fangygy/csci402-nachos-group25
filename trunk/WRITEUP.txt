@@ -175,6 +175,19 @@ IV. Implementation:
 		void Cashier (int index)
 		void Manager ()
 		
+		-- in officeMonitor.h/officeMonitor.cc
+		static const int MAX_CLERK
+		static const int MAX_CUSTOMER
+
+		OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
+		
+		// Clerk States
+		enum clerkState {BUSY, AVAILABLE, BREAK};
+		// Customer States
+		enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
+		// Customer Types
+		enum custType {CUSTOMER, SENATOR};
+		
 	+ Data Structures modified, and the file they were added to.
 		- For example,
 			class Lock                -- in file threads.cc/threads.h
