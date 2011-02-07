@@ -61,10 +61,13 @@ extern void Print(char *file), PerformanceTest(void);
 extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
 //extern void TestSuite(void), Copy(char *unixFile, char *nachosFile);
-extern void PassportOffice(void), Copy(char *unixFile, char *nachosFile);
+//extern void PassportOffice(void), Copy(char *unixFile, char *nachosFile);
 #ifdef THREADS
 extern void TestSuite(void);
-//extern void PassportOffice(void);
+extern void PassportOffice(void);
+extern void PassportOffice2(void);
+extern void PassportOffice3(void);
+extern void PassportOffice4(void);
 #endif
 
 //----------------------------------------------------------------------
@@ -107,6 +110,12 @@ main(int argc, char **argv)
             ThreadTest();
 		if (!strcmp(*argv, "-P2"))               // PassportOffice
            PassportOffice();
+		if (!strcmp(*argv, "-P3"))               // PassportOffice
+           PassportOffice2();
+		if (!strcmp(*argv, "-P4"))               // PassportOffice
+           PassportOffice3();
+		if (!strcmp(*argv, "-P5"))               // PassportOffice
+           PassportOffice4();
 
 #endif
 #ifdef USER_PROGRAM
