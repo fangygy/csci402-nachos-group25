@@ -3,7 +3,7 @@ Date: 02/07/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
 	Jasper Lee			jklol					iono
-	Yinlerthai Chan		probably ferdverel		iono
+	Yinlerthai Chan		yinlertc@usc.edu		4550945929
 
 I. Requirements:
 
@@ -256,10 +256,6 @@ VI. Discussion:
 		get stuck either in the PictureClerk, PassportClerk, Cashier, or when a Manager attemps to
 		wake a Clerk from break.
 
-
-
-		
-		- Explain your experiment result.
 
 VII. Miscellaneous:
 

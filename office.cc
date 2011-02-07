@@ -1981,6 +1981,159 @@ void PassportOffice() {
 
 	Thread *t;
 
+	addCustomer(20);
+	
+	for(int i = 0; i < oMonitor.numAppClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "AppClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) AppClerk, i);
+		currentThread->Yield();
+	}
+
+	for(int i = 0; i < oMonitor.numPicClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PicClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PicClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numPassClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PassClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PassClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numCashiers; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "Cashier";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Cashier, i);
+		currentThread->Yield();
+	}
+	
+	t = new Thread("Manager");
+	t->Fork((VoidFunctionPtr) Manager, 0);
+}
+void PassportOffice2() {
+
+	//srand(time(0));		//Initializing random number generator for seeding random values
+
+	Thread *t;
+
+	addCustomer(30);
+	
+	for(int i = 0; i < oMonitor.numAppClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "AppClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) AppClerk, i);
+		currentThread->Yield();
+	}
+
+	for(int i = 0; i < oMonitor.numPicClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PicClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PicClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numPassClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PassClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PassClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numCashiers; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "Cashier";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Cashier, i);
+		currentThread->Yield();
+	}
+	
+	t = new Thread("Manager");
+	t->Fork((VoidFunctionPtr) Manager, 0);
+}
+void PassportOffice3() {
+
+	//srand(time(0));		//Initializing random number generator for seeding random values
+
+	Thread *t;
+
+	addCustomer(50);
+	
+	for(int i = 0; i < oMonitor.numAppClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "AppClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) AppClerk, i);
+		currentThread->Yield();
+	}
+
+	for(int i = 0; i < oMonitor.numPicClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PicClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PicClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numPassClerks; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "PassClerk";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) PassClerk, i);
+		currentThread->Yield();
+	}
+	
+	for(int i = 0; i < oMonitor.numCashiers; i++) {
+		char index[50];
+		sprintf(index, "%d", i);
+		char name[50] = "Cashier";
+		strcat(name, index);
+		t = new Thread(name);
+		t->Fork((VoidFunctionPtr) Cashier, i);
+		currentThread->Yield();
+	}
+	
+	t = new Thread("Manager");
+	t->Fork((VoidFunctionPtr) Manager, 0);
+}
+void PassportOffice4() {
+
+	//srand(time(0));		//Initializing random number generator for seeding random values
+
+	Thread *t;
+
 	addCustomer(1);
 	
 	for(int i = 0; i < oMonitor.numAppClerks; i++) {
