@@ -1,7 +1,7 @@
 I. Requirements:
 
 	- Describe what's your understanding of the requirements from the assignment statement. With the requirement analysis, you would be clear about what you are supposed to do.
-	- Build a synchronized, multi-threaded system
+	- Build a synchronized, multi-threaded system #SARCASM
 	
 II. Assumptions:
 
@@ -32,7 +32,7 @@ III. Design:
 				- set state to BUSY
 				- Signal the first customer and wait for them
 				
-				- record their SSN
+				- record their SSN and type
 				- if custState == APPPICDONE
 					- doPassport = true
 					- Signal the customer
@@ -63,6 +63,27 @@ IV. Implementation:
 				Thread* holder;			// holder of this lock
 				List *queue; 
 		}
+		
+		-- in file office.cc
+		-- HELPER FUNCTIONS
+		void doRandomCash ()
+		void checkSenator ()
+		void senLineCashier (int& myCash, int& SSN, bool& visitedCash)
+		void lineCashier (int& myCash, int& SSN, bool& visitedCash)
+		void talkPassClerk (int& SSN, bool& visitedPass, bool inPrivLine)
+		void talkAppClerk (int& SSN, bool& visitedApp, bool inPrivLine)
+		void talkPicClerk (int& SSN, bool& visitedPic, bool inPrivLine)
+		void lineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic)
+		void linePassClerk (int& myCash, int& SSN, bool& visitedPass)
+		void senLineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic) 
+		void senLinePassClerk (int& myCash, int& SSN, bool& visitedPass)
+		
+		-- THREAD FUNCTIONS
+		AppClerk (int index)
+		PicClerk (int index)
+		PassClerk (int index)
+		Cashier (int index)
+		Manager ()
 	+ Data Structures modified, and the file they were added to.
 		- For example,
 			class Lock                -- in file threads.cc/threads.h
@@ -96,30 +117,3 @@ VI. Discussion:
 VII. Miscellaneous:
 
 - Whatever else you want the grader know about your development.  You can create your own subsections headings here.
-==========	office.cc	==========
-CUSTOMER FUNCTIONS:
-doRandomCash ()
-checkSenator ()
-senLineCashier (int& myCash, int& SSN, bool& visitedCash)
-lineCashier (int& myCash, int& SSN, bool& visitedCash)
-talkPassClerk (int& SSN, bool& visitedPass, bool inPrivLine)
-talkAppClerk (int& SSN, bool& visitedApp, bool inPrivLine)
-talkPicClerk (int& SSN, bool& visitedPic, bool inPrivLine)
-lineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic)
-linePassClerk (int& myCash, int& SSN, bool& visitedPass)
-senLineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic) 
-senLinePassClerk (int& myCash, int& SSN, bool& visitedPass)
-
-
-Customer
-Senator
-
-CLERK FUNCTIONS:
-
-AppClerk (int index)
-PicClerk (int index)
-PassClerk (int index)
-Cashier (int index)
-Manager ()
-
-==========	officeMonitor.cc	==========
