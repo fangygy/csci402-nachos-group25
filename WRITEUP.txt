@@ -224,7 +224,6 @@ V. Testing:  (For each test case, you must show)
 			To run each, type either 'nachos -P2,' 'nachos P3',' nachos P4', 
 			or 'nachos P5' respectively
 
-- How to run the test cases, the commands, the arguments and so on.
 	+ Test Output
 		Our part 1 of the assignment runs through all test cases and outputs the proper results as
 		described in test_code.cc.
@@ -232,12 +231,34 @@ V. Testing:  (For each test case, you must show)
 		but depending on the number of customers, the program will stop running
 		or infinitely stall at certain points that involve signal/wait issues.
 
-- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output.
-
 VI. Discussion:
 	+ Experiment expectation.  (What you hope will happen.)
 	+ Experiment result.  (What actually happens.)
 	+ Explanation
+		In this assignment, we learned how threads work in operating systems and computer code.
+		We experimented on how threads can interact with each other
+		and perform multiple functions simulteaously.
+
+		Our expectation from our design was that everything would go smoothly (aside from some
+		compilation debugging with syntax and such). We meticulously discussed and went through
+		the processes and interactions between the way threads will communicate with each other,
+		tracing between locks and condition variables to make sure race conditions and 
+		context switches don't happen. We were confident things would run smoothly overall.
+
+		Our result was not what we expected. While we did get delayed from solving certain syntactical 
+		errors that we were unsure of how to solve, our final dilemma came down to
+		our program running through certain threads smoothly, but then stopping at other threads.
+		This was particular for signal/wait situations, where one thread would signal another thread,
+		only to find the latter never waking up despite us using the correct locks and CVs.
+		We believed the code would run smoothly otherwise, as our code compiles easily now.
+		However, when run, our program does not manage to allow a customer to finish through
+		the passport office. It will usually run through the Application Clerk successfully, and then
+		get stuck either in the PictureClerk, PassportClerk, Cashier, or when a Manager attemps to
+		wake a Clerk from break.
+
+
+
+		
 		- Explain your experiment result.
 
 VII. Miscellaneous:
