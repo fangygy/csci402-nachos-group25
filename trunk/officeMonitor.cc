@@ -51,10 +51,18 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numAppClerks; i++) {
 		char* lockName = "appLock" + i;
 		char* cvName = "appCV" + i;
+/*		char index[50];
+		sprintf(index, "%d", i);
+		char* lockName = "appLock";
+		char* cvName = "appCV";
+		strcat(lockName, index);
+		strcat(cvName, index);
+*/
 		appLock[i] = new Lock(lockName);
 		appCV[i] = new Condition(cvName);
 		appData[i] = 0;
 		appState[i] = BUSY;
+		appWaitState[i] = NOTWAITING;
 	}
 
 	if(numPicClerks > 10) {
@@ -63,11 +71,19 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numPicClerks; i++) {
 		char* lockName = "picLock" + i;
 		char* cvName = "picCV" + i;
+/*		char index[50];
+		sprintf(index, "%d", i);
+		char* lockName = "picLock";
+		char* cvName = "picCV";
+		strcat(lockName, index);
+		strcat(cvName, index);
+*/
 		picLock[i] = new Lock(lockName);
 		picCV[i] = new Condition(cvName);
 		picData[i] = 0;
 		picDataBool[i] = false;
 		picState[i] = BUSY;
+		picWaitState[i] = NOTWAITING;
 	}
 
 	if(numPassClerks > 10) {
@@ -76,11 +92,19 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numPassClerks; i++) {
 		char* lockName = "passLock" + i;
 		char* cvName = "passCV" + i;
+/*		char index[50];
+		sprintf(index, "%d", i);
+		char* lockName = "passLock";
+		char* cvName = "passCV";
+		strcat(lockName, index);
+		strcat(cvName, index);
+*/
 		passLock[i] = new Lock(lockName);
 		passCV[i] = new Condition(cvName);
 		passData[i] = 0;
 		passDataBool[i] = false;
 		passState[i] = BUSY;
+		passWaitState[i] = NOTWAITING;
 	}
 
 	if(numCashiers > 10) {
@@ -89,11 +113,19 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	for(int i = 0; i < numCashiers; i++) {
 		char* lockName = "cashLock" + i;
 		char* cvName = "cashCV" + i;
+/*		char index[50];
+		sprintf(index, "%d", i);
+		char* lockName = "cashLock";
+		char* cvName = "cashCV";
+		strcat(lockName, index);
+		strcat(cvName, index);
+*/
 		cashLock[i] = new Lock(lockName);
 		cashCV[i] = new Condition(cvName);
 		cashData[i] = 0;
 		cashDataBool[i] = false;
 		cashState[i] = BUSY;
+		cashWaitState[i] = NOTWAITING;
 	}
 
  	appMoney = 0;
