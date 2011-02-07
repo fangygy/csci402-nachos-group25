@@ -1450,7 +1450,6 @@ void Manager(){
 //	Passport Clerk function thread
 //	Records customer passport
 */
-
 void PassClerk(int index) {
 	int myIndex = index;
 	int mySSN;		// SSN of current customer
@@ -1637,7 +1636,6 @@ void PassClerk(int index) {
 			oMonitor.passLineLock->Release();
 			oMonitor.passLock[myIndex]->Acquire();
 			oMonitor.passState[myIndex] = oMonitor.BREAK;
-			printf("PassportClerk %d is set to break. Gonna wait now\n", myIndex);
 			oMonitor.passCV[myIndex]->Wait(oMonitor.passLock[myIndex]);
 			oMonitor.picWaitState[myIndex] = oMonitor.NOTWAITING;
 
@@ -1652,7 +1650,6 @@ void PassClerk(int index) {
 //	Cashier function thread
 //	Takes the customer's monies
 */
-
 void Cashier(int index) {
 	int myIndex = index;
 	int mySSN;		// SSN of current customer
@@ -1661,6 +1658,7 @@ void Cashier(int index) {
 
 	// set own state to busy
 	oMonitor.cashLock[myIndex]->Acquire();
+	printf("Customer %d is now Availiable\n", myIndex);
 	oMonitor.cashState[myIndex] = oMonitor.BUSY;
 	oMonitor.cashLock[index]->Release();
 
@@ -1692,7 +1690,7 @@ void Cashier(int index) {
 				// customer wasn't a dumbass, DO WORK
 				oMonitor.passDataBool[myIndex] = true;
 				//for (int i = 0; i < 50; i++) {
-					currentThread->Yield();
+				currentThread->Yield();
 				//}
 				oMonitor.fileState[mySSN] = oMonitor.ALLDONE;
 
@@ -1729,7 +1727,7 @@ void Cashier(int index) {
 			oMonitor.cashCV[myIndex]->Signal(oMonitor.cashLock[myIndex]);	// signal customer awake
 			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
 		} else {
-			// No one in line... Pull out your DS and take a break
+			// No one in line... Sit back and take a break
 			printf("Cashier %d is going on break\n", myIndex);
 			oMonitor.cashLineLock->Release();
 			oMonitor.cashLock[myIndex]->Acquire();
@@ -1737,7 +1735,6 @@ void Cashier(int index) {
 			oMonitor.cashWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);
 			oMonitor.cashWaitState[myIndex] = oMonitor.NOTWAITING;
-
 
 			printf("Cashier %d returned from break\n", myIndex);
 			oMonitor.cashLock[myIndex]->Release();
