@@ -1,6 +1,7 @@
 I. Requirements:
 
-	- Describe what's your understanding of the requirements from the assignment statement. With the requirement analysis, you would be clear about what you are supposed to do.
+	- Describe what's your understanding of the requirements from the assignment statement. 
+	  With the requirement analysis, you would be clear about what you are supposed to do.
 	- Build a synchronized, multi-threaded system #SARCASM
 	
 II. Assumptions:
@@ -24,7 +25,40 @@ III. Design:
 			- After being signalled to go to a clerk, check for Senators
 	- Senator
 	- AppClerk
+		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
+		- While this thread is running
+			- check to see if the privileged line has customers first, then check the regular line
+			- when checking each line:
+				- decrease the line length
+				- set itself to available
+				- Signal the customer to let it know the clerk is ready
+				- then wait for the customer's response
+				- Once the customer responds, read the SSN from the data array
+				- check the customer type
+				- Set the customer's state to reflect the Application phase DONE
+				- Process the application, then signal the customer and release it
+			- If no customers in either line, go on break
+				- Wake up when Manager sees that there are customers in line
 	- PicClerk
+		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
+		- While this thread is running
+			- check to see if the privileged line has customers first, then check the regular line
+			- when checking each line:
+				- decrease the line length
+				- set itself to available
+				- Signal the customer to let it know the clerk is ready
+				- then wait for the customer's response
+				- Once the customer responds, read the SSN from the data array
+				- check the customer type
+				- Then proceed to take the customer's picture
+					- will loop as long as the picture is disliked by the customer
+					- There is a bool in the picture clerk data array for the customer to let
+					- him know if the picture is liked or not
+					- Will loop out once the picture is liked, and the pic clerk will continue to process
+				- Set the customer's state to reflect the Picture phase DONE
+				- Process the picture then signal the customer and release it
+			- If no customers in either line, go on break
+				- Wake up when Manager sees that there are customers in line
 	- PassClerk
 		- Keep track of the SSN and type of the current customer
 		- WHILE this thread is running
@@ -43,6 +77,15 @@ III. Design:
 					- change their custState to PASSDONE
 	- Cashier
 	- Manager
+		- keeps track of the total money made by the office
+		- while this thread is running
+			- constantly check all clerk lines for customers
+			- if customers exist, depending on the number, wake up either
+			- one clerk or all clerks for that line
+			- also checks for senators and broadcasts to everyone 
+			- if a senator is there
+			- will also print out a money report that includes
+			- the office's total money as well as each clerk's money
 
 IV. Implementation:
 
