@@ -152,18 +152,51 @@ IV. Implementation:
 		+ officeMonitor.h, officeMonitor.cc
 		+ office.cc
 	
-	+ Data Structures added, and the file they were added to.
+	+ Data Structures added
 		-- in file threads.cc/threads.h
-		class Lock
- 		{
-			public:
-				
-			private:
-				bool  free; 
-				Thread* holder;			// holder of this lock
-				List *queue; 
-		}
+		class Lock {
+		  public:
+			Lock(char* debugName);  		// initialize lock to be FREE
+			~Lock();				// deallocate lock
+			char* getName() { return name; }	// debugging assist
+
+			void Acquire(); // these are the only operations on a lock
+			void Release(); // they are both *atomic*
+
+			bool isHeldByCurrentThread();	// true if the current thread
+							// holds this lock.  Useful for
+							// checking in Release, and in
+							// Condition variable ops below.
+
+		  private:
+			char* name;				// for debugging
+			bool  free; 
+			Thread* holder;			// holder of this lock
+			List *queue; 
+		};
+
+		class Condition {
+		  public:
+			Condition(char* debugName);		// initialize condition to 
+							// "no one waiting"
+			~Condition();			// deallocate the condition
+			char* getName() { return (name); }
+			
+			void Wait(Lock *conditionLock); 	// these are the 3 operations on 
+							// condition variables; releasing the 
+							// lock and going to sleep are 
+							// *atomic* in Wait()
+			void Signal(Lock *conditionLock);   // conditionLock must be held by
+			void Broadcast(Lock *conditionLock);// the currentThread for all of 
+							// these operations
+
+		  private:
+			char* name;
+			Lock* waitingLock;
+			List* queue;
+		};
 		
+	+ Data Structures created
 		-- in file office.cc
 		-- CUSTOMER/SENATOR HELPER FUNCTIONS
 		int doRandomCash ()
@@ -186,9 +219,11 @@ IV. Implementation:
 		void Manager ()
 		
 		-- in officeMonitor.h/officeMonitor.cc
+		// MAX NUMBER OF AGENTS (for initilalization)
 		static const int MAX_CLERK
 		static const int MAX_CUSTOMER
-
+		
+		// Constructor
 		OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
 		
 		// Clerk States
@@ -197,24 +232,9 @@ IV. Implementation:
 		enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
 		// Customer Types
 		enum custType {CUSTOMER, SENATOR};
-		
-	+ Data Structures modified, and the file they were added to.
-		- For example,
-			class Lock                -- in file threads.cc/threads.h
-			{
-				public:
-					
-				private:
-					bool  free; 
-					Thread* holder;			// holder of this lock
-					List *queue; 
-			}
-			
-            + Functions added and in which file.
 
-            + Functions modified and in which file.
+V. Testing:
 
-V. Testing:  (For each test case, you must show)
 	+ How to test
 		Compile with gmake in the threads directory.
 		To test part 1 of assignment, run 'nachos -T'
@@ -235,9 +255,7 @@ V. Testing:  (For each test case, you must show)
 		or infinitely stall at certain points that involve signal/wait issues.
 
 VI. Discussion:
-	+ Experiment expectation.  (What you hope will happen.)
-	+ Experiment result.  (What actually happens.)
-	+ Explanation
+
 		In this assignment, we learned how threads work in operating systems and computer code.
 		We experimented on how threads can interact with each other
 		and perform multiple functions simulteaously.
@@ -261,5 +279,3 @@ VI. Discussion:
 
 
 VII. Miscellaneous:
-
-- Whatever else you want the grader know about your development.  You can create your own subsections headings here.
