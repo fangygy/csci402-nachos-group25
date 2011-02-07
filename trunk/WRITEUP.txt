@@ -15,15 +15,37 @@ III. Design:
 	This should include a description of classes, algorithms, etc.
 	
 	- Customer
-		- Keep track of clerks visited (4 Booleans)
-		- WHILE any flag is false, stay inside this loop
-			- Random chance to go to passport line too early
-				- This only happens once
-			- while !visitedApp or !visitedPic,
-				go to the shorter of the two lines
-			- Before going to any line, check for Senators
-			- After being signalled to go to a clerk, check for Senators
+		- Local variables include a unique identifier (SSN), cash on hand (randomly chosen increments of
+			$100, $600, $1100, $1600), and four boolean flags
+			- Each flag keeps track of which clerk the customer has visited: ApplicationClerk, PictureClerk,
+				PassportClerk, and Cashier
+			- WHILE any flag is false, stay inside this loop
+		- There is a random chance to go to passport line before the application and picture clerks
+			- This only happens once
+			- Customer will be punished upon being rejected, waiting a certain number of 
+				currentThread->Yield calls
+		- Visits clerks in order of ApplicationClerk == PictureClerk > PassportClerk > Cashier
+			- If customer has enough money, will always enter the privileged line UNLESS
+				both regular and privileged lines are empty. Gotta save money, right?
+			- When choosing between ApplicationClerk and PictureClerk, chooses whichever has the
+				shortest line, taking into account privileged and empty lines. If both lines are tied
+				or empty, then go to ApplicationClerk.
+		- Checks for Senators in three different situations:
+			- Before entering the office, if senators are present, go directly into the
+				Waiting Room.
+			- Between entering lines for different clerks, if senators are present, go 
+				directly to the Waiting Room.
+			- While in line, if senators are present, go directly to the Waiting Room, but remember
+				that customer was in which line.
 	- Senator
+		- Senators do not actively start lining up until the Passport Office is cleared of
+			all regular customers (can't be in the same room as riff-raffs, eh)
+			- Waits for the Manager to alert them that all customers have gone into the 
+				Waiting Room
+		- Otherwise, behaves exactly the same as customers when dealing with each different type
+			of clerk
+		- After all senators are finished, the Manager alerts all Customers to continue doing
+			whatever they were already doing
 	- AppClerk
 		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
 		- While this thread is running
