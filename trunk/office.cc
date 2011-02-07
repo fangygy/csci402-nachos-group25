@@ -1722,7 +1722,6 @@ void Cashier(int index) {
 			}
 			oMonitor.fileLock[mySSN]->Release();
 			while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-					
 			}
 			oMonitor.cashCV[myIndex]->Signal(oMonitor.cashLock[myIndex]);	// signal customer awake
 			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
