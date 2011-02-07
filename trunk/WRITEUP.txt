@@ -1,0 +1,125 @@
+I. Requirements:
+
+	- Describe what's your understanding of the requirements from the assignment statement. With the requirement analysis, you would be clear about what you are supposed to do.
+	- Build a synchronized, multi-threaded system
+	
+II. Assumptions:
+
+	- Reasonable assumptions you take for your scheme.
+
+III. Design:
+
+	- This section is to cover your logic and ideas as to how 
+	you are going to solve the problem presented. 
+	This should include a description of classes, algorithms, etc.
+	
+	- Customer
+		- Keep track of clerks visited (4 Booleans)
+		- WHILE any flag is false, stay inside this loop
+			- Random chance to go to passport line too early
+				- This only happens once
+			- while !visitedApp or !visitedPic,
+				go to the shorter of the two lines
+			- Before going to any line, check for Senators
+			- After being signalled to go to a clerk, check for Senators
+	- Senator
+	- AppClerk
+	- PicClerk
+	- PassClerk
+		- Keep track of the SSN and type of the current customer
+		- WHILE this thread is running
+			- If there's a customer in line:
+				- set state to BUSY
+				- Signal the first customer and wait for them
+				
+				- record their SSN
+				- if custState == APPPICDONE
+					- doPassport = true
+					- Signal the customer
+				- else
+					- punish the customer
+				- If doPassport
+					- Yield (to simulate doing work)
+					- change their custState to PASSDONE
+	- Cashier
+	- Manager
+
+IV. Implementation:
+
+	+ Files Modified
+	+ synch.h, synch.cc
+	
+	+ Files added
+	+ officeMonitor.h, officeMonitor.cc
+	+ office.cc
+	
+	+ Data Structures added, and the file they were added to.
+		class Lock                -- in file threads.cc/threads.h
+ 		{
+			public:
+				
+			private:
+				bool  free; 
+				Thread* holder;			// holder of this lock
+				List *queue; 
+		}
+	+ Data Structures modified, and the file they were added to.
+		- For example,
+			class Lock                -- in file threads.cc/threads.h
+			{
+				public:
+					
+				private:
+					bool  free; 
+					Thread* holder;			// holder of this lock
+					List *queue; 
+			}
+			
+            + Functions added and in which file.
+
+            + Functions modified and in which file.
+
+V. Testing:  (For each test case, you must show)
+	+ How to test
+
+- How to run the test cases, the commands, the arguments and so on.
+	+ Test Output
+
+- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output.
+
+VI. Discussion:
+	+ Experiment expectation.  (What you hope will happen.)
+	+ Experiment result.  (What actually happens.)
+	+ Explanation
+		- Explain your experiment result.
+
+VII. Miscellaneous:
+
+- Whatever else you want the grader know about your development.  You can create your own subsections headings here.
+==========	office.cc	==========
+CUSTOMER FUNCTIONS:
+doRandomCash ()
+checkSenator ()
+senLineCashier (int& myCash, int& SSN, bool& visitedCash)
+lineCashier (int& myCash, int& SSN, bool& visitedCash)
+talkPassClerk (int& SSN, bool& visitedPass, bool inPrivLine)
+talkAppClerk (int& SSN, bool& visitedApp, bool inPrivLine)
+talkPicClerk (int& SSN, bool& visitedPic, bool inPrivLine)
+lineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic)
+linePassClerk (int& myCash, int& SSN, bool& visitedPass)
+senLineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic) 
+senLinePassClerk (int& myCash, int& SSN, bool& visitedPass)
+
+
+Customer
+Senator
+
+CLERK FUNCTIONS:
+
+AppClerk (int index)
+PicClerk (int index)
+PassClerk (int index)
+Cashier (int index)
+Manager ()
+
+==========	officeMonitor.cc	==========
