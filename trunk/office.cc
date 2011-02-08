@@ -35,12 +35,13 @@ int doRandomCash() {
 //	The "if senators are present" is called outside this function
 void checkSenator() {
 	// If there are senators present in the office, go to the customer waiting room
-		oMonitor.senatorLock->Release();
 		oMonitor.customerLock->Acquire();
 		
 		//Remove self from office and add self to waiting room
 		oMonitor.officeCust--;
 		oMonitor.waitCust++;
+		
+		printf("Waiting in waitRoom\n");
 		
 		oMonitor.customerLock->Release();
 		oMonitor.custWaitLock->Acquire();
@@ -61,11 +62,16 @@ void checkSenator() {
 void senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	oMonitor.cashLineLock->Acquire();
 	oMonitor.cashLineLength++;
-	oMonitor.cashWaitState[SSN] = oMonitor.WAITING;
+	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 	oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
-	oMonitor.cashWaitState[SSN] = oMonitor.NOTWAITING;
+	oMonitor.custWaitState[SSN] = oMonitor.NOTWAITING;
 
 	oMonitor.cashLineLock->Release();
+	
+	oMonitor.senatorLock->Acquire();
+	oMonitor.numCashWait--;
+	oMonitor.senatorLock->Release();
+			
 	int myClerk = -1;
 	for (int i = 0; i < oMonitor.numCashiers; i++) {
 		oMonitor.cashLock[i]->Acquire(); // Prevents race condition for clerks
@@ -85,9 +91,9 @@ void senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 
 	oMonitor.cashData[myClerk] = SSN;
 
-	while(oMonitor.cashWaitState[myClerk] != oMonitor.WAITING) {
+	//while(oMonitor.cashWaitState[myClerk] != oMonitor.WAITING) {
 
-	}
+	//}
 	oMonitor.cashCV[myClerk]->Signal(oMonitor.cashLock[myClerk]);
 	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 	oMonitor.cashCV[myClerk]->Wait(oMonitor.cashLock[myClerk]);
@@ -108,9 +114,9 @@ void senLineCashier(int& myCash, int& SSN, bool& visitedCash) {
 		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
 		printf("Senator%d gets invalid certification Cashier%d\n",SSN,myClerk);
 		printf("Senator%d is punished to wait by Cashier%d\n",SSN,myClerk);
-		//for (int i = 0; i < randWait; i++) {
+		for (int i = 0; i < randWait; i++) {
 			currentThread->Yield();
-		//}
+		}
 	}
 	printf("Senator%d's passport is now recorded by Cashier%d\n",SSN, myClerk);
 }
@@ -123,13 +129,14 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	while(true) {
 		oMonitor.cashLineLock->Acquire();
 		oMonitor.cashLineLength++;
-		oMonitor.cashWaitState[SSN] = oMonitor.WAITING;
+		oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 		oMonitor.cashLineCV->Wait(oMonitor.cashLineLock);
-		oMonitor.cashWaitState[SSN] = oMonitor.NOTWAITING;
+		oMonitor.custWaitState[SSN] = oMonitor.NOTWAITING;
 		
 		oMonitor.cashLineLock->Release();
 		oMonitor.senatorLock->Acquire();
-		if (oMonitor.officeSenator > 0) {
+		if (oMonitor.officeSenator > 0 && oMonitor.numCashWait == 0) {
+			oMonitor.senatorLock->Release();
 			oMonitor.cashLineLock->Acquire();
 			oMonitor.cashLineLength--;
 			oMonitor.cashLineLock->Release();
@@ -137,8 +144,11 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 			printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 			checkSenator();
 			printf("Customer%d joins the regular wait queue of Cashier\n", SSN);
+			
+			oMonitor.cashLineLock->Acquire();
 		}
 		else {
+			oMonitor.numCashWait--;
 			oMonitor.senatorLock->Release();
 			break;
 		}
@@ -161,10 +171,11 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 	printf("Customer%d goes to Cashier%d\n",SSN,myClerk);
 
 	oMonitor.cashData[myClerk] = SSN;
-
-	while(oMonitor.cashWaitState[myClerk] != oMonitor.WAITING) {
-
-	}
+	
+	//while(oMonitor.cashWaitState[myClerk] != oMonitor.WAITING) {
+		//if (oMonitor.cashWaitState[myClerk] == oMonitor.NOTWAITING) {
+		//}
+	//}
 	oMonitor.cashCV[myClerk]->Signal(oMonitor.cashLock[myClerk]);
 	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 	oMonitor.cashCV[myClerk]->Wait(oMonitor.cashLock[myClerk]);
@@ -175,6 +186,7 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 		oMonitor.cashLock[myClerk]->Release();
 		printf("Customer%d gets valid certification Cashier%d\n",SSN,myClerk);
 		printf("Customer%d pays $100 to Cashier%d for their passport\n",SSN,myClerk);
+		printf("Customer%d's passport is now recorded by Cashier%d\n",SSN, myClerk);
 		visitedCash = true;
 		myCash -= 100;
 	}
@@ -185,11 +197,10 @@ void lineCashier(int& myCash, int& SSN, bool& visitedCash) {
 		int randWait = rand() % 900 + 101; // Random wait time between 100 and 1000
 		printf("Customer%d gets invalid certification Cashier%d\n",SSN,myClerk);
 		printf("Customer%d is punished to wait by Cashier%d\n",SSN,myClerk);
-		//for (int i = 0; i < randWait; i++) {
+		for (int i = 0; i < randWait; i++) {
 			currentThread->Yield();
-		//}
+		}
 	}
-	printf("Customer%d's passport is now recorded by Cashier%d\n",SSN, myClerk);
 }		
 
 // Jasper Lee:
@@ -234,9 +245,9 @@ void talkPassClerk(int& SSN, bool& visitedPass, bool inPrivLine) {
 			printf("Senator%d is willing to pay 500 money to the PassportClerk%d for moving ahead in the line\n", SSN, myClerk);
 		}
 	}
-	while(oMonitor.passWaitState[myClerk] != oMonitor.WAITING) {
+	//while(oMonitor.passWaitState[myClerk] != oMonitor.WAITING) {
 
-	}
+	//}
 	oMonitor.passCV[myClerk]->Signal(oMonitor.passLock[myClerk]);
 	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 	oMonitor.passCV[myClerk]->Wait(oMonitor.passLock[myClerk]);
@@ -266,9 +277,9 @@ void talkPassClerk(int& SSN, bool& visitedPass, bool inPrivLine) {
 			printf("Senator%d is not certified by PassportClerk%d\n",SSN,myClerk);
 			printf("Senator%d is being forced to wait by PassportClerk%d\n",SSN, myClerk);
 		}
-		//for (int i = 0; i < randWait; i++) {
+		for (int i = 0; i < randWait; i++) {
 			currentThread->Yield();
-		//}
+		}
 	}
 }	
 
@@ -308,8 +319,8 @@ void talkAppClerk(int& SSN, bool& visitedApp, bool inPrivLine) {
 		printf("Senator%d gives application to ApplicationClerk%d = %d\n",SSN, myClerk, SSN);
 	}
 
-	while (oMonitor.appWaitState[myClerk] != oMonitor.WAITING) {
-	}
+	//while (oMonitor.appWaitState[myClerk] != oMonitor.WAITING) {
+	//}
 
 	oMonitor.appCV[myClerk]->Signal(oMonitor.appLock[myClerk]);
 	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
@@ -359,8 +370,8 @@ void talkPicClerk(int& SSN, bool& visitedPic, bool inPrivLine) {
 		}
 	}
 	oMonitor.picData[myClerk] = SSN;
-	while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
-	}
+	//while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
+	//}
 	oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 	oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 	oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]); // Ready for picture
@@ -378,9 +389,9 @@ void talkPicClerk(int& SSN, bool& visitedPic, bool inPrivLine) {
 			else {
 				printf("Senator%d doesn't like the picture provided by PictureClerk%d\n",SSN,myClerk);
 			}
-			while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
+			//while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
 
-			}
+			//
 			oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 			oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 			oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]);
@@ -401,9 +412,9 @@ void talkPicClerk(int& SSN, bool& visitedPic, bool inPrivLine) {
 			else {
 				printf("Senator%d likes the picture provided by PictureClerk%d\n",SSN,myClerk);
 			}
-			while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
-				printf("PictureClerk%d is not waiting!\n", myClerk);
-			}
+			//while(oMonitor.picWaitState[myClerk] != oMonitor.WAITING) {
+			//	printf("PictureClerk%d is not waiting!\n", myClerk);
+			//}
 			oMonitor.picCV[myClerk]->Signal(oMonitor.picLock[myClerk]);
 			oMonitor.custWaitState[SSN] = oMonitor.WAITING;
 			oMonitor.picCV[myClerk]->Wait(oMonitor.picLock[myClerk]);
@@ -448,7 +459,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 			
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regACLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -456,8 +468,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of ApplicationClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numAppWait--;
 					oMonitor.senatorLock->Release();
 					talkAppClerk(SSN, visitedApp, false);
 					break;
@@ -479,7 +494,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 			
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPicWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regPCLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -487,8 +503,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of PictureClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPicWait--;
 					oMonitor.senatorLock->Release();
 					talkPicClerk(SSN, visitedPic, false);
 					break;
@@ -508,7 +527,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 			
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.privACLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -516,8 +536,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the privileged wait queue of ApplicationClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numAppWait--;
 					oMonitor.senatorLock->Release();
 					
 					talkAppClerk(SSN, visitedApp, true);
@@ -540,7 +563,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPicWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.privPCLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -548,8 +572,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the privileged wait queue of PictureClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPicWait--;
 					oMonitor.senatorLock->Release();
 					talkPicClerk(SSN, visitedPic, true);
 
@@ -573,7 +600,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.privACLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -581,8 +609,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the privileged wait queue of ApplicationClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numAppWait--;
 					oMonitor.senatorLock->Release();
 					talkAppClerk(SSN, visitedApp, true);
 
@@ -605,7 +636,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPicWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.privPCLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -613,8 +645,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the privileged wait queue of PictureClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPicWait--;
 					oMonitor.senatorLock->Release();
 					talkPicClerk(SSN, visitedPic, true);
 					myCash -= 500;
@@ -639,7 +674,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regACLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -647,8 +683,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of ApplicationClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numAppWait--;
 					oMonitor.senatorLock->Release();
 					talkAppClerk(SSN, visitedApp, false);
 					break;
@@ -668,7 +707,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPicWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regPCLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -676,8 +716,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of PictureClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPicWait--;
 					oMonitor.senatorLock->Release();
 					talkPicClerk(SSN, visitedPic, false);
 					break;
@@ -698,7 +741,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regACLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -706,8 +750,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of ApplicationClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numAppWait--;
 					oMonitor.senatorLock->Release();
 					talkAppClerk(SSN, visitedApp, false);
 					break;
@@ -729,7 +776,8 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 				
 				oMonitor.acpcLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numAppWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.acpcLineLock->Acquire();
 					oMonitor.regPCLineLength--;
 					oMonitor.acpcLineLock->Release();
@@ -737,8 +785,11 @@ void lineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of PictureClerk\n", SSN);
+					
+					oMonitor.acpcLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPicWait--;
 					oMonitor.senatorLock->Release();
 					talkPicClerk(SSN, visitedPic, false);
 					break;
@@ -769,7 +820,8 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 
 				oMonitor.passLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPassWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.passLineLock->Acquire();
 					oMonitor.regPassLineLength--;
 					oMonitor.passLineLock->Release();
@@ -777,8 +829,11 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the regular wait queue of PassportClerk\n", SSN);
+					
+					oMonitor.passLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPassWait--;
 					oMonitor.senatorLock->Release();
 					talkPassClerk(SSN, visitedPass, false);
 					break;
@@ -795,7 +850,8 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 				
 				oMonitor.passLineLock->Release();
 				oMonitor.senatorLock->Acquire();
-				if (oMonitor.officeSenator > 0) {
+				if (oMonitor.officeSenator > 0 && oMonitor.numPassWait == 0) {
+					oMonitor.senatorLock->Release();
 					oMonitor.passLineLock->Acquire();
 					oMonitor.privPassLineLength--;
 					oMonitor.passLineLock->Release();
@@ -803,8 +859,11 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 					printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 					checkSenator();
 					printf("Customer%d joins the privileged wait queue of PassportClerk\n", SSN);
+					
+					oMonitor.passLineLock->Acquire();
 				}
 				else {
+					oMonitor.numPassWait--;
 					oMonitor.senatorLock->Release();
 					talkPassClerk(SSN, visitedPass, true);
 					myCash -= 500;
@@ -823,7 +882,8 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 			
 			oMonitor.passLineLock->Release();
 			oMonitor.senatorLock->Acquire();
-			if (oMonitor.officeSenator > 0) {
+			if (oMonitor.officeSenator > 0 && oMonitor.numPassWait == 0) {
+				oMonitor.senatorLock->Release();
 				oMonitor.passLineLock->Acquire();
 				oMonitor.regPassLineLength--;
 				oMonitor.passLineLock->Release();
@@ -831,8 +891,11 @@ void linePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 				printf("Customer%d leaves the Passport Office as a Senator has arrived\n", SSN);
 				checkSenator();
 				printf("Customer%d joins the regular wait queue of PassportClerk\n", SSN);
+				
+				oMonitor.passLineLock->Acquire();
 			}
 			else {
+				oMonitor.numPassWait--;
 				oMonitor.senatorLock->Release();
 				talkPassClerk(SSN, visitedPass, false);
 				break;
@@ -857,34 +920,58 @@ void senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 			&& !visitedApp) {
 		// If both priv and reg lines are empty for appClerk, and haven't
 		// visited him, just enter his regular line.
-			
+			printf("Senator%d is getting into empty reg AC line\n", SSN);
 			oMonitor.regACLineLength++;
 			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkAppClerk(SSN, visitedApp, false);
 		}
 		else if (oMonitor.regPCLineLength == 0 && oMonitor.privPCLineLength == 0 
 				 && !visitedPic) {
 		// If both priv and reg lines are empty for picClerk, and haven't
 		// visited him, just enter his regular line.
-
+			printf("Senator%d is getting into empty reg PC line\n", SSN);
 			oMonitor.regPCLineLength++;
 			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPicClerk(SSN, visitedPic, false);
 		}
 		else if (visitedPic) {
 		// If already visited picClerk, go into privLine for appClerk
-
+			printf("Senator%d is getting into priv AC line\n", SSN);
 			oMonitor.privACLineLength++;
 			oMonitor.privACLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkAppClerk(SSN, visitedApp, true);
 
 			myCash -= 500;
 		}
 		else if (visitedApp) {
 		// If already visited appClerk, go into privLine for picClerk 
-
+			printf("Senator%d is getting into priv PC line\n", SSN);
 			oMonitor.privPCLineLength++;
 			oMonitor.privPCLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPicClerk(SSN, visitedPic, true);
 
 			myCash -= 500;
@@ -892,18 +979,30 @@ void senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 		else if (oMonitor.privACLineLength <= oMonitor.privPCLineLength) {
 		// If appClerk's privLine is less than  or equal to 
 		// picClerk's privLine, then go into appClerk's privLine
-
+			printf("Senator%d is getting into priv AC line\n", SSN);
 			oMonitor.privACLineLength++;
 			oMonitor.privACLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkAppClerk(SSN, visitedApp, true);
 
 			myCash -= 500;
 		}
 		else {
 		// Else picClerk's privLine is shorter, so go in there
-			
+			printf("Senator%d is getting into priv PC line\n", SSN);
 			oMonitor.privPCLineLength++;
 			oMonitor.privPCLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPicClerk(SSN, visitedPic, true);
 
 			myCash -= 500;
@@ -914,32 +1013,56 @@ void senLineAppPicClerk(int& myCash, int& SSN, bool& visitedApp,
 		
 		if (visitedPic) {
 		// If already been to picClerk, go into appClerk's line
-
+			printf("Senator%d is getting into reg AC line\n", SSN);
 			oMonitor.regACLineLength++;
 			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkAppClerk(SSN, visitedApp, false);
 		}
 		else if (visitedApp) {
 		// If already visited appClerk, go into picClerk's line
-
+			printf("Senator%d is getting into reg PC line\n", SSN);
 			oMonitor.regPCLineLength++;
 			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPicClerk(SSN, visitedPic, false);
 		}
 		else if (oMonitor.regACLineLength <= oMonitor.regPCLineLength) {
 		// If appClerk's regLine is shorter or equal to picClerk's
 		// regLine, go into appClerk's line
-			
+			printf("Senator%d is getting into reg AC line\n", SSN);
 			oMonitor.regACLineLength++;
 			oMonitor.regACLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkAppClerk(SSN, visitedApp, false);
 		}
 		else {
 		// Else picClerk's regLine is shorter than appClerk's, so
 		// go there
-			
+			printf("Senator%d is getting into reg PC line\n", SSN);
 			oMonitor.regPCLineLength++;
 			oMonitor.regPCLineCV->Wait(oMonitor.acpcLineLock);
+			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPicClerk(SSN, visitedPic, false);
 		}
 	}
@@ -961,6 +1084,12 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 			
 			oMonitor.regPassLineLength++;
 			oMonitor.regPassLineCV->Wait(oMonitor.passLineLock);
+			oMonitor.passLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPassWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPassClerk(SSN, visitedPass, false);
 		}
 		else {
@@ -968,6 +1097,12 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 			
 			oMonitor.privPassLineLength++;
 			oMonitor.privPassLineCV->Wait(oMonitor.passLineLock);
+			oMonitor.passLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPassWait--;
+			oMonitor.senatorLock->Release();
+			
 			talkPassClerk(SSN, visitedPass, true);
 			myCash -= 500;
 		}
@@ -976,6 +1111,12 @@ void senLinePassClerk(int& myCash, int& SSN, bool& visitedPass) {
 		// Doesn't have enough cash for privileged, just go into regular
 		oMonitor.regPassLineLength++;
 		oMonitor.regPassLineCV->Wait(oMonitor.passLineLock);
+		oMonitor.passLineLock->Release();
+		
+		oMonitor.senatorLock->Acquire();
+		oMonitor.numPassWait--;
+		oMonitor.senatorLock->Release();
+			
 		talkPassClerk(SSN, visitedPass, false);
 	}
 }
@@ -999,17 +1140,37 @@ void AppClerk(int index){
 
 	// Endless loop to perform AppClerk actions
 	while(true){
+		
+		oMonitor.senatorLock->Acquire();
+		oMonitor.customerLock->Acquire();
+		if (oMonitor.officeSenator > 0 && oMonitor.officeCust > 0) {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+			
+			oMonitor.clerkWaitLock->Acquire();
+			oMonitor.clerkWaitCV->Wait(oMonitor.clerkWaitLock);
+			oMonitor.clerkWaitLock->Release();
+		}	
+		else {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+		}
+		
 		oMonitor.acpcLineLock->Acquire();
-
+		
 		// Check for the privileged customer line first
 		// If there are privileged customers, do AppClerk tasks, then received $500
 		if(oMonitor.privACLineLength > 0){
 			oMonitor.privACLineLength--;
-			oMonitor.privACLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in priv line
-			oMonitor.acpcLineLock->Release();
-
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait++;		//Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
+			
 			oMonitor.appLock[myIndex]->Acquire();
 			oMonitor.appState[myIndex] = oMonitor.AVAILABLE;
+			oMonitor.privACLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in priv line
+			oMonitor.acpcLineLock->Release();
 			oMonitor.appWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.appCV[myIndex]->Wait(oMonitor.appLock[myIndex]);	// Waits for the next customer
 			oMonitor.appWaitState[myIndex] = oMonitor.NOTWAITING;
@@ -1040,9 +1201,9 @@ void AppClerk(int index){
 
 			// tell passport ssn
 
-			//for(int i = 0; i < 20; i++){
+			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
-		    //}
+		    }
 			if (cType == oMonitor.CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
@@ -1061,9 +1222,9 @@ void AppClerk(int index){
 
 			oMonitor.appMoneyLock->Release();
 
-			while (oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-
-			}
+			//while (oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+				
+			//}
 			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 		}
@@ -1071,11 +1232,15 @@ void AppClerk(int index){
 		// If there are regular customers, do AppClerk tasks
 		else if(oMonitor.regACLineLength > 0){
 			oMonitor.regACLineLength--;
-			oMonitor.regACLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in priv line
-			oMonitor.acpcLineLock->Release();
-
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numAppWait++;		//Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
+			
 			oMonitor.appLock[myIndex]->Acquire();
 			oMonitor.appState[myIndex] = oMonitor.AVAILABLE;
+			oMonitor.regACLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in priv line
+			oMonitor.acpcLineLock->Release();
 			oMonitor.appWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.appCV[myIndex]->Wait(oMonitor.appLock[myIndex]);	// Waits for the next customer
 			oMonitor.appWaitState[myIndex] = oMonitor.NOTWAITING;
@@ -1104,18 +1269,18 @@ void AppClerk(int index){
 			}
 
 			/////////////////////////////The Yielding makes things weird for some reason
-			//for(int i = 0; i < 20; i++){
+			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
-			//}
+			}
 			if (cType == oMonitor.CUSTOMER) {
 				printf("ApplicationClerk%d informs Customer%d that the application has been filed\n", myIndex, mySSN);
 			} else {
 				printf("ApplicationClerk%d informs Senator%d that the application has been filed\n", myIndex, mySSN);
 			}
 
-			while (oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+			//while (oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
 
-			}
+			//}
 			oMonitor.appCV[myIndex]->Signal(oMonitor.appLock[myIndex]); // signal customer awake
 			oMonitor.appLock[myIndex]->Release();     // release clerk lock
 		}
@@ -1158,6 +1323,21 @@ void PicClerk(int index){
 
 	// Endless loop for PicClerk actions
 	while(true){
+		oMonitor.senatorLock->Acquire();
+		oMonitor.customerLock->Acquire();
+		if (oMonitor.officeSenator > 0 && oMonitor.officeCust > 0) {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+			
+			oMonitor.clerkWaitLock->Acquire();
+			oMonitor.clerkWaitCV->Wait(oMonitor.clerkWaitLock);
+			oMonitor.clerkWaitLock->Release();
+		}	
+		else {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+		}
+		
 		oMonitor.acpcLineLock->Acquire();
 
 		// Check for the privileged customer line first
@@ -1165,11 +1345,16 @@ void PicClerk(int index){
 		printf("PicClerk %d is checking the lines\n", myIndex);
 		if(oMonitor.privPCLineLength > 0){
 			oMonitor.privPCLineLength--;
-			oMonitor.privPCLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in line
-			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait++;		//Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
 
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = oMonitor.AVAILABLE;
+			oMonitor.privPCLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in line
+			oMonitor.acpcLineLock->Release();
+			
 			oMonitor.picWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Waits for the next customer
 			oMonitor.picWaitState[myIndex] = oMonitor.NOTWAITING;
@@ -1205,12 +1390,12 @@ void PicClerk(int index){
 				// picCV->Signal then picCV->Wait to
 				// show customer picture
 			while(oMonitor.picDataBool[myIndex] == false){
-				printf("PicClerk%d looping\n",myIndex);
+				//printf("PicClerk%d looping\n",myIndex);
 				//for(int i = 0; i < 4; i++){
 					currentThread->Yield();
 				//}
-					while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-					}
+					//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+					//}
 				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	//
 				oMonitor.picWaitState[myIndex] = oMonitor.WAITING;
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
@@ -1232,9 +1417,9 @@ void PicClerk(int index){
 			// file picture using
 			// current thread yield
 			/////////////////////////////Weird yield
-			//for(int i = 0; i < 20; i++){
+			for(int i = 0; i < 20; i++){
 				currentThread->Yield();
-			//}
+			}
 			if (cType == oMonitor.CUSTOMER) {
 				printf("Picture%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
 			} else {
@@ -1254,9 +1439,9 @@ void PicClerk(int index){
 			oMonitor.picMoneyLock->Release();
 
 			oMonitor.picDataBool[myIndex] = false;
-			while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+			//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
 					
-			}
+			//}
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
 			oMonitor.picLock[myIndex]->Release();// release clerk lock
 		}
@@ -1264,12 +1449,18 @@ void PicClerk(int index){
 		// If there are regular customers, do PicClerk tasks
 		else if(oMonitor.regPCLineLength > 0){
 			oMonitor.regPCLineLength--;
-			oMonitor.regPCLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in line
-			oMonitor.acpcLineLock->Release();
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPicWait++;		//Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
+			
 
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = oMonitor.AVAILABLE;	// Sets itself to AVAILABLE	
 			oMonitor.picWaitState[myIndex] = oMonitor.WAITING;
+			oMonitor.regPCLineCV->Signal(oMonitor.acpcLineLock);		// Signals the next customer in line
+			oMonitor.acpcLineLock->Release();
+			
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Waits for the next customer
 			oMonitor.picWaitState[myIndex] = oMonitor.NOTWAITING;
 
@@ -1310,9 +1501,9 @@ void PicClerk(int index){
 				//for(int i = 0; i < 4; i++){
 					currentThread->Yield();
 				//}
-					while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-						printf("Customer%d is not waiting!\n", mySSN);
-					}
+					//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+						//rintf("Customer%d is not waiting!\n", mySSN);
+					//}
 				oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]);	
 				oMonitor.picWaitState[myIndex] = oMonitor.WAITING;
 				oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);	// Shows the customer the picture
@@ -1334,9 +1525,9 @@ void PicClerk(int index){
 			// file picture using
 			// current thread yield
 //////////////////////////////////Weird yield
-			//for(int i = 0; i < 20; i++){
-			currentThread->Yield();
-			//}
+			for(int i = 0; i < 20; i++){
+				currentThread->Yield();
+			}
 
 			if (cType == oMonitor.CUSTOMER) {
 				printf("PictureClerk%d informs Customer%d that the procedure has been completed\n", myIndex, mySSN);
@@ -1347,9 +1538,9 @@ void PicClerk(int index){
 
 			oMonitor.picDataBool[myIndex] = false;
 			// signal customer awake
-			while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-						printf("Customer%d is not waiting!\n", mySSN);
-			}
+			//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+			//			printf("Customer%d is not waiting!\n", mySSN);
+			//}
 			oMonitor.picCV[myIndex]->Signal(oMonitor.picLock[myIndex]); // signal customer awake
 			oMonitor.picLock[myIndex]->Release();// release clerk lock
 		}
@@ -1359,7 +1550,6 @@ void PicClerk(int index){
 			oMonitor.picLock[myIndex]->Acquire();
 			oMonitor.picState[myIndex] = oMonitor.BREAK;
 			printf("PictureClerk%d is going on break\n",myIndex);
-			oMonitor.picLock[myIndex]->Release();
 			oMonitor.picWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.picCV[myIndex]->Wait(oMonitor.picLock[myIndex]);
 			oMonitor.picWaitState[myIndex] = oMonitor.NOTWAITING;
@@ -1385,16 +1575,17 @@ void Manager(){
 	int totalMoney;
 
 	while(true){
-		//printf("Entering Manager loop\n");
 		// Checks for any senators present
+		//printf("Customers in waitRoom: %d\n", oMonitor.waitCust);
+		//printf("Senators in office: %d\n", oMonitor.officeSenator);
 		oMonitor.senatorLock->Acquire();
-		oMonitor.customerLock->Acquire();
-		if (oMonitor.officeSenator > 0 && oMonitor.officeCust > 0) {
+		if (oMonitor.officeSenator > 0) {
 		// If there are senators present and customers in office, then 
 		// wake up all customers and tell them to go to the wait room. 
 		// Wait until all customers are out of the passport office 
 		// before proceeding.
 			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Acquire();
 			while (oMonitor.officeCust > 0) {
 			// Wake up all customers waiting in every line
 				oMonitor.customerLock->Release();
@@ -1418,6 +1609,7 @@ void Manager(){
 				oMonitor.cashLineCV->Broadcast(oMonitor.cashLineLock);
 				oMonitor.cashLineLock->Release();
 				
+				currentThread->Yield();
 				oMonitor.customerLock->Acquire();
 			}
 			oMonitor.customerLock->Release();
@@ -1426,11 +1618,16 @@ void Manager(){
 			oMonitor.senWaitLock->Acquire();
 			oMonitor.senWaitCV->Broadcast(oMonitor.senWaitLock);
 			oMonitor.senWaitLock->Release();
+			
+			oMonitor.clerkWaitLock->Acquire();
+			oMonitor.clerkWaitCV->Broadcast(oMonitor.clerkWaitLock);
+			oMonitor.clerkWaitLock->Release();
 		}
 		else if (oMonitor.officeSenator == 0 && oMonitor.waitCust > 0) {
 		// If there are no senators, but customers in the waiting room.
 		// Wake up all waiting room customers
 			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Acquire();
 			while (oMonitor.waitCust > 0) {
 				oMonitor.customerLock->Release();
 				
@@ -1438,13 +1635,13 @@ void Manager(){
 				oMonitor.custWaitCV->Broadcast(oMonitor.custWaitLock);
 				oMonitor.custWaitLock->Release();
 				
+				currentThread->Yield();
 				oMonitor.customerLock->Acquire();
 			}
 			oMonitor.customerLock->Release();
 		}
 		else {
 		//Else, just proceed
-			oMonitor.customerLock->Release();
 			oMonitor.senatorLock->Release();
 		}					
 		
@@ -1468,18 +1665,14 @@ void Manager(){
 		}
 		else if(oMonitor.privACLineLength >= 1 || oMonitor.regACLineLength >= 1){
 			oMonitor.acpcLineLock->Release();
-			//printf("");
 			for(int i = 0; i < oMonitor.numAppClerks; i++){
-				oMonitor.appLock[i]->Acquire();
-				if(oMonitor.appState[i] != oMonitor.BREAK){
-					oMonitor.appLock[i]->Release();
-					break;
-				}
-				else {
+				if(oMonitor.appState[i] == oMonitor.BREAK){
+					oMonitor.appLock[i]->Acquire();
 					oMonitor.appCV[i]->Signal(oMonitor.appLock[i]);
 					oMonitor.appState[i] = oMonitor.BUSY;
 					oMonitor.appLock[i]->Release();
 					printf("Manager calls back an ApplicationClerk from break\n");
+					break;
 				}
 			}						
 		}
@@ -1505,19 +1698,13 @@ void Manager(){
 		else if(oMonitor.privPCLineLength >= 1 || oMonitor.regPCLineLength >= 1){
 			oMonitor.acpcLineLock->Release();
 			for(int i = 0; i < oMonitor.numPicClerks; i++){
-				oMonitor.picLock[i]->Acquire();
-				if(oMonitor.picState[i] != oMonitor.BREAK){
-					oMonitor.picLock[i]->Release();
-					break;
-				}
-				else {
-					while(oMonitor.picWaitState[i] = oMonitor.NOTWAITING){
-
-					}
+				if(oMonitor.picState[i] == oMonitor.BREAK){
+					oMonitor.picLock[i]->Acquire();
 					oMonitor.picCV[i]->Signal(oMonitor.picLock[i]);
 					oMonitor.picState[i] = oMonitor.BUSY;
 					oMonitor.picLock[i]->Release();
 					printf("Manager calls back a PictureClerk from break\n");
+					break;
 				}
 			}						
 		}
@@ -1566,16 +1753,16 @@ void Manager(){
 					oMonitor.cashLock[i]->Acquire();
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
 					oMonitor.cashState[i] = oMonitor.BUSY;
-				oMonitor.cashLock[i]->Release();
+					oMonitor.cashLock[i]->Release();
 					printf("Manager calls back a Cashier from break\n");
 				}
-			}						
+			}							
 		}
 		else if(oMonitor.cashLineLength >= 1){
 			oMonitor.cashLineLock->Release();
 			for(int i = 0; i < 	oMonitor.numCashiers; i++){
-				oMonitor.cashLock[i]->Acquire();
 				if(oMonitor.cashState[i] == oMonitor.BREAK){
+					oMonitor.cashLock[i]->Acquire();
 					oMonitor.cashCV[i]->Signal(oMonitor.cashLock[i]);
 					oMonitor.cashState[i] = oMonitor.BUSY;
 					oMonitor.cashLock[i]->Release();
@@ -1591,6 +1778,8 @@ void Manager(){
 		if(oMonitor.officeCust + oMonitor.officeSenator + oMonitor.waitCust == 0){
 		// Print out money periodically (must figure out Timer stuff)
 		
+		printf("\n");
+		printf("============================================================\n");
 		oMonitor.appMoneyLock->Acquire();
 		printf("Total money received from ApplicationClerk = %d\n",oMonitor.appMoney);
 		totalMoney += oMonitor.appMoney;
@@ -1612,8 +1801,15 @@ void Manager(){
 		oMonitor.cashMoneyLock->Release();
 
 		printf("Total money made by office = %d\n",totalMoney);
+		printf("============================================================\n");
 		
+		printf("No more customers in passport office, ending simulation.\n");
+		printf("\n");
+		
+		break;
 		}
+		
+		currentThread->Yield();
 	}
 
 }
@@ -1636,11 +1832,29 @@ void PassClerk(int index) {
 	oMonitor.passLock[myIndex]->Release();
 
 	while (true) {
+		oMonitor.senatorLock->Acquire();
+		oMonitor.customerLock->Acquire();
+		if (oMonitor.officeSenator > 0 && oMonitor.officeCust > 0) {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+			
+			oMonitor.clerkWaitLock->Acquire();
+			oMonitor.clerkWaitCV->Wait(oMonitor.clerkWaitLock);
+			oMonitor.clerkWaitLock->Release();
+		}	
+		else {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+		}
 		// Check for customers in line
 		oMonitor.passLineLock->Acquire();
 		if (oMonitor.privPassLineLength > 0) {
 			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
 			oMonitor.privPassLineLength --;
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPassWait++; //Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
 			
 			oMonitor.passLock[myIndex]->Acquire();
 			oMonitor.passState[myIndex] = oMonitor.AVAILABLE;
@@ -1675,7 +1889,7 @@ void PassClerk(int index) {
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				//for (int i = 0; i < 500; i++) {
-					currentThread->Yield();
+					//currentThread->Yield();
 				//}
 
 				oMonitor.passDataBool[myIndex] = false;
@@ -1715,9 +1929,9 @@ void PassClerk(int index) {
 
 			//if customer wasn't an idiot, process their passport
 			if (doPassport) {
-				//for (int i = 0; i < 300; i++) {
+				for (int i = 0; i < 20; i++) {
 					currentThread->Yield();
-				//}
+				}
 				// file dat passport
 				oMonitor.fileLock[mySSN]->Acquire();
 				oMonitor.fileState[mySSN] = oMonitor.PASSDONE;
@@ -1731,6 +1945,10 @@ void PassClerk(int index) {
 		} else if (oMonitor.regPassLineLength > 0) {
 			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
 			oMonitor.regPassLineLength --;
+			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numPassWait++; //Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
 			
 			oMonitor.passLock[myIndex]->Acquire();
 			oMonitor.passState[myIndex] = oMonitor.AVAILABLE;
@@ -1761,7 +1979,7 @@ void PassClerk(int index) {
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				//for (int i = 0; i < 500; i++) {
-					currentThread->Yield();
+					//currentThread->Yield();
 				//}
 
 				oMonitor.passDataBool[myIndex] = false;
@@ -1782,17 +2000,17 @@ void PassClerk(int index) {
 			}
 			
 			oMonitor.fileLock[mySSN]->Release();
-			while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-			}
+			//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+			//}
 
 			oMonitor.passCV[myIndex]->Signal(oMonitor.passLock[myIndex]);	// signal customer awake
 			oMonitor.passLock[myIndex]->Release();							// release clerk lock
 
 			//if customer wasn't an idiot, process their passport
 			if (doPassport) {
-				//for (int i = 0; i < 20; i++) {
+				for (int i = 0; i < 20; i++) {
 					currentThread->Yield();
-				//}
+				}
 				// file dat passport
 				oMonitor.fileLock[mySSN]->Acquire();
 				oMonitor.fileState[mySSN] = oMonitor.PASSDONE;
@@ -1832,22 +2050,42 @@ void Cashier(int index) {
 
 	// set own state to busy
 	oMonitor.cashLock[myIndex]->Acquire();
-	printf("Customer%d is now Availiable\n", myIndex);
+	//printf("Cashier%d is now Availiable\n", myIndex);
 	oMonitor.cashState[myIndex] = oMonitor.BUSY;
 	oMonitor.cashLock[index]->Release();
 
 	while (true) {
+		oMonitor.senatorLock->Acquire();
+		oMonitor.customerLock->Acquire();
+		if (oMonitor.officeSenator > 0 && oMonitor.officeCust > 0) {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+			
+			oMonitor.clerkWaitLock->Acquire();
+			oMonitor.clerkWaitCV->Wait(oMonitor.clerkWaitLock);
+			oMonitor.clerkWaitLock->Release();
+		}	
+		else {
+			oMonitor.senatorLock->Release();
+			oMonitor.customerLock->Release();
+		}
 		// Check for customers in line
 		oMonitor.cashLineLock->Acquire();
+		printf("Cashier%d is looking at his lines.\n", myIndex);
 		if (oMonitor.cashLineLength > 0) {
 			// Decrement line length, set state to AVAIL, signal 1st customer and wait for them
 			oMonitor.cashLineLength --;
 			
+			oMonitor.senatorLock->Acquire();
+			oMonitor.numCashWait++; //Shows customer that one clerk is waiting
+			oMonitor.senatorLock->Release();
+			
 			oMonitor.cashLock[myIndex]->Acquire();
 			oMonitor.cashState[myIndex] = oMonitor.AVAILABLE;
-
-			oMonitor.cashLineCV->Signal(oMonitor.cashLineLock);		// signal the customer
 			
+			oMonitor.cashLineCV->Signal(oMonitor.cashLineLock);		// signal the customer
+			oMonitor.cashLineLock->Release();
+			printf("Cashier%d is waiting for customer signal\n", myIndex);
 			oMonitor.cashWaitState[myIndex] = oMonitor.WAITING;
 			oMonitor.cashCV[myIndex]->Wait(oMonitor.cashLock[myIndex]);	// wait for customer to signal me
 			oMonitor.cashWaitState[myIndex] = oMonitor.NOTWAITING;
@@ -1860,12 +2098,13 @@ void Cashier(int index) {
 			} else {
 				cType = OfficeMonitor::SENATOR;
 			}
+	
 			if (oMonitor.fileState[mySSN] == oMonitor.PASSDONE) {
 				// customer wasn't a dumbass, DO WORK
-				oMonitor.passDataBool[myIndex] = true;
-				//for (int i = 0; i < 50; i++) {
-				currentThread->Yield();
-				//}
+				oMonitor.cashDataBool[myIndex] = true;
+				for (int i = 0; i < 50; i++) {
+					currentThread->Yield();
+				}
 				oMonitor.fileState[mySSN] = oMonitor.ALLDONE;
 
 				// add $100 to passClerk money amount for passport fee
@@ -1885,7 +2124,7 @@ void Cashier(int index) {
 			} else {
 				// customer WAS a dumbass.... MAKE THEM PAY
 				
-				oMonitor.passDataBool[myIndex] = false;
+				oMonitor.cashDataBool[myIndex] = false;
 				if (cType == OfficeMonitor::CUSTOMER) {
 					printf("Cashier%d gives invalid certification to Customer%d\n", myIndex, mySSN);
 					printf("Cashier%d punishes Customer%d to wait\n", myIndex, mySSN);
@@ -1895,10 +2134,12 @@ void Cashier(int index) {
 				}
 			}
 			oMonitor.fileLock[mySSN]->Release();
-			while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
-			}
+			//while(oMonitor.custWaitState[mySSN] != oMonitor.WAITING) {
+			//}
 			oMonitor.cashCV[myIndex]->Signal(oMonitor.cashLock[myIndex]);	// signal customer awake
 			oMonitor.cashLock[myIndex]->Release();							// release clerk lock
+			oMonitor.cashState[myIndex] = oMonitor.BUSY;
+			currentThread->Yield();
 		} else {
 			// No one in line... Sit back and take a break
 			printf("Cashier%d is going on break\n", myIndex);
@@ -1930,7 +2171,7 @@ void Customer(int index) {
 
 	//Data for being a stupid customer and visiting passport before app/pic clerks
 	int chanceToBeStupid = rand() % 2; // 0 or 1
-	bool beenStupid = true; // Has only one chance to be stupid
+	bool beenStupid = false; // Has only one chance to be stupid
 	
 	// Does not call checkSenator() function because customer is not inside
 	// the office yet
@@ -1965,7 +2206,7 @@ void Customer(int index) {
 	while(!visitedApp || !visitedPic || !visitedPass || !visitedCash) {	
 	//to keep thread running, while any of the visited bool flags are false
 		
-		if (chanceToBeStupid == 1 && !beenStupid) {
+		if (chanceToBeStupid == 1 || !beenStupid) {
 			printf("Customer%d Being stupid\n", SSN);
 			//checkSenator();
 			linePassClerk(myCash, SSN, visitedPass);
@@ -1976,9 +2217,10 @@ void Customer(int index) {
 		}
 
 		while (!visitedApp || !visitedPic) {
-			printf("Customer%d Entering app/pic loop\n", SSN);
+			//printf("Customer%d Entering app/pic loop\n", SSN);
 			oMonitor.senatorLock->Acquire();
 			if (oMonitor.officeSenator > 0) {
+				oMonitor.senatorLock->Release();
 				checkSenator();
 			}
 			else {
@@ -1990,6 +2232,7 @@ void Customer(int index) {
 		while (!visitedPass) {
 			oMonitor.senatorLock->Acquire();
 			if (oMonitor.officeSenator > 0) {
+				oMonitor.senatorLock->Release();
 				checkSenator();
 			}
 			else {
@@ -2001,6 +2244,7 @@ void Customer(int index) {
 		while (!visitedCash) {
 			oMonitor.senatorLock->Acquire();
 			if (oMonitor.officeSenator > 0) {
+				oMonitor.senatorLock->Release();
 				checkSenator();
 			}
 			else {
@@ -2013,7 +2257,7 @@ void Customer(int index) {
 	// Completely finished, leave the office
 	oMonitor.customerLock->Acquire();
 	oMonitor.officeCust--;
-	printf("Customer%d leaves the passport office",SSN);
+	printf("Customer%d leaves the passport office\n",SSN);
 	oMonitor.customerLock->Release();
 }
 
@@ -2030,9 +2274,10 @@ void Senator(int index) {
 
 	//Data for being a stupid customer and visiting passport before app/pic clerks
 	int chanceToBeStupid = rand() % 2; // 0 or 1
-	bool beenStupid = false; // Has only one chance to be stupid
+	bool beenStupid = true; // Has only one chance to be stupid
 	
 	oMonitor.senatorLock->Acquire();
+	printf("Senator%d arrives at the Passport Office.\n", SSN);
 	oMonitor.officeSenator++;
 	oMonitor.senatorLock->Release();
 	oMonitor.customerLock->Acquire();
@@ -2051,7 +2296,7 @@ void Senator(int index) {
 	//to keep thread running, while any of the visited bool flags are false
 
 		if (chanceToBeStupid == 1 && !beenStupid) {
-
+			
 			senLinePassClerk(myCash, SSN, visitedPass);
 			beenStupid = true;
 		}
@@ -2059,8 +2304,7 @@ void Senator(int index) {
 			beenStupid = true;
 		}
 
-		while (!visitedApp && !visitedPic) {
-
+		while (!visitedApp || !visitedPic) {
 			senLineAppPicClerk(myCash, SSN, visitedApp, visitedPic);
 		}
 
@@ -2078,7 +2322,7 @@ void Senator(int index) {
 	// Completely finished, leave the office
 	oMonitor.senatorLock->Acquire();
 	oMonitor.officeSenator--;
-	printf("Senator%d leaves the passport office",SSN);
+	printf("Senator%d leaves the passport office\n",SSN);
 	oMonitor.senatorLock->Release();
 }
 
@@ -2157,6 +2401,7 @@ void PassportOffice() {
 
 	addCustomer(20);
 	
+	addSenator(3);
 	for(int i = 0; i < oMonitor.numAppClerks; i++) {
 		char index[50];
 		sprintf(index, "%d", i);
@@ -2195,10 +2440,12 @@ void PassportOffice() {
 		t = new Thread(name);
 		t->Fork((VoidFunctionPtr) Cashier, i);
 		currentThread->Yield();
+		
 	}
 	
 	t = new Thread("Manager");
 	t->Fork((VoidFunctionPtr) Manager, 0);
+	
 }
 void PassportOffice2() {
 
@@ -2207,6 +2454,7 @@ void PassportOffice2() {
 	Thread *t;
 
 	addCustomer(30);
+	
 	
 	for(int i = 0; i < oMonitor.numAppClerks; i++) {
 		char index[50];
@@ -2309,6 +2557,8 @@ void PassportOffice4() {
 	Thread *t;
 
 	addCustomer(1);
+	
+	addSenator(3);
 	
 	for(int i = 0; i < oMonitor.numAppClerks; i++) {
 		char index[50];
