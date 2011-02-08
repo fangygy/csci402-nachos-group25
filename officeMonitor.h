@@ -23,7 +23,7 @@ public:
 	int numAppClerks, numPicClerks, numPassClerks, numCashiers;
 
 	// Amount of each customer/senator in total (used for instantiation)
-	int totalCustSen;
+	int totalCustSen, numAppWait, numPicWait, numPassWait, numCashWait;
 
 	// Amount of each customer/senator currently in office or waiting room
 	int officeCust, waitCust, officeSenator;
@@ -35,6 +35,8 @@ public:
 	// Waiting room locks/CVs
 	Lock *custWaitLock;
 	Lock *senWaitLock;
+	Lock *clerkWaitLock;
+	Condition *clerkWaitCV;
 	Condition *custWaitCV;
 	Condition *senWaitCV;
 

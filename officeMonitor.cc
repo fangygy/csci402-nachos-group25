@@ -24,14 +24,21 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	waitCust = 0;
 	officeSenator = 0;
 	
+	numAppWait = 0;
+	numPicWait = 0;
+	numPassWait = 0;
+	numCashWait = 0;
+	
 	customerLock = new Lock("customerLock");
 	senatorLock = new Lock("senatorLock");
 	
 	custWaitLock = new Lock("custWaitLock");
 	senWaitLock = new Lock("senWaitLock");
+	clerkWaitLock = new Lock("clerkWaitLock");
 	
 	custWaitCV = new Condition("custWaitCV");
 	senWaitCV = new Condition("senWaitCV");
+	clerkWaitCV = new Condition("clerkWaitCV");
 	
 	acpcLineLock = new Lock("acpcLineLock");
 	passLineLock = new Lock("passLineLock");
