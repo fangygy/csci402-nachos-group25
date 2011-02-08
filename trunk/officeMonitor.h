@@ -103,13 +103,6 @@ public:
 	enum custType {CUSTOMER, SENATOR};
 	custType fileType[MAX_CUSTOMERS];
 
-	// Wait States
-	enum waitState{ WAITING, NOTWAITING };
-	waitState custWaitState[MAX_CLERKS];
-	waitState appWaitState[MAX_CLERKS];
-	waitState picWaitState[MAX_CLERKS];
-	waitState passWaitState[MAX_CLERKS];
-	waitState cashWaitState[MAX_CLERKS];
 };
 
 #endif // OFFICEMONITOR_H

@@ -62,7 +62,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		appCV[i] = new Condition(cvName);
 		appData[i] = 0;
 		appState[i] = BUSY;
-		appWaitState[i] = NOTWAITING;
 	}
 
 	if(numPicClerks > 10) {
@@ -76,7 +75,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		picData[i] = 0;
 		picDataBool[i] = false;
 		picState[i] = BUSY;
-		picWaitState[i] = NOTWAITING;
 	}
 
 	if(numPassClerks > 10) {
@@ -90,7 +88,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		passData[i] = 0;
 		passDataBool[i] = false;
 		passState[i] = BUSY;
-		passWaitState[i] = NOTWAITING;
 	}
 
 	if(numCashiers > 10) {
@@ -104,7 +101,6 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 		cashData[i] = 0;
 		cashDataBool[i] = false;
 		cashState[i] = BUSY;
-		cashWaitState[i] = NOTWAITING;
 	}
 
  	appMoney = 0;
