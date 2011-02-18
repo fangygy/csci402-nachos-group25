@@ -173,7 +173,7 @@ Broadcast:
    .globl CreateLock
    .ent  CreateLock
 CreateLock:
-   addiu $2,$0,CreateLock
+   addiu $2,$0,SC_CreateLock
    syscall
    j     $31
    .end CreateLock
@@ -181,7 +181,7 @@ CreateLock:
    .globl DestroyLock
    .ent  DestroyLock
 DestroyLock:
-   addiu $2,$0,DestroyLock
+   addiu $2,$0,SC_DestroyLock
    syscall
    j     $31
    .end DestroyLock
@@ -189,7 +189,7 @@ DestroyLock:
    .globl CreateCondition
    .ent  CreateCondition
 CreateCondition:
-   addiu $2,$0,CreateCondition
+   addiu $2,$0,SC_CreateCondition
    syscall
    j     $31
    .end CreateCondition
@@ -197,7 +197,7 @@ CreateCondition:
    .globl DestroyCondition
    .ent  DestroyCondition
 DestroyCondition:
-   addiu $2,$0,DestroyCondition
+   addiu $2,$0,SC_DestroyCondition
    syscall
    j     $31
    .end DestroyCondition
