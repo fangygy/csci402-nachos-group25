@@ -37,13 +37,13 @@ struct KernelLock {
 	Lock* lock;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
-}
+};
 
 struct KernelCondition {
 	Condition* condition;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
-}
+};
 
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
@@ -248,6 +248,9 @@ void Close_Syscall(int fd) {
     } else {
       printf("%s","Tried to close an unopen file\n");
     }
+}
+
+KernelLock CreateLock() {
 }
 
 void ExceptionHandler(ExceptionType which) {
