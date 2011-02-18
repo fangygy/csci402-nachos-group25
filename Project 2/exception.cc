@@ -33,18 +33,20 @@ using namespace std;
 #define MAX_LOCKS 100;
 #define MAX_CONDITIONS 100;
 
-KernelLock locks[MAX_LOCKS];
-KernelCondition conditions[MAX_CONDITIONS];
-
 struct KernelLock {
 	Lock* lock;
 	AddrSpace* addrSpace;
+	bool isToBeDeleted;
 }
 
 struct KernelCondition {
 	Condition* condition;
 	AddrSpace* addrSpace;
+	bool isToBeDeleted;
 }
+
+KernelLock locks[MAX_LOCKS];
+KernelCondition conditions[MAX_CONDITIONS];
 
 int copyin(unsigned int vaddr, int len, char *buf) {
     // Copy len bytes from the current thread's virtual address vaddr.
@@ -283,6 +285,58 @@ void ExceptionHandler(ExceptionType which) {
 	    case SC_Close:
 		DEBUG('a', "Close syscall.\n");
 		Close_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_Yield:
+		DEBUG('a', "Yield syscall.\n");
+		currentThread->Yield();
+		break;
+		case SC_Exit:
+		DEBUG('a', "Exit syscall.\n");
+		
+		break;
+		case SC_Exec:
+		DEBUG('a', "Exec syscall.\n");
+		
+		break;
+		case SC_Fork:
+		DEBUG('a', "Fork syscall.\n");
+		
+		break;
+		case SC_Acquire:
+		DEBUG('a', "Acquire syscall.\n");
+		
+		break;
+		case SC_Release:
+		DEBUG('a', "Release syscall.\n");
+		
+		break;
+		case SC_Wait:
+		DEBUG('a', "Wait syscall.\n");
+		
+		break;
+		case SC_Signal:
+		DEBUG('a', "Signal syscall.\n");
+		
+		break;
+		case SC_Broadcast:
+		DEBUG('a', "Broadcast syscall.\n");
+		
+		break;
+		case SC_CreateLock:
+		DEBUG('a', "Create lock syscall.\n");
+		
+		break;
+		case SC_DestroyLock:
+		DEBUG('a', "Destroy lock syscall.\n");
+		
+		break;
+		case SC_CreateCondition:
+		DEBUG('a', "Create condition syscall.\n");
+		
+		break;
+		case SC_DestroyCondition:
+		DEBUG('a', "Destroy condition syscall.\n");
+		
 		break;
 	}
 
