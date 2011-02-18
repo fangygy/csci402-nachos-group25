@@ -131,10 +131,33 @@ void Fork(void (*func)());
  */
 void Yield();		
 
-void Wait();
+/* 
+ * Lock functions: Acquire and Release.
+ */
+
+/* Acquires the lock
+ */
 void Acquire();
+
+/* Releases the lock
+ */
 void Release();
+
+/* 
+ * Condition Variable functions: Wait, Signal and Broadcast
+ */
+ 
+/* Waits on the condition variable to signal it awake.
+ */
+void Wait();
+
+ 
+/* Signals the next thread waiting on the condition variable awake.
+ */
 void Signal();
+
+/* Wakes up all sleeping threads waiting on the condition variable.
+ */
 void Broadcast();
 
 #endif /* IN_ASM */
