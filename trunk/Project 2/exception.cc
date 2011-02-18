@@ -30,8 +30,8 @@
 
 using namespace std;
 
-#define MAX_LOCKS 100;
-#define MAX_CONDITIONS 100;
+#define MAX_LOCKS 100
+#define MAX_CONDITIONS 100
 
 struct KernelLock {
 	Lock* lock;
