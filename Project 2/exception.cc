@@ -250,7 +250,19 @@ void Close_Syscall(int fd) {
     }
 }
 
-KernelLock CreateLock() {
+int CreateLock(char* name, int length) {
+	if (sizeof(locks) >= MAX_LOCKS) {
+		// print error msg?
+		return -1;
+	}
+	int index = sizeof(locks);
+	KernelLock l;
+	l.lock = Lock(name);
+	l.addrSpace = currentThread->space;		// double-check
+	l.isToBeDeleted = false;
+	
+	locks[i] = l;
+	return (index);
 }
 
 void ExceptionHandler(ExceptionType which) {
