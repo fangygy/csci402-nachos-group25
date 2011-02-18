@@ -24,10 +24,27 @@
 #include "copyright.h"
 #include "system.h"
 #include "syscall.h"
+#include "synch.h"
 #include <stdio.h>
 #include <iostream>
 
 using namespace std;
+
+#define MAX_LOCKS 100;
+#define MAX_CONDITIONS 100;
+
+KernelLock locks[MAX_LOCKS];
+KernelCondition conditions[MAX_CONDITIONS];
+
+struct KernelLock {
+	Lock* lock;
+	AddrSpace* addrSpace;
+}
+
+struct KernelCondition {
+	Condition* condition;
+	AddrSpace* addrSpace;
+}
 
 int copyin(unsigned int vaddr, int len, char *buf) {
     // Copy len bytes from the current thread's virtual address vaddr.
