@@ -2288,6 +2288,14 @@ void addSenator(int numS) {
 
 void PassportOffice() {
 
+	printf("Number of Customers = %d\n", oMonitor.officeCust);
+	printf("Number of Senators = %d\n", oMonitor.officeSenator);
+	printf("Number of ApplicationClerks = %d\n", oMonitor.numAppClerks);
+	printf("Number of PictureClerks = %d\n", oMonitor.numPicClerks);
+	printf("Number of PassportClerks = %d\n", oMonitor.numPassClerks);
+	printf("Number of Cashiers = %d\n", oMonitor.numCashiers);
+
+
 	//srand(time(0));		//Initializing random number generator for seeding random values
 
 	Thread *t;
@@ -2342,6 +2350,12 @@ void PassportOffice() {
 }
 void PassportOffice2() {
 
+	printf("Number of Customers = %d\n", oMonitor.officeCust);
+	printf("Number of Senators = %d\n", oMonitor.officeSenator);
+	printf("Number of ApplicationClerks = %d\n", oMonitor.numAppClerks);
+	printf("Number of PictureClerks = %d\n", oMonitor.numPicClerks);
+	printf("Number of PassportClerks = %d\n", oMonitor.numPassClerks);
+	printf("Number of Cashiers = %d\n", oMonitor.numCashiers);
 	//srand(time(0));		//Initializing random number generator for seeding random values
 
 	Thread *t;
@@ -2394,6 +2408,12 @@ void PassportOffice2() {
 }
 void PassportOffice3() {
 
+	printf("Number of Customers = %d\n", oMonitor.officeCust);
+	printf("Number of Senators = %d\n", oMonitor.officeSenator);
+	printf("Number of ApplicationClerks = %d\n", oMonitor.numAppClerks);
+	printf("Number of PictureClerks = %d\n", oMonitor.numPicClerks);
+	printf("Number of PassportClerks = %d\n", oMonitor.numPassClerks);
+	printf("Number of Cashiers = %d\n", oMonitor.numCashiers);
 	//srand(time(0));		//Initializing random number generator for seeding random values
 
 	Thread *t;
@@ -2445,6 +2465,12 @@ void PassportOffice3() {
 }
 void PassportOffice4() {
 
+	printf("Number of Customers = %d\n", oMonitor.officeCust);
+	printf("Number of Senators = %d\n", oMonitor.officeSenator);
+	printf("Number of ApplicationClerks = %d\n", oMonitor.numAppClerks);
+	printf("Number of PictureClerks = %d\n", oMonitor.numPicClerks);
+	printf("Number of PassportClerks = %d\n", oMonitor.numPassClerks);
+	printf("Number of Cashiers = %d\n", oMonitor.numCashiers);
 	//srand(time(0));		//Initializing random number generator for seeding random values
 
 	Thread *t;

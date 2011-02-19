@@ -112,12 +112,12 @@ OfficeMonitor::OfficeMonitor(int numAC, int numPC,
 	picMoneyLock = new Lock("picMoneyLock");
   	passMoneyLock = new Lock("passMoneyLock");
   	cashMoneyLock = new Lock("cashMoneyLock");
-
+	/*
 	printf("Number of Customers = %d\n", officeCust);
 	printf("Number of Senators = %d\n",officeSenator);
 	printf("Number of ApplicationClerks = %d\n",numAppClerks);
 	printf("Number of PictureClerks = %d\n",numPicClerks);
 	printf("Number of PassportClerks = %d\n",numPassClerks);
 	printf("Number of Cashiers = %d\n",numCashiers);
-
+	*/
 }

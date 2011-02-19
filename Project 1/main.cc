@@ -57,18 +57,14 @@
 // External functions used by this file
 
 extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
+extern void TestSuite(void), Copy(char *unixFile, char *nachosFile);
+extern void PassportOffice(void), Copy(char *unixFile, char *nachosFile);
+extern void PassportOffice2(void), Copy(char *unixFile, char *nachosFile);
+extern void PassportOffice3(void), Copy(char *unixFile, char *nachosFile);
+extern void PassportOffice4(void), Copy(char *unixFile, char *nachosFile);
 extern void Print(char *file), PerformanceTest(void);
 extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
-//extern void TestSuite(void), Copy(char *unixFile, char *nachosFile);
-//extern void PassportOffice(void), Copy(char *unixFile, char *nachosFile);
-#ifdef THREADS
-extern void TestSuite(void);
-extern void PassportOffice(void);
-extern void PassportOffice2(void);
-extern void PassportOffice3(void);
-extern void PassportOffice4(void);
-#endif
 
 //----------------------------------------------------------------------
 // main
@@ -94,30 +90,26 @@ main(int argc, char **argv)
     (void) Initialize(argc, argv);
     
 #ifdef THREADS
-//	  PassportOffice();
-//    ThreadTest();
-//    TestSuite();
+    //ThreadTest();
 #endif
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
 	argCount = 1;
         if (!strcmp(*argv, "-z"))               // print copyright
             printf (copyright);
-#ifdef THREADS
-		if (!strcmp(*argv, "-T"))               // Test Suite
-            TestSuite();
-		if (!strcmp(*argv, "-N"))               // ThreadTest
-            ThreadTest();
-		if (!strcmp(*argv, "-P2"))               // PassportOffice
-           PassportOffice();
-		if (!strcmp(*argv, "-P3"))               // PassportOffice
-           PassportOffice2();
-		if (!strcmp(*argv, "-P4"))               // PassportOffice
-           PassportOffice3();
-		if (!strcmp(*argv, "-P5"))               // PassportOffice
-           PassportOffice4();
+	if (!strcmp(*argv, "-N"))
+	  ThreadTest();
+	if (!strcmp(*argv, "-T"))
+	  TestSuite();
+	if (!strcmp(*argv, "-P2"))               // PassportOffice
+	  PassportOffice();
+	if (!strcmp(*argv, "-P3"))               // PassportOffice
+	  PassportOffice2();
+	if (!strcmp(*argv, "-P4"))               // PassportOffice
+	  PassportOffice3();
+	if (!strcmp(*argv, "-P5"))               // PassportOffice
+	  PassportOffice4();
 
-#endif
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {        	// run a user program
 	    ASSERT(argc > 1);
