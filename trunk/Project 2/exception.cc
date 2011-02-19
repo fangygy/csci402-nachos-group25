@@ -265,6 +265,31 @@ int CreateLock(char* name, int length) {
 	return (index);
 }
 
+int CreateCondition(char* name, int length) {
+	if (sizeof(conditions) >= MAX_CONDITIONS) {
+		// print error msg?
+		return -1;
+	}
+	int index = sizeof(conditions);
+	KernelCondition c;
+	c.condition = Condition(name);
+	c.addrSpace = currentThread->space;		// double-check
+	c.isToBeDeleted = false;
+	
+	conditions[i] = c;
+	return (index);
+}
+
+void DestroyLock(int index) {
+	// simply remove object at index, leaving gaps, OR
+	// shift all latter elements down to make more room?
+}
+
+void DestroyCondition(int index) {
+	// simply remove object at index, leaving gaps, OR
+	// shift all latter elements down to make more room?
+}
+
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
     int rv=0; 	// the return value from a syscall
