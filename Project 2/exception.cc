@@ -257,11 +257,11 @@ int CreateLock(char* name, int length) {
 	}
 	int index = sizeof(locks);
 	KernelLock l;
-	l.lock = Lock(name);
+	l.lock = new Lock(name);
 	l.addrSpace = currentThread->space;		// double-check
 	l.isToBeDeleted = false;
 	
-	locks[i] = l;
+	locks[index] = l;
 	return (index);
 }
 
@@ -272,11 +272,11 @@ int CreateCondition(char* name, int length) {
 	}
 	int index = sizeof(conditions);
 	KernelCondition c;
-	c.condition = Condition(name);
+	c.condition = new Condition(name);
 	c.addrSpace = currentThread->space;		// double-check
 	c.isToBeDeleted = false;
 	
-	conditions[i] = c;
+	conditions[index] = c;
 	return (index);
 }
 
