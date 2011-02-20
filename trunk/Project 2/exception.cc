@@ -32,11 +32,21 @@ using namespace std;
 
 #define MAX_LOCKS 100
 #define MAX_CONDITIONS 100
+int numLocks = 0;
+int numConditions = 0;
 
 struct KernelLock {
 	Lock* lock;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
+	bool deleted;
+	
+	KernelLock() {
+		lock = NULL;
+		addrSpace = NULL;
+		isToBeDeleted = false;
+		deleted = true;
+	}
 };
 
 struct KernelCondition {
@@ -251,38 +261,47 @@ void Close_Syscall(int fd) {
 }
 
 int CreateLock(char* name, int length) {
-	if (sizeof(locks) >= MAX_LOCKS) {
+	// acquire lock
+	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
 		return -1;
 	}
-	int index = sizeof(locks);
-	KernelLock l;
-	l.lock = new Lock(name);
-	l.addrSpace = currentThread->space;		// double-check
-	l.isToBeDeleted = false;
 	
-	locks[index] = l;
-	return (index);
-}
-
-int CreateCondition(char* name, int length) {
-	if (sizeof(conditions) >= MAX_CONDITIONS) {
-		// print error msg?
-		return -1;
+	int index = -1;
+	
+	for (int i = 0; i < MAX_LOCKS; i++) {
+		if (locks[i].lock == NULL) {
+			index = i;
+			break;
+		}
 	}
-	int index = sizeof(conditions);
-	KernelCondition c;
-	c.condition = new Condition(name);
-	c.addrSpace = currentThread->space;		// double-check
-	c.isToBeDeleted = false;
 	
-	conditions[index] = c;
+	locks[index].lock = Lock(name);
+	locks[index].addrSpace = currentThread->space;		// double-check
+	locks[index].isToBeDeleted = false;
+	numLocks ++;
+	
+	locks[i] = l;
+	
+	// release lock
 	return (index);
 }
 
 void DestroyLock(int index) {
-	// simply remove object at index, leaving gaps, OR
-	// shift all latter elements down to make more room?
+	// acquire lock
+	
+	// is lock is still in use/waited on, just return;
+	// the lock should check if it's needed and call this Destroy on its own
+	
+	locks[i].lock-> ~Lock();		// destroy the lock object; DOUBLE-CHECK SYNTAX
+	locks[i].lock = NULL;			// nullify lock pointer; this is now a free space
+	locks[i].addrSpace = NULL;		// make the address space null
+	locks[i].isToBeDeleted = false;
+	locks[i].deleted = true;
+	
+	numLocks --;
+	
+	// release lock
 }
 
 void DestroyCondition(int index) {
