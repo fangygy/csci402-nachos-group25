@@ -35,6 +35,8 @@ using namespace std;
 int numLocks = 0;
 int numConditions = 0;
 
+Lock* kernelLock = new Lock("kernelLock");
+
 struct KernelLock {
 	Lock* lock;
 	AddrSpace* addrSpace;
@@ -262,52 +264,105 @@ void Close_Syscall(int fd) {
 }
 
 int CreateLock(char* name, int length) {
-	// acquire lock
+	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
 		return -1;
 	}
 	
 	int index = -1;
-	
 	for (int i = 0; i < MAX_LOCKS; i++) {
+		// find 1st vacancy in the list
 		if (locks[i].lock == NULL) {
 			index = i;
 			break;
 		}
 	}
 	
-	locks[index].lock = Lock(name);
+	locks[index].lock = new Lock(name);
 	locks[index].addrSpace = currentThread->space;		// double-check
 	locks[index].isToBeDeleted = false;
+	locks[index].deleted = false;
 	numLocks ++;
 	
-	locks[i] = l;
-	
-	// release lock
+	kernelLock-> Release();
 	return (index);
 }
 
-void DestroyLock(int index) {
-	// acquire lock
+int CreateCondition(char* name, int length) {
+	kernelLock-> Acquire();
+	if (numConditions >= MAX_CONDITIONS) {
+		// print error msg?
+		return -1;
+	}
 	
-	// is lock is still in use/waited on, just return;
-	// the lock should check if it's needed and call this Destroy on its own
+	int index = -1;
+	for (int i = 0; i < MAX_CONDITIONS; i++) {
+	// find 1st vacancy in the list
+		if (conditions[i].condition == NULL) {
+			index = i;
+			break;
+		}
+	}
 	
-	locks[i].lock-> ~Lock();		// destroy the lock object; DOUBLE-CHECK SYNTAX
-	locks[i].lock = NULL;			// nullify lock pointer; this is now a free space
-	locks[i].addrSpace = NULL;		// make the address space null
-	locks[i].isToBeDeleted = false;
-	locks[i].deleted = true;
+	conditions[index].condition = new Condition(name);
+	conditions[index].addrSpace = currentThread->space;		// double-check
+	conditions[index].isToBeDeleted = false;
+	conditions[index].deleted = false;
+	numConditions ++;
 	
-	numLocks --;
-	
-	// release lock
+	kernelLock-> Release();
+	return (index);
 }
 
-void DestroyCondition(int index) {
-	// simply remove object at index, leaving gaps, OR
-	// shift all latter elements down to make more room?
+int DestroyLock(int index) {
+	kernelLock-> Acquire();
+	
+	if (locks[index].hasBeenDeleted || locks[index].deleted) {
+		// Delete has already been called for this lock. don't do anything
+		kernelLock->Release();
+		return 0;
+	}
+	if (locks[index].lock->getFree() ) {
+		// Lock isn't in use; delete it
+		locks[index].lock-> ~Lock();
+		locks[i].lock = NULL;			// nullify lock pointer; this is now a free space
+		locks[i].addrSpace = NULL;		// make the address space null
+		locks[index].isToBeDeleted = false;
+		locks[index].deleted = true;
+		numLocks --;
+	} else {
+		// Lock is still in use; will delete it later
+		locks[index].isToBeDeleted = true;
+	}
+	
+	kernelLock->Release();
+	return 1;
+}
+
+int DestroyCondition(int index) {
+	kernelLock-> Acquire();
+	
+	if (conditions[index].hasBeenDeleted || conditions[index].deleted) {
+		// Delete has already been called for this condition. don't do anything
+		kernelLock->Release();
+		return 0;
+	}
+	if (conditions[index].condition->getFree() ) {
+		// Condition isn't in use; delete it
+		conditions[index].condition-> ~Condition();
+		conditions[i].condition = NULL;		// nullify condition pointer; this is now a free space
+		conditions[i].addrSpace = NULL;		// make the address space null
+		conditions[index].isToBeDeleted = false;
+		conditions[index].deleted = true;
+		numConditions --;
+	} else {
+		// Condition is still in use; will delete it later
+		conditions[index].isToBeDeleted = true;
+	}
+	
+	kernelLock->Release();
+	return 1;
 }
 
 void Acquire(int index){
