@@ -76,7 +76,7 @@ class Lock {
 					// holds this lock.  Useful for
 					// checking in Release, and in
 					// Condition variable ops below.
-	bool getFree();
+	bool getFree();		// check if this lock is being used/waited on
   private:
     char* name;				// for debugging
     bool  free; 
@@ -131,7 +131,7 @@ class Condition {
     void Signal(Lock *conditionLock);   // conditionLock must be held by
     void Broadcast(Lock *conditionLock);// the currentThread for all of 
 					// these operations
-
+	bool getFree();		// check if this condition is being used
   private:
     char* name;
     Lock* waitingLock;

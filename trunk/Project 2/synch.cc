@@ -281,3 +281,14 @@ void Condition::Broadcast(Lock* conditionLock)
 		Signal(conditionLock);
 	}
 }
+
+//----------------------------------------------------------------------
+// Condition::getFree
+//	Returns a true if there is no lock waiting on this condition
+//----------------------------------------------------------------------
+bool Condition::getFree() {
+	if (waitingLock == null) {
+		return true;
+	}
+	return false;
+}
