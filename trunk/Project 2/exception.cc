@@ -53,6 +53,7 @@ struct KernelCondition {
 	Condition* condition;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
+	bool hasBeenDeleted;
 };
 
 KernelLock locks[MAX_LOCKS];
@@ -187,7 +188,7 @@ void Write_Syscall(unsigned int vaddr, int len, int id) {
 	    printf("%s","Bad pointer passed to to write: data not written\n");
 	    delete[] buf;
 	    return;
-	}
+		}
     }
 
     if ( id == ConsoleOutput) {
@@ -309,6 +310,42 @@ void DestroyCondition(int index) {
 	// shift all latter elements down to make more room?
 }
 
+void Acquire(int index){
+	kernelLock->Acquire();
+	if(locks[index].hasBeenDeleted){
+		// Lock does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(lockks[index].isToBeDeleted){
+		// Lock is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+
+	kernelLock->Release();
+	locks[index].lock->Acquire();
+}
+
+void Release(int index){
+	kernelLock->Acquire();
+	if(locks[index].hasBeenDeleted){
+		// Lock does not exist
+		kernelLock->Release();
+		return;
+	}
+
+	locks[index].lock->Release();
+	if(locks[index].lock->getFree() && locks[index].isToBeDeleted){
+		locks[index].hasBeenDeleted = true;
+		locks[index].isToBeDeleted = false;
+		locks[index].lock->~Lock();
+		numLocks--;
+	}
+
+	kernelLock->Release();
+}
+
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
     int rv=0; 	// the return value from a syscall
@@ -319,6 +356,7 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Unknown syscall - shutting down.\n");
 	    case SC_Halt:
 		DEBUG('a', "Shutdown, initiated by user program.\n");
+		printf("ExceptionCall: Halting...\n");
 		interrupt->Halt();
 		break;
 	    case SC_Create:
@@ -347,6 +385,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Yield:
 		DEBUG('a', "Yield syscall.\n");
+		printf("ExceptionCall: Yielding...\n");
 		currentThread->Yield();
 		break;
 		case SC_Exit:
