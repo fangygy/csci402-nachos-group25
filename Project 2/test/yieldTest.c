@@ -8,8 +8,9 @@
 
 #include "syscall.h"
 
+
 int main()
 {
-    Yield();
+	Yield();
     /* not reached */
 }
