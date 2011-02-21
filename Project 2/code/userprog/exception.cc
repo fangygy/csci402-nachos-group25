@@ -39,7 +39,7 @@ Lock* kernelLock = new Lock("kernelLock");
 
 struct KernelLock {
 	Lock* lock;
-	AddrSpace* addrSpace;
+	AddrSpace* space;
 	bool beingAcquired;
 	bool isToBeDeleted;
 	bool hasBeenDeleted;
@@ -48,7 +48,7 @@ struct KernelLock {
 	KernelLock() {
 		lock = NULL;
 		beingAcquired = false;
-		addrSpace = NULL;
+		space = NULL;
 		isToBeDeleted = false;
 		deleted = true;
 	}
@@ -56,10 +56,18 @@ struct KernelLock {
 
 struct KernelCondition {
 	Condition* condition;
-	AddrSpace* addrSpace;
+	AddrSpace* space;
+	bool beingAcquired;
 	bool isToBeDeleted;
 	bool deleted;
-	bool deleted;
+	
+	KernelCondition() {
+		lock = NULL;
+		beingAcquired = false;
+		space = NULL;
+		isToBeDeleted = false;
+		deleted = true;
+	}
 };
 
 KernelLock locks[MAX_LOCKS];
@@ -268,6 +276,7 @@ void Close_Syscall(int fd) {
 }
 
 int CreateLock(char* name, int length) {
+	// axe crowley
 	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
@@ -284,7 +293,7 @@ int CreateLock(char* name, int length) {
 	}
 	
 	locks[index].lock = new Lock(name);
-	locks[index].addrSpace = currentThread->space;		// double-check
+	locks[index].space = currentThread->space;		// double-check
 	locks[index].beingAcquired = false;
 	locks[index].isToBeDeleted = false;
 	locks[index].deleted = false;
@@ -311,7 +320,7 @@ int CreateCondition(char* name, int length) {
 	}
 	
 	conditions[index].condition = new Condition(name);
-	conditions[index].addrSpace = currentThread->space;		// double-check
+	conditions[index].space = currentThread->space;		// double-check
 	conditions[index].isToBeDeleted = false;
 	conditions[index].deleted = false;
 	numConditions ++;
@@ -341,9 +350,9 @@ int DestroyLock(int index) {
 	}
 	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
 		// Lock isn't in use; delete it
-		locks[index].lock-> ~Lock();
+		delete locks[index].lock;
 		locks[index].lock = NULL;			// nullify lock pointer; this is now a free space
-		locks[index].addrSpace = NULL;		// make the address space null
+		locks[index].space = NULL;			// make the address space null
 		locks[index].isToBeDeleted = false;
 		locks[index].deleted = true;
 		numLocks --;
@@ -368,7 +377,7 @@ int DestroyCondition(int index) {
 		// Condition isn't in use; delete it
 		conditions[index].condition-> ~Condition();
 		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
-		conditions[index].addrSpace = NULL;		// make the address space null
+		conditions[index].space = NULL;			// make the address space null
 		conditions[index].isToBeDeleted = false;
 		conditions[index].deleted = true;
 		numConditions --;
@@ -432,10 +441,10 @@ void Release(int index){
 	}
 
 	locks[index].lock->Release();
-	if(locks[index].lock->getFree() && locks[index].isToBeDeleted){
+	if(locks[index].lock->getFree() && locks[index].isToBeDeleted && !locks[index].beingAcquired){
 		locks[index].deleted = true;
 		locks[index].isToBeDeleted = false;
-		locks[index].lock->~Lock();
+		delete locks[index].lock;
 		numLocks--;
 	}
 
