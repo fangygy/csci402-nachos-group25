@@ -68,5 +68,11 @@ yieldTest: yieldTest.o start.o
 	$(LD) $(LDFLAGS) start.o yieldTest.o -o yieldTest.coff
 	../bin/coff2noff yieldTest.coff yieldTest
 
+lockTest1.o: lockTest1.c
+	$(CC) $(CFLAGS) -c lockTest1.c
+lockTest1: lockTest1.o start.o
+	$(LD) $(LDFLAGS) start.o lockTest1.o -o lockTest1.coff
+	../bin/coff2noff lockTest1.coff lockTest1
+
 clean:
 	rm -f *.o *.coff
