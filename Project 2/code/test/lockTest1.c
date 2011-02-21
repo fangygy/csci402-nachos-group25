@@ -12,8 +12,9 @@
 
 int main()
 {
-	int lock1, lock 2;
-	lock1 = CreateLock();
-	lock2 = CreateLock();
+	CreateLock();
+	Acquire();
+	Release();
+	DestroyLock();
 	/* not reached */
 }

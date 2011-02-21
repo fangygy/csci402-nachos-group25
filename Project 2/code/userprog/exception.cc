@@ -42,6 +42,7 @@ struct KernelLock {
 	AddrSpace* addrSpace;
 	bool beingAcquired;
 	bool isToBeDeleted;
+	bool hasBeenDeleted;
 	bool deleted;
 	
 	KernelLock() {
@@ -57,6 +58,7 @@ struct KernelCondition {
 	Condition* condition;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
+	bool deleted;
 	bool deleted;
 };
 
@@ -340,8 +342,8 @@ int DestroyLock(int index) {
 	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
 		// Lock isn't in use; delete it
 		locks[index].lock-> ~Lock();
-		locks[i].lock = NULL;			// nullify lock pointer; this is now a free space
-		locks[i].addrSpace = NULL;		// make the address space null
+		locks[index].lock = NULL;			// nullify lock pointer; this is now a free space
+		locks[index].addrSpace = NULL;		// make the address space null
 		locks[index].isToBeDeleted = false;
 		locks[index].deleted = true;
 		numLocks --;
@@ -365,8 +367,8 @@ int DestroyCondition(int index) {
 	if (conditions[index].condition->getFree() ) {
 		// Condition isn't in use; delete it
 		conditions[index].condition-> ~Condition();
-		conditions[i].condition = NULL;		// nullify condition pointer; this is now a free space
-		conditions[i].addrSpace = NULL;		// make the address space null
+		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
+		conditions[index].addrSpace = NULL;		// make the address space null
 		conditions[index].isToBeDeleted = false;
 		conditions[index].deleted = true;
 		numConditions --;
@@ -450,7 +452,7 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Unknown syscall - shutting down.\n");
 	    case SC_Halt:
 		DEBUG('a', "Shutdown, initiated by user program.\n");
-		printf("ExceptionCall: Halting...\n");
+		printf("ExceptionHandler: Halting...\n");
 		interrupt->Halt();
 		break;
 	    case SC_Create:
@@ -479,7 +481,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Yield:
 		DEBUG('a', "Yield syscall.\n");
-		printf("ExceptionCall: Yielding...\n");
+		printf("ExceptionHandler: Yielding...\n");
 		currentThread->Yield();
 		break;
 		case SC_Exit:
@@ -496,15 +498,15 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Acquire:
 		DEBUG('a', "Acquire syscall.\n");
-		
+		printf("ExceptionHandler: Acquiring...\n");	
 		break;
 		case SC_Release:
 		DEBUG('a', "Release syscall.\n");
-		
+		printf("ExceptionHandler: Releasing...\n");	
 		break;
 		case SC_Wait:
 		DEBUG('a', "Wait syscall.\n");
-		
+
 		break;
 		case SC_Signal:
 		DEBUG('a', "Signal syscall.\n");
@@ -516,11 +518,11 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_CreateLock:
 		DEBUG('a', "Create lock syscall.\n");
-		
+		printf("ExceptionHandler: Creating lock...\n");	
 		break;
 		case SC_DestroyLock:
 		DEBUG('a', "Destroy lock syscall.\n");
-		
+		printf("ExceptionCallHandler: Destroying lock...\n");		
 		break;
 		case SC_CreateCondition:
 		DEBUG('a', "Create condition syscall.\n");
