@@ -321,6 +321,7 @@ int CreateCondition(char* name, int length) {
 	
 	conditions[index].condition = new Condition(name);
 	conditions[index].space = currentThread->space;		// double-check
+	conditions[index].beingAcquired = false;
 	conditions[index].isToBeDeleted = false;
 	conditions[index].deleted = false;
 	numConditions ++;
@@ -368,14 +369,25 @@ int DestroyLock(int index) {
 int DestroyCondition(int index) {
 	kernelLock-> Acquire();
 	
-	if (conditions[index].deleted || conditions[index].deleted) {
+	if (index < 0) {
+		kernelLock->Release();
+		// print error msg
+		return 0;
+	}
+	if (conditions[index].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if (conditions[index].isToBeDeleted || conditions[index].deleted) {
 		// Delete has already been called for this condition. don't do anything
 		kernelLock->Release();
 		return 0;
 	}
-	if (conditions[index].condition->getFree() ) {
+	if (conditions[index].condition->getFree() && !conditions[index].beingAcquired) {
 		// Condition isn't in use; delete it
-		conditions[index].condition-> ~Condition();
+		delete conditions[index].condition;
 		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
 		conditions[index].space = NULL;			// make the address space null
 		conditions[index].isToBeDeleted = false;
@@ -450,6 +462,176 @@ void Release(int index){
 
 	kernelLock->Release();
 }
+
+void Signal(int cIndex, int lIndex) {
+	kernelLock->Acquire();
+	if (cIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (lIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].deleted){
+		// Condition does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].deleted){
+		// Lock does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].isToBeDeleted){
+		// Condition is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].isToBeDeleted){
+		// Lock is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	
+	conditions[cIndex].condition->Signal(locks[lIndex].lock);
+	
+	kernelLock->Release();
+	
+}
+
+void Broadcast(int cIndex, int lIndex) {
+	kernelLock->Acquire();
+	if (cIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (lIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].deleted){
+		// Condition does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].deleted){
+		// Lock does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].isToBeDeleted){
+		// Condition is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].isToBeDeleted){
+		// Lock is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	
+	conditions[cIndex].condition->Broadcast(locks[lIndex].lock);
+	
+	kernelLock->Release();
+	
+}
+
+void Wait(int cIndex, int lIndex) {
+	kernelLock->Acquire();
+	if (cIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (lIndex < 0) {
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].deleted){
+		// Condition does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].deleted){
+		// Lock does not exist
+		kernelLock->Release();
+		return;
+	}
+	if(conditions[cIndex].isToBeDeleted){
+		// Condition is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	if(locks[lIndex].isToBeDeleted){
+		// Lock is going to be deleted, no further action permitted
+		kernelLock->Release();
+		return;
+	}
+	
+	locks[lIndex].beingAcquired = true;
+	conditions[cIndex].beingAcquired = true;
+	kernelLock->Release();
+	
+	conditions[cIndex].condition->Wait(locks[lIndex].lock);
+	
+	kernelLock->Acquire();
+	locks[lIndex].beingAcquired = false;
+	conditions[cIndex].beingAcquired = false;
+	
+	if(conditions[cIndex].condition->getFree() && conditions[cIndex].isToBeDeleted) {
+		delete conditions[index].condition;
+		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
+		conditions[index].space = NULL;			// make the address space null
+		conditions[index].isToBeDeleted = false;
+		conditions[index].deleted = true;
+		numConditions --;
+	}
+	kernelLock->Release();
+	return;
+}
+		
 
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
