@@ -263,6 +263,19 @@ void Close_Syscall(int fd) {
     }
 }
 
+unsigned int Exec_Syscall(char* name){
+}
+
+void Fork_Syscall(void (*func)()){
+
+}
+
+void Exit_Syscall(int status){
+	//if last thread, Halt
+	//else
+	currentThread->Finish();
+}
+
 int CreateLock(char* name, int length) {
 	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
