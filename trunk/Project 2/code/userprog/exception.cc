@@ -40,11 +40,13 @@ Lock* kernelLock = new Lock("kernelLock");
 struct KernelLock {
 	Lock* lock;
 	AddrSpace* addrSpace;
+	bool beingAcquired;
 	bool isToBeDeleted;
 	bool deleted;
 	
 	KernelLock() {
 		lock = NULL;
+		beingAcquired = false;
 		addrSpace = NULL;
 		isToBeDeleted = false;
 		deleted = true;
@@ -55,7 +57,7 @@ struct KernelCondition {
 	Condition* condition;
 	AddrSpace* addrSpace;
 	bool isToBeDeleted;
-	bool hasBeenDeleted;
+	bool deleted;
 };
 
 KernelLock locks[MAX_LOCKS];
@@ -263,19 +265,6 @@ void Close_Syscall(int fd) {
     }
 }
 
-unsigned int Exec_Syscall(char* name){
-}
-
-void Fork_Syscall(void (*func)()){
-
-}
-
-void Exit_Syscall(int status){
-	//if last thread, Halt
-	//else
-	currentThread->Finish();
-}
-
 int CreateLock(char* name, int length) {
 	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
@@ -294,6 +283,7 @@ int CreateLock(char* name, int length) {
 	
 	locks[index].lock = new Lock(name);
 	locks[index].addrSpace = currentThread->space;		// double-check
+	locks[index].beingAcquired = false;
 	locks[index].isToBeDeleted = false;
 	locks[index].deleted = false;
 	numLocks ++;
@@ -330,13 +320,24 @@ int CreateCondition(char* name, int length) {
 
 int DestroyLock(int index) {
 	kernelLock-> Acquire();
-	
-	if (locks[index].hasBeenDeleted || locks[index].deleted) {
+	// check on return value
+	if (index < 0) {
+		kernelLock->Release();
+		// print error msg
+		return 0;
+	}
+	if (locks[index].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if (locks[index].isToDeleted || locks[index].deleted) {
 		// Delete has already been called for this lock. don't do anything
 		kernelLock->Release();
 		return 0;
 	}
-	if (locks[index].lock->getFree() ) {
+	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
 		// Lock isn't in use; delete it
 		locks[index].lock-> ~Lock();
 		locks[i].lock = NULL;			// nullify lock pointer; this is now a free space
@@ -356,7 +357,7 @@ int DestroyLock(int index) {
 int DestroyCondition(int index) {
 	kernelLock-> Acquire();
 	
-	if (conditions[index].hasBeenDeleted || conditions[index].deleted) {
+	if (conditions[index].deleted || conditions[index].deleted) {
 		// Delete has already been called for this condition. don't do anything
 		kernelLock->Release();
 		return 0;
@@ -380,24 +381,49 @@ int DestroyCondition(int index) {
 
 void Acquire(int index){
 	kernelLock->Acquire();
-	if(locks[index].hasBeenDeleted){
+	if (index < 0) {
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if (locks[index].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if(locks[index].deleted){
 		// Lock does not exist
 		kernelLock->Release();
 		return;
 	}
-	if(lockks[index].isToBeDeleted){
+	//
+	if(locks[index].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
 		kernelLock->Release();
 		return;
 	}
 
+	locks[index].beingAcquired = true;
 	kernelLock->Release();
 	locks[index].lock->Acquire();
+	locks[index].beingAcquired = false;
 }
 
 void Release(int index){
 	kernelLock->Acquire();
-	if(locks[index].hasBeenDeleted){
+	if (index < 0) {
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if (locks[index].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		kernelLock->Release();
+		return 0;
+	}
+	if(locks[index].deleted){
 		// Lock does not exist
 		kernelLock->Release();
 		return;
@@ -405,7 +431,7 @@ void Release(int index){
 
 	locks[index].lock->Release();
 	if(locks[index].lock->getFree() && locks[index].isToBeDeleted){
-		locks[index].hasBeenDeleted = true;
+		locks[index].deleted = true;
 		locks[index].isToBeDeleted = false;
 		locks[index].lock->~Lock();
 		numLocks--;
