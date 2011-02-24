@@ -275,8 +275,12 @@ void Close_Syscall(int fd) {
     }
 }
 
-int CreateLock_Syscall(unsigned int vaddr, int length) {
+void Exit_Syscall() {
+	currentThread->Finish();
+}
 
+int CreateLock_Syscall(unsigned int vaddr, int length) {
+	// axe crowley
 	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
@@ -675,8 +679,54 @@ void Wait_Syscall(int cIndex, int lIndex) {
 }
 
 void Exit_Syscall() {
+}
 
-}		
+spaceId Exec_Syscall (unsigned int vaddr, int len) {
+	else if ((which == SyscallException) && (type == SC_Fork)) {
+	}
+	char *buf = new char[len+1];	// Kernel buffer to put the name in
+	if (!buf) {
+		printf("%s","Can't allocate kernel buffer in Open\n");
+		return -1;
+    }
+	
+    OpenFile *f;			// The new open file
+    int id;	
+	
+	bool result;
+	//Read the virtual address of the name of the process from the
+		//register R4 virtualAddress = machine->ReadRegister(4).
+	vaddr = machine->ReadRegister(4);
+	//Convert it to the physical address and read the contents from there ,
+		//which will give you the name of the process to be executed.
+	int *paddr = new int;
+	machine->ReadMem( vaddr, 1, paddr );
+	
+    if( copyin(vaddr,len,buf) == -1 ) {
+		printf("%s","Bad pointer passed to Exec\n");
+		delete[] buf;
+		return -1;
+    }
+	
+	//Now Open that file using filesystem->Open.
+	//Store its openfile pointer.
+    f = fileSystem->Open(buf);
+    delete[] buf;
+	
+	//Create new addrespace for this executable file.
+	//Create a new thread.
+	Thread* t = new Thread();
+	//Allocate the space created to this thread's space.
+	*AddrSpace space = new AddrSpace(f);
+	*Process process = new Process();
+	//Update the process table and related data structures.
+	process->processId = processTable.Put(process);
+	numProcesses++;
+	//Write the space ID to the register 2.
+	machine->WriteRegister(2, process->processId);
+	//Fork the new thread. I call it exec_thread.
+	return process->processId
+}
 
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
