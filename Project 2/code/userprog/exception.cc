@@ -62,7 +62,7 @@ struct KernelCondition {
 	bool deleted;
 	
 	KernelCondition() {
-		lock = NULL;
+		condition = NULL;
 		beingAcquired = false;
 		space = NULL;
 		isToBeDeleted = false;
@@ -275,8 +275,8 @@ void Close_Syscall(int fd) {
     }
 }
 
-int CreateLock(char* name, int length) {
-	// axe crowley
+int CreateLock_Syscall(unsigned int vaddr, int length) {
+
 	kernelLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
@@ -292,6 +292,21 @@ int CreateLock(char* name, int length) {
 		}
 	}
 	
+	char* name;
+	
+	if ( !(name = new char[length]) ) {
+	printf("%s","Error allocating kernel buffer for write!\n");
+	kernelLock->Release();
+	return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+	    printf("%s","Bad pointer passed to to write: data not written\n");
+	    delete[] name;
+		kernelLock->Release();
+	    return -1;
+		}
+    }
+	
 	locks[index].lock = new Lock(name);
 	locks[index].space = currentThread->space;		// double-check
 	locks[index].beingAcquired = false;
@@ -303,7 +318,7 @@ int CreateLock(char* name, int length) {
 	return (index);
 }
 
-int CreateCondition(char* name, int length) {
+int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	kernelLock-> Acquire();
 	if (numConditions >= MAX_CONDITIONS) {
 		// print error msg?
@@ -319,6 +334,21 @@ int CreateCondition(char* name, int length) {
 		}
 	}
 	
+	char* name;
+	
+	if ( !(name = new char[length]) ) {
+	printf("%s","Error allocating kernel buffer for write!\n");
+	kernelLock->Release();
+	return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+	    printf("%s","Bad pointer passed to to write: data not written\n");
+	    delete[] name;
+		kernelLock->Release();
+	    return -1; 
+		}
+    }
+	
 	conditions[index].condition = new Condition(name);
 	conditions[index].space = currentThread->space;		// double-check
 	conditions[index].beingAcquired = false;
@@ -330,7 +360,7 @@ int CreateCondition(char* name, int length) {
 	return (index);
 }
 
-int DestroyLock(int index) {
+int DestroyLock_Syscall(int index) {
 	kernelLock-> Acquire();
 	// check on return value
 	if (index < 0) {
@@ -344,7 +374,7 @@ int DestroyLock(int index) {
 		kernelLock->Release();
 		return 0;
 	}
-	if (locks[index].isToDeleted || locks[index].deleted) {
+	if (locks[index].isToBeDeleted || locks[index].deleted) {
 		// Delete has already been called for this lock. don't do anything
 		kernelLock->Release();
 		return 0;
@@ -366,7 +396,7 @@ int DestroyLock(int index) {
 	return 1;
 }
 
-int DestroyCondition(int index) {
+int DestroyCondition_Syscall(int index) {
 	kernelLock-> Acquire();
 	
 	if (index < 0) {
@@ -402,18 +432,18 @@ int DestroyCondition(int index) {
 	return 1;
 }
 
-void Acquire(int index){
+void Acquire_Syscall(int index){
 	kernelLock->Acquire();
 	if (index < 0) {
 		// print error msg
 		kernelLock->Release();
-		return 0;
+		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		kernelLock->Release();
-		return 0;
+		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
@@ -433,18 +463,18 @@ void Acquire(int index){
 	locks[index].beingAcquired = false;
 }
 
-void Release(int index){
+void Release_Syscall(int index){
 	kernelLock->Acquire();
 	if (index < 0) {
 		// print error msg
 		kernelLock->Release();
-		return 0;
+		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		kernelLock->Release();
-		return 0;
+		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
@@ -463,7 +493,7 @@ void Release(int index){
 	kernelLock->Release();
 }
 
-void Signal(int cIndex, int lIndex) {
+void Signal_Syscall(int cIndex, int lIndex) {
 	kernelLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
@@ -514,7 +544,7 @@ void Signal(int cIndex, int lIndex) {
 	
 }
 
-void Broadcast(int cIndex, int lIndex) {
+void Broadcast_Syscall(int cIndex, int lIndex) {
 	kernelLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
@@ -565,7 +595,7 @@ void Broadcast(int cIndex, int lIndex) {
 	
 }
 
-void Wait(int cIndex, int lIndex) {
+void Wait_Syscall(int cIndex, int lIndex) {
 	kernelLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
@@ -621,17 +651,20 @@ void Wait(int cIndex, int lIndex) {
 	conditions[cIndex].beingAcquired = false;
 	
 	if(conditions[cIndex].condition->getFree() && conditions[cIndex].isToBeDeleted) {
-		delete conditions[index].condition;
-		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
-		conditions[index].space = NULL;			// make the address space null
-		conditions[index].isToBeDeleted = false;
-		conditions[index].deleted = true;
+		delete conditions[cIndex].condition;
+		conditions[cIndex].condition = NULL;		// nullify condition pointer; this is now a free space
+		conditions[cIndex].space = NULL;			// make the address space null
+		conditions[cIndex].isToBeDeleted = false;
+		conditions[cIndex].deleted = true;
 		numConditions --;
 	}
 	kernelLock->Release();
 	return;
 }
-		
+
+void Exit_Syscall() {
+
+}		
 
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
@@ -689,39 +722,48 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Acquire:
 		DEBUG('a', "Acquire syscall.\n");
-		printf("ExceptionHandler: Acquiring...\n");	
+		printf("ExceptionHandler: Acquiring...\n");
+		Acquire_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Release:
 		DEBUG('a', "Release syscall.\n");
 		printf("ExceptionHandler: Releasing...\n");	
+		Release_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Wait:
 		DEBUG('a', "Wait syscall.\n");
-
+		Wait_Syscall(machine->ReadRegister(4), 
+					machine->ReadRegister(5));
 		break;
 		case SC_Signal:
 		DEBUG('a', "Signal syscall.\n");
-		
+		Signal_Syscall(machine->ReadRegister(4),
+					machine->ReadRegister(5));
 		break;
 		case SC_Broadcast:
 		DEBUG('a', "Broadcast syscall.\n");
-		
+		Broadcast_Syscall(machine->ReadRegister(4),
+						machine->ReadRegister(5));
 		break;
 		case SC_CreateLock:
 		DEBUG('a', "Create lock syscall.\n");
 		printf("ExceptionHandler: Creating lock...\n");	
+		rv = CreateLock_Syscall(machine->ReadRegister(4),
+							machine->ReadRegister(5));
 		break;
 		case SC_DestroyLock:
 		DEBUG('a', "Destroy lock syscall.\n");
-		printf("ExceptionCallHandler: Destroying lock...\n");		
+		printf("ExceptionCallHandler: Destroying lock...\n");
+		rv = DestroyLock_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_CreateCondition:
 		DEBUG('a', "Create condition syscall.\n");
-		
+		rv = CreateCondition_Syscall(machine->ReadRegister(4),
+									machine->ReadRegister(5));
 		break;
 		case SC_DestroyCondition:
 		DEBUG('a', "Destroy condition syscall.\n");
-		
+		rv = DestroyCondition_Syscall(machine->ReadRegister(4));
 		break;
 	}
 
