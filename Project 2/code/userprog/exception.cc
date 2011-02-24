@@ -25,6 +25,7 @@
 #include "system.h"
 #include "syscall.h"
 #include "synch.h"
+#include "process.h"
 #include <stdio.h>
 #include <iostream>
 
@@ -677,9 +678,6 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	}
 	lock_condLock->Release();
 	return;
-}
-
-void Exit_Syscall() {
 }
 
 void exec_thread() {
