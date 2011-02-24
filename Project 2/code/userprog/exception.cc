@@ -738,7 +738,6 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Unknown syscall - shutting down.\n");
 	    case SC_Halt:
 		DEBUG('a', "Shutdown, initiated by user program.\n");
-		printf("ExceptionHandler: Halting...\n");
 		interrupt->Halt();
 		break;
 	    case SC_Create:
@@ -767,7 +766,6 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Yield:
 		DEBUG('a', "Yield syscall.\n");
-		printf("ExceptionHandler: Yielding...\n");
 		currentThread->Yield();
 		break;
 		case SC_Exit:
@@ -784,12 +782,10 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Acquire:
 		DEBUG('a', "Acquire syscall.\n");
-		printf("ExceptionHandler: Acquiring...\n");
 		Acquire_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Release:
 		DEBUG('a', "Release syscall.\n");
-		printf("ExceptionHandler: Releasing...\n");	
 		Release_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Wait:
@@ -809,13 +805,11 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_CreateLock:
 		DEBUG('a', "Create lock syscall.\n");
-		printf("ExceptionHandler: Creating lock...\n");	
 		rv = CreateLock_Syscall(machine->ReadRegister(4),
 							machine->ReadRegister(5));
 		break;
 		case SC_DestroyLock:
 		DEBUG('a', "Destroy lock syscall.\n");
-		printf("ExceptionHandler: Destroying lock...\n");
 		rv = DestroyLock_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_CreateCondition:
