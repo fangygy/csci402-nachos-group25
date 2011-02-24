@@ -12,19 +12,16 @@
 
 int main()
 {
+	int lockIndex;
 	Write("Starting lock test\n", 64, ConsoleOutput);
-	int lockIndex = CreateLock();
-	if(lockIndex != -1) 
-		Write("Created lock\n", 64, ConsoleOutput);
-	else
-		Write("Failed to create lock\n", 64, ConsoleOutput);
-	Acquire(lockIndex);
-	Write("Acquired lock \n", 64, ConsoleOutput);
+	DestroyLock(0);
+	lockIndex = CreateLock("Testlock\n", 64);
 	Release(lockIndex);
-	Write("Released lock\n", 64, ConsoleOutput);
-	if(DestroyLock() == 1)
-		Write("Destroyed lock\n", 64, ConsoleOutput);
-	else
-		Write("Failed to destroy lock\n", 64, ConsoleOutput);
+
+	Acquire(lockIndex);
+	Acquire(lockIndex);
+	Release(lockIndex);
+	DestroyLock(lockIndex);
+
 	/* not reached */
 }

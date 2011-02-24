@@ -365,22 +365,26 @@ int DestroyLock_Syscall(int index) {
 	// check on return value
 	if (index < 0) {
 		kernelLock->Release();
+		printf("Lock index less than zero. Invalid.\n");
 		// print error msg
 		return 0;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Wrong address space, foo\n");
 		kernelLock->Release();
 		return 0;
 	}
 	if (locks[index].isToBeDeleted || locks[index].deleted) {
 		// Delete has already been called for this lock. don't do anything
+		printf("Delete has already been called for this lock.\n");
 		kernelLock->Release();
 		return 0;
 	}
 	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
 		// Lock isn't in use; delete it
+		printf("Lock isn't in use and is now being deleted.\n");
 		delete locks[index].lock;
 		locks[index].lock = NULL;			// nullify lock pointer; this is now a free space
 		locks[index].space = NULL;			// make the address space null
@@ -389,6 +393,7 @@ int DestroyLock_Syscall(int index) {
 		numLocks --;
 	} else {
 		// Lock is still in use; will delete it later
+		printf("Lock still in use. Delete later.\n");
 		locks[index].isToBeDeleted = true;
 	}
 	
@@ -435,6 +440,7 @@ int DestroyCondition_Syscall(int index) {
 void Acquire_Syscall(int index){
 	kernelLock->Acquire();
 	if (index < 0) {
+		printf("Lock index less than zero. Invalid.\n");
 		// print error msg
 		kernelLock->Release();
 		return;
@@ -442,17 +448,20 @@ void Acquire_Syscall(int index){
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Wrong address space, foo\n");
 		kernelLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
+		printf("Lock does not exist.\n");
 		kernelLock->Release();
 		return;
 	}
 	//
 	if(locks[index].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
+		printf("Lock is going to be deleted, no furthur action permitted.\n");
 		kernelLock->Release();
 		return;
 	}
@@ -467,17 +476,20 @@ void Release_Syscall(int index){
 	kernelLock->Acquire();
 	if (index < 0) {
 		// print error msg
+		printf("Lock index less than zero. Invalid.\n");
 		kernelLock->Release();
 		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Wrong address space, foo.\n");
 		kernelLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
+		printf("Lock does not exist.\n");
 		kernelLock->Release();
 		return;
 	}
@@ -753,7 +765,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_DestroyLock:
 		DEBUG('a', "Destroy lock syscall.\n");
-		printf("ExceptionCallHandler: Destroying lock...\n");
+		printf("ExceptionHandler: Destroying lock...\n");
 		rv = DestroyLock_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_CreateCondition:
