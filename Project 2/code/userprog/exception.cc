@@ -35,7 +35,8 @@ using namespace std;
 int numLocks = 0;
 int numConditions = 0;
 
-Lock* kernelLock = new Lock("kernelLock");
+Lock* lock_condLock = new Lock("lock_condLock");
+Lock* memoryLock = new Lock("memoryLock");
 
 struct KernelLock {
 	Lock* lock;
@@ -281,7 +282,7 @@ void Exit_Syscall() {
 
 int CreateLock_Syscall(unsigned int vaddr, int length) {
 	// axe crowley
-	kernelLock-> Acquire();
+	lock_condLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
 		return -1;
@@ -299,15 +300,15 @@ int CreateLock_Syscall(unsigned int vaddr, int length) {
 	char* name;
 	
 	if ( !(name = new char[length]) ) {
-	printf("%s","Error allocating kernel buffer for write!\n");
-	kernelLock->Release();
-	return -1;
+		printf("%s","Error allocating kernel buffer for lock creation!\n");
+		lock_condLock->Release();
+		return -1;
     } else {
         if ( copyin(vaddr,length,name) == -1 ) {
-	    printf("%s","Bad pointer passed to to write: data not written\n");
-	    delete[] name;
-		kernelLock->Release();
-	    return -1;
+			printf("%s","Bad pointer passed to lock creation\n");
+			delete[] name;
+			lock_condLock->Release();
+			return -1;
 		}
     }
 	
@@ -318,12 +319,12 @@ int CreateLock_Syscall(unsigned int vaddr, int length) {
 	locks[index].deleted = false;
 	numLocks ++;
 	
-	kernelLock-> Release();
+	lock_condLock-> Release();
 	return (index);
 }
 
 int CreateCondition_Syscall(unsigned int vaddr, int length) {
-	kernelLock-> Acquire();
+	lock_condLock-> Acquire();
 	if (numConditions >= MAX_CONDITIONS) {
 		// print error msg?
 		return -1;
@@ -341,15 +342,15 @@ int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	char* name;
 	
 	if ( !(name = new char[length]) ) {
-	printf("%s","Error allocating kernel buffer for write!\n");
-	kernelLock->Release();
-	return -1;
+		printf("%s","Error allocating kernel buffer for condition creation!\n");
+		lock_condLock->Release();
+		return -1;
     } else {
         if ( copyin(vaddr,length,name) == -1 ) {
-	    printf("%s","Bad pointer passed to to write: data not written\n");
-	    delete[] name;
-		kernelLock->Release();
-	    return -1; 
+			printf("%s","Bad pointer passed to condition creation\n");
+			delete[] name;
+			lock_condLock->Release();
+			return -1; 
 		}
     }
 	
@@ -360,15 +361,15 @@ int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	conditions[index].deleted = false;
 	numConditions ++;
 	
-	kernelLock-> Release();
+	lock_condLock-> Release();
 	return (index);
 }
 
 int DestroyLock_Syscall(int index) {
-	kernelLock-> Acquire();
+	lock_condLock-> Acquire();
 	// check on return value
 	if (index < 0) {
-		kernelLock->Release();
+		lock_condLock->Release();
 		printf("Lock index less than zero. Invalid.\n");
 		// print error msg
 		return 0;
@@ -377,13 +378,13 @@ int DestroyLock_Syscall(int index) {
 		// wrong address space, foo
 		// print error msg
 		printf("Wrong address space, foo\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return 0;
 	}
 	if (locks[index].isToBeDeleted || locks[index].deleted) {
 		// Delete has already been called for this lock. don't do anything
 		printf("Delete has already been called for this lock.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return 0;
 	}
 	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
@@ -401,27 +402,27 @@ int DestroyLock_Syscall(int index) {
 		locks[index].isToBeDeleted = true;
 	}
 	
-	kernelLock->Release();
+	lock_condLock->Release();
 	return 1;
 }
 
 int DestroyCondition_Syscall(int index) {
-	kernelLock-> Acquire();
+	lock_condLock-> Acquire();
 	
 	if (index < 0) {
-		kernelLock->Release();
+		lock_condLock->Release();
 		// print error msg
 		return 0;
 	}
 	if (conditions[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return 0;
 	}
 	if (conditions[index].isToBeDeleted || conditions[index].deleted) {
 		// Delete has already been called for this condition. don't do anything
-		kernelLock->Release();
+		lock_condLock->Release();
 		return 0;
 	}
 	if (conditions[index].condition->getFree() && !conditions[index].beingAcquired) {
@@ -437,64 +438,64 @@ int DestroyCondition_Syscall(int index) {
 		conditions[index].isToBeDeleted = true;
 	}
 	
-	kernelLock->Release();
+	lock_condLock->Release();
 	return 1;
 }
 
 void Acquire_Syscall(int index){
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	if (index < 0) {
 		printf("Lock index less than zero. Invalid.\n");
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		printf("Wrong address space, foo\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
 		printf("Lock does not exist.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	//
 	if(locks[index].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
 		printf("Lock is going to be deleted, no furthur action permitted.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 
 	locks[index].beingAcquired = true;
-	kernelLock->Release();
+	lock_condLock->Release();
 	locks[index].lock->Acquire();
 	locks[index].beingAcquired = false;
 }
 
 void Release_Syscall(int index){
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	if (index < 0) {
 		// print error msg
 		printf("Lock index less than zero. Invalid.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		printf("Wrong address space, foo.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
 		printf("Lock does not exist.\n");
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 
@@ -506,163 +507,163 @@ void Release_Syscall(int index){
 		numLocks--;
 	}
 
-	kernelLock->Release();
+	lock_condLock->Release();
 }
 
 void Signal_Syscall(int cIndex, int lIndex) {
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	
 	conditions[cIndex].condition->Signal(locks[lIndex].lock);
 	
-	kernelLock->Release();
+	lock_condLock->Release();
 	
 }
 
 void Broadcast_Syscall(int cIndex, int lIndex) {
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	
 	conditions[cIndex].condition->Broadcast(locks[lIndex].lock);
 	
-	kernelLock->Release();
+	lock_condLock->Release();
 	
 }
 
 void Wait_Syscall(int cIndex, int lIndex) {
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
-		kernelLock->Release();
+		lock_condLock->Release();
 		return;
 	}
 	
 	locks[lIndex].beingAcquired = true;
 	conditions[cIndex].beingAcquired = true;
-	kernelLock->Release();
+	lock_condLock->Release();
 	
 	conditions[cIndex].condition->Wait(locks[lIndex].lock);
 	
-	kernelLock->Acquire();
+	lock_condLock->Acquire();
 	locks[lIndex].beingAcquired = false;
 	conditions[cIndex].beingAcquired = false;
 	
@@ -674,58 +675,67 @@ void Wait_Syscall(int cIndex, int lIndex) {
 		conditions[cIndex].deleted = true;
 		numConditions --;
 	}
-	kernelLock->Release();
+	lock_condLock->Release();
 	return;
 }
 
 void Exit_Syscall() {
 }
 
-spaceId Exec_Syscall (unsigned int vaddr, int len) {
-	else if ((which == SyscallException) && (type == SC_Fork)) {
-	}
-	char *buf = new char[len+1];	// Kernel buffer to put the name in
-	if (!buf) {
-		printf("%s","Can't allocate kernel buffer in Open\n");
+void exec_thread() {
+	memoryLock->Acquire();
+	currentThread->space->InitRegisters();
+	currentThread->space->RestoreState();
+	memoryLock->Release();
+	machine->Run();
+}
+
+SpaceId Exec_Syscall (unsigned int vaddr) {
+
+	char *fileName;
+	if ( !(fileName = new char[256]) ) {
+		printf("%s","Error allocating kernel buffer for executing process!\n");
 		return -1;
+    } else {
+        if ( copyin(vaddr,256, fileName) == -1 ) {
+			printf("%s","Bad pointer passed to executing process\n");
+			delete[] fileName;
+			return -1; 
+		}
     }
 	
-    OpenFile *f;			// The new open file
-    int id;	
-	
-	bool result;
-	//Read the virtual address of the name of the process from the
-		//register R4 virtualAddress = machine->ReadRegister(4).
-	vaddr = machine->ReadRegister(4);
-	//Convert it to the physical address and read the contents from there ,
-		//which will give you the name of the process to be executed.
-	int *paddr = new int;
-	machine->ReadMem( vaddr, 1, paddr );
-	
-    if( copyin(vaddr,len,buf) == -1 ) {
-		printf("%s","Bad pointer passed to Exec\n");
-		delete[] buf;
-		return -1;
-    }
+    OpenFile *f;
 	
 	//Now Open that file using filesystem->Open.
 	//Store its openfile pointer.
-    f = fileSystem->Open(buf);
-    delete[] buf;
+    f = fileSystem->Open(fileName);
 	
-	//Create new addrespace for this executable file.
-	//Create a new thread.
-	Thread* t = new Thread();
-	//Allocate the space created to this thread's space.
-	*AddrSpace space = new AddrSpace(f);
-	*Process process = new Process();
-	//Update the process table and related data structures.
-	process->processId = processTable.Put(process);
-	numProcesses++;
-	//Write the space ID to the register 2.
-	machine->WriteRegister(2, process->processId);
-	//Fork the new thread. I call it exec_thread.
-	return process->processId
+	if(f != NULL) {
+		memoryLock->Acquire();
+		//Create new addrespace for this executable file.
+		//Create a new thread.
+		Thread* t = new Thread(fileName);
+		//Allocate the space created to this thread's space.
+		AddrSpace* space = new AddrSpace(f);
+		Process* process = new Process;
+		process->space = space;
+		t->space = space;
+		process->name = fileName;
+		process->numThreads = 1;
+		//Update the process table and related data structures.
+		process->processId = processTable.Put(process);
+		numProcesses++;
+		//Write the space ID to the register 2.
+		machine->WriteRegister(2, process->processId);
+		//Fork the new thread. I call it exec_thread.
+		memoryLock->Release();
+		t->Fork((VoidFunctionPtr)exec_thread, NULL);
+		return process->processId;
+	}
+	else {
+		printf("Couldn't open file.\n");
+		return -1;
+	}
 }
 
 void ExceptionHandler(ExceptionType which) {
@@ -774,7 +784,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Exec:
 		DEBUG('a', "Exec syscall.\n");
-		
+		rv = Exec_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Fork:
 		DEBUG('a', "Fork syscall.\n");
