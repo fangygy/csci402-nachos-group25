@@ -170,19 +170,19 @@ void Broadcast(int cIndex, int lIndex);
 
 /* Creates a Lock.
  */
-void CreateLock(char* name, int length);
+int CreateLock(char* name, int length);
 
 /* Destroys a Lock.
  */
-void DestroyLock(int index);
+int DestroyLock(int index);
 
 /* Creates a condition variable.
 */
-void CreateCondition(char* name, int length);
+int CreateCondition(char* name, int length);
 
 /* Destroys a condition variable.
 */
-void DestroyCondition(int index);
+int DestroyCondition(int index);
 
 
 

@@ -143,6 +143,7 @@ void Lock::Acquire()
 
 	if (currentThread == holder) {
 		(void) interrupt->SetLevel(oldLevel);
+		printf("%s: Lock owner acquiring own lock. Returning...\n", currentThread->getName());
 		return;
 	}
 
