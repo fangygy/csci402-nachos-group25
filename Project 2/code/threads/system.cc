@@ -18,6 +18,11 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
+struct Process {
+	AddrSpace* space;
+	unsigned int numThreads;
+	SpaceId id;
+};
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -29,6 +34,8 @@ SynchDisk   *synchDisk;
 
 #ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
 Machine *machine;	// user program memory and registers
+Table processTable(10);
+int numProcesses;
 #endif
 
 #ifdef NETWORK
