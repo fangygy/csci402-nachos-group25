@@ -3,7 +3,7 @@
 #include "addrspace.h"
 #include "syscall.h"
 
-struct process {
+struct Process {
 	AddrSpace* space;
 	char* name;
 	SpaceId processId;

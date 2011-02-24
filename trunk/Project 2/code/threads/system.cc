@@ -18,11 +18,6 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
-struct Process {
-	AddrSpace* space;
-	unsigned int numThreads;
-	SpaceId id;
-};
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
