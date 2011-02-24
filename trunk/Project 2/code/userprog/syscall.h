@@ -141,11 +141,11 @@ void Yield();
 
 /* Acquires the lock
  */
-void Acquire();
+void Acquire(int index);
 
 /* Releases the lock
  */
-void Release();
+void Release(int index);
 
 /* 
  * Condition Variable functions: Wait, Signal and Broadcast
@@ -153,16 +153,16 @@ void Release();
  
 /* Waits on the condition variable to signal it awake.
  */
-void Wait();
+void Wait(int cIndex, int lIndex);
 
  
 /* Signals the next thread waiting on the condition variable awake.
  */
-void Signal();
+void Signal(int cIndex, int lIndex);
 
 /* Wakes up all sleeping threads waiting on the condition variable.
  */
-void Broadcast();
+void Broadcast(int cIndex, int lIndex);
 
 /* 
  * Constructor and destructor functions for locks and condition variables.
@@ -170,19 +170,19 @@ void Broadcast();
 
 /* Creates a Lock.
  */
-void CreateLock();
+void CreateLock(char* name, int length);
 
 /* Destroys a Lock.
  */
-void DestroyLock();
+void DestroyLock(int index);
 
 /* Creates a condition variable.
 */
-void CreateCondition();
+void CreateCondition(char* name, int length);
 
 /* Destroys a condition variable.
 */
-void DestroyCondition();
+void DestroyCondition(int index);
 
 
 
