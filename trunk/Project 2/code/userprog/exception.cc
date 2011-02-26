@@ -778,12 +778,8 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 void kernel_thread(unsigned int vaddr) {
 	memoryLock->Acquire();
 	
-	currentThread->space->AllocateStack();
-	machine->WriteRegister(PCReg, vaddr);	
-    machine->WriteRegister(NextPCReg, vaddr+4);
-	currentThread->space->RestoreState();
-    machine->WriteRegister(StackReg, numPages * PageSize - 16);
-	
+	currentThread->space->AllocateStack(vaddr);
+
 	memoryLock->Release();
 	machine->Run();
 }

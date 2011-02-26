@@ -32,7 +32,7 @@ class AddrSpace {
     void InitRegisters();		// Initialize user-level CPU registers,
 					// before jumping to user code
 	
-	void AllocateStack();
+	void AllocateStack(unsigned int vaddr);
 	void DeallocateStack();
 
     void SaveState();			// Save/restore address space-specific
