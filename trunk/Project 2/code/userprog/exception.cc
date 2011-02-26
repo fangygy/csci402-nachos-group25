@@ -282,6 +282,7 @@ int CreateLock_Syscall(unsigned int vaddr, int length) {
 	lock_condLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
+		printf("Error: Number of locks exceeded maximum lock limit. Returning.\n");
 		return -1;
 	}
 	
@@ -324,6 +325,7 @@ int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	lock_condLock-> Acquire();
 	if (numConditions >= MAX_CONDITIONS) {
 		// print error msg?
+		printf("Error: Number of CVs exceeded maximum CV limit.\n");
 		return -1;
 	}
 	
@@ -409,22 +411,26 @@ int DestroyCondition_Syscall(int index) {
 	if (index < 0) {
 		lock_condLock->Release();
 		// print error msg
+		printf("CV index less than zero. Invalid.\n");
 		return 0;
 	}
 	if (conditions[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("CV address is wrong. Invalid.\n");
 		lock_condLock->Release();
 		return 0;
 	}
 	if (conditions[index].isToBeDeleted || conditions[index].deleted) {
 		// Delete has already been called for this condition. don't do anything
 		lock_condLock->Release();
+		printf("CV is going to be deleted. Ignored. \n");
 		return 0;
 	}
 	if (conditions[index].condition->getFree() && !conditions[index].beingAcquired) {
 		// Condition isn't in use; delete it
 		delete conditions[index].condition;
+		printf("CV not in use and is now deleted.\n");
 		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
 		conditions[index].space = NULL;			// make the address space null
 		conditions[index].isToBeDeleted = false;
@@ -432,6 +438,7 @@ int DestroyCondition_Syscall(int index) {
 		numConditions --;
 	} else {
 		// Condition is still in use; will delete it later
+		printf("CV still in use. Will delete later.\n");
 		conditions[index].isToBeDeleted = true;
 	}
 	
@@ -511,43 +518,51 @@ void Signal_Syscall(int cIndex, int lIndex) {
 	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
+		printf("Signal index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
+		printf("CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("CV address space is wrong. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
+		printf("CV does not exist. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
+		printf("CV's Lock does not exist. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
+		printf("CV is going to be deleted. Ignored. \n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
+		printf("CV's Lock is going to be deleted. Ignored. \n");
 		lock_condLock->Release();
 		return;
 	}
