@@ -277,6 +277,7 @@ void AddrSpace::AllocateStack()
 		pageTable[i].readOnly = FALSE;
 	}
 	
+	currentThread->firstPageTable = numPages;
 	numPages += 8;
 	TranslationEntry *deleteTable = pageTable;
 	pageTable = newPageTable;
@@ -284,7 +285,13 @@ void AddrSpace::AllocateStack()
 }
 
 void AddrSpace::DeallocateStack() {
-	int *vaddr = currentThread->stackTop;		// virtual address of thread stack
-	
-	// clear physical page
+	int index = currentThread->firstPageTable;
+	int paddr;		// physical address of thread stack
+	for(int i = index; i < (index + 8); i++) {
+		paddr = pageTable[index].physicalPage;
+		mainmemLock->Acquire();
+		bitmap.clear(paddr);		// clear physical page
+		mainmemLock->Release();
+		pageTable[i]valid = FALSE;		// invalidate the page table entry
+	}
 }
