@@ -720,7 +720,6 @@ void Exit_Syscall() {
 }
 
 void exec_thread() {
-
 	printf("exec_thread running.\n");
 	memoryLock->Acquire();
 	printf("Calling InitRegisters.\n");
@@ -771,9 +770,14 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//Write the space ID to the register 2.
 		machine->WriteRegister(2, process->processId);
 		//Fork the new thread. I call it exec_thread.
+		
+		// need vaddr
+		//printf("Allocating stack.\n");
+		//t->space->AllocateStack();
+		
 		memoryLock->Release();
 		printf("Forking exec thread.\n");
-		t->Fork((VoidFunctionPtr)exec_thread, NULL);
+		t->Fork((VoidFunctionPtr)exec_thread, NULL);		// exec_thread NOT RUNNING!
 		printf("Forked thread.\n");
 		return process->processId;
 	}
@@ -784,6 +788,7 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 }
 
 void kernel_thread(unsigned int vaddr) {
+	printf("kernel_thread\n");
 	memoryLock->Acquire();
 	
 	currentThread->space->AllocateStack(vaddr);
@@ -793,19 +798,33 @@ void kernel_thread(unsigned int vaddr) {
 }
 
 void Fork_Syscall(unsigned int vaddr) {
+	printf("\nFork_Syscall\n");
 	if (vaddr > 0) {
 		memoryLock->Acquire();
+		if (numProcesses == 0) {
+			printf("There is no process for this thread to Fork to.\n");
+			memoryLock->Release();
+			return;
+		}
+		
 		Process *tempProcess;
+		printf("NumProcesses:%d", numProcesses);
+		printf("\nFinding correct process...\n");
 		for(int i = 0; i < numProcesses; i++) {
 			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
 				break;
 			}
 		}
+		printf("\Making new thread\n");
 		Thread *t = new Thread("name");
+		printf("New thread created successfully!\n");
 		t->space = tempProcess->space;
+		printf("1\n");
 		tempProcess->numThreads++;
+		printf("2\n");
 		memoryLock->Release();
+		printf("\Calling t->Fork()\n");
 		t->Fork((VoidFunctionPtr)kernel_thread, vaddr);
 		return;
 	}
