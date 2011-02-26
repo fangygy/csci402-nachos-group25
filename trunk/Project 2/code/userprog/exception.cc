@@ -693,10 +693,10 @@ void Wait_Syscall(int cIndex, int lIndex) {
 
 
 void Exit_Syscall() {
-
 	Process* process;
+	// find the current process
 	for(int i = 0; i < numProcesses; i++) {
-		process = processTable.Get(i);
+		process = (Process*)processTable.Get(i);
 		if(process->space == currentThread->space) {
 			break;
 		}
