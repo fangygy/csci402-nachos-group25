@@ -162,7 +162,11 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
-    bzero(machine->mainMemory, size);
+    // bzero(machine->mainMemory, size);
+	
+	for (i = 0; i < numPages; i++) {
+		bzero(&(machine->mainMemory[pageTable[i].physicalPage * PageSize]), PageSize);
+	}
 
 // then, copy in the code and data segments into memory
 	//Physical address, page size, inFileAddr + virual address
