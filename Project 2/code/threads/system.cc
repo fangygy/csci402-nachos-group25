@@ -31,6 +31,8 @@ SynchDisk   *synchDisk;
 Machine *machine;	// user program memory and registers
 Table processTable(10);
 int numProcesses;
+BitMap bitMap(NumPhysPages);
+Lock* mainmemLock;
 #endif
 
 #ifdef NETWORK
@@ -151,6 +153,7 @@ Initialize(int argc, char **argv)
     
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
+	mainmemLock = new Lock("MainMemoryLock");
 #endif
 
 #ifdef FILESYS
