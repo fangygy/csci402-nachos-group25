@@ -720,8 +720,12 @@ void Exit_Syscall() {
 }
 
 void exec_thread() {
+
+	printf("exec_thread running.\n");
 	memoryLock->Acquire();
+	printf("Calling InitRegisters.\n");
 	currentThread->space->InitRegisters();
+	printf("Calling RestoreState.\n");
 	currentThread->space->RestoreState();
 	memoryLock->Release();
 	machine->Run();
@@ -753,7 +757,9 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//Create a new thread.
 		Thread* t = new Thread(fileName);
 		//Allocate the space created to this thread's space.
+		printf("New address space.\n");
 		AddrSpace* space = new AddrSpace(f);
+		printf("New address space created.\n");
 		Process* process = new Process;
 		process->space = space;
 		t->space = space;
@@ -766,7 +772,9 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		machine->WriteRegister(2, process->processId);
 		//Fork the new thread. I call it exec_thread.
 		memoryLock->Release();
+		printf("Forking exec thread.\n");
 		t->Fork((VoidFunctionPtr)exec_thread, NULL);
+		printf("Forked thread.\n");
 		return process->processId;
 	}
 	else {
