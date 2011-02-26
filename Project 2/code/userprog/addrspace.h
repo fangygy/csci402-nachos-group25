@@ -33,6 +33,7 @@ class AddrSpace {
 					// before jumping to user code
 	
 	void AllocateStack();
+	void DeallocateStack();
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch
