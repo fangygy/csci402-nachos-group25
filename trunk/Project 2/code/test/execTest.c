@@ -14,4 +14,5 @@ int main()
 	Exec("Blahblahfilefail");
 	Exec("../test/forkTest");
 	/* not reached */
+	Exit(0);
 }
