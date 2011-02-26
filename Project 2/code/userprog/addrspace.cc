@@ -290,8 +290,8 @@ void AddrSpace::DeallocateStack() {
 	for(int i = index; i < (index + 8); i++) {
 		paddr = pageTable[index].physicalPage;
 		mainmemLock->Acquire();
-		bitmap.clear(paddr);		// clear physical page
+		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
-		pageTable[i]valid = FALSE;		// invalidate the page table entry
+		pageTable[i].valid = FALSE;		// invalidate the page table entry
 	}
 }
