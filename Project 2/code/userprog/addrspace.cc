@@ -254,7 +254,7 @@ void AddrSpace::RestoreState()
     machine->pageTableSize = numPages;
 }
 
-void AddrSpace::AllocateStack()
+void AddrSpace::AllocateStack(unsigned int vaddr)
 {
 	TranslationEntry *newPageTable = new TranslationEntry[numPages+8];
 	for(int i = 0; i < numPages; i++) {
@@ -282,6 +282,12 @@ void AddrSpace::AllocateStack()
 	TranslationEntry *deleteTable = pageTable;
 	pageTable = newPageTable;
 	delete deleteTable;
+	
+	machine->WriteRegister(PCReg, vaddr);	
+    machine->WriteRegister(NextPCReg, vaddr+4);
+	currentThread->space->RestoreState();
+    machine->WriteRegister(StackReg, numPages * PageSize - 16);
+	
 }
 
 void AddrSpace::DeallocateStack() {
