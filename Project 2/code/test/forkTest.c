@@ -10,14 +10,14 @@
 
 void testFunc(){
 	Write("A forked function.", 64, ConsoleOutput);
-	Exit();
+	Exit(0);
 }
 
 int main()
 {
 	Write("Testing fork syscall...", 64, ConsoleOutput);
-	Fork(testFork());
-	Fork(testFork());
+	Fork(testFunc);
+	Fork(testFunc);
 
 	/* not reached */
 }
