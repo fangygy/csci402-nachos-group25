@@ -282,3 +282,9 @@ void AddrSpace::AllocateStack()
 	pageTable = newPageTable;
 	delete deleteTable;
 }
+
+void AddrSpace::DeallocateStack() {
+	int *vaddr = currentThread->stackTop;		// virtual address of thread stack
+	
+	// clear physical page
+}
