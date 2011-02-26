@@ -789,7 +789,7 @@ void Fork_Syscall(unsigned int vaddr) {
 		memoryLock->Acquire();
 		Process *tempProcess;
 		for(int i = 0; i < numProcesses; i++) {
-			tempProcess = processTable.Get(i);
+			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
 				break;
 			}
