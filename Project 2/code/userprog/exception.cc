@@ -861,7 +861,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Fork:
 		DEBUG('a', "Fork syscall.\n");
-		
+		Fork_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Acquire:
 		DEBUG('a', "Acquire syscall.\n");
