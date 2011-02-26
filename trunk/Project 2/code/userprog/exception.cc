@@ -277,10 +277,6 @@ void Close_Syscall(int fd) {
     }
 }
 
-void Exit_Syscall() {
-	currentThread->Finish();
-}
-
 int CreateLock_Syscall(unsigned int vaddr, int length) {
 	// axe crowley
 	lock_condLock-> Acquire();
@@ -680,6 +676,34 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
+
+void Exit_Syscall() {
+
+	Process* process;
+	for(int i = 0; i < numProcesses; i++) {
+		process = processTable.Get(i);
+		if(process->space == currentThread->space) {
+			break;
+		}
+	}
+	
+	if(process->numThreads == 1) {
+	//If last thread in process
+		if(numProcesses == 1) {
+		//If last process
+			interrupt->Halt();
+		}
+		else {
+			//What do we do here?
+			//How to deallocate memory from process?
+		}
+	}
+	else {
+		//Deallocate stack? How?
+		currentThread->Finish();
+	}
+}
+
 void exec_thread() {
 	memoryLock->Acquire();
 	currentThread->space->InitRegisters();
@@ -733,6 +757,42 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 	else {
 		printf("Couldn't open file.\n");
 		return -1;
+	}
+}
+
+void kernel_thread(unsigned int vaddr) {
+	memoryLock->Acquire();
+	
+	currentThread->space->AllocateStack();
+	machine->WriteRegister(PCReg, vaddr);	
+    machine->WriteRegister(NextPCReg, vaddr+4);
+	currentThread->space->RestoreState();
+    machine->WriteRegister(StackReg, numPages * PageSize - 16);
+	
+	memoryLock->Release();
+	machine->Run();
+}
+
+void Fork_Syscall(unsigned int vaddr) {
+	if (vaddr > 0) {
+		memoryLock->Acquire();
+		Process *tempProcess;
+		for(int i = 0; i < numProcesses; i++) {
+			tempProcess = processTable.Get(i);
+			if(tempProcess->space == currentThread->space) {
+				break;
+			}
+		}
+		Thread *t = new Thread("name");
+		t->space = tempProcess->space;
+		tempProcess->numThreads++;
+		memoryLock->Release();
+		t->Fork((VoidFunctionPtr)kernel_thread, vaddr);
+		return;
+	}
+	else {
+		printf("Bad virtual address for Fork\n");
+		return;
 	}
 }
 
