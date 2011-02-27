@@ -9,13 +9,13 @@
 #include "syscall.h"
 
 void testFunc(){
-	Write("A forked function.", 64, ConsoleOutput);
+	Write("A forked function.\n", sizeof("A forked function.\n"), ConsoleOutput);
 	Exit(0);
 }
 
 int main()
 {
-	Write("Testing fork syscall...", 64, ConsoleOutput);
+	Write("Testing fork syscall...\n", sizeof("Testing fork syscall...\n"), ConsoleOutput);
 	Fork(testFunc);
 	Fork(testFunc);
 

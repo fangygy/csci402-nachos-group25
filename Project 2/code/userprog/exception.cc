@@ -282,7 +282,7 @@ int CreateLock_Syscall(unsigned int vaddr, int length) {
 	lock_condLock-> Acquire();
 	if (numLocks >= MAX_LOCKS) {
 		// print error msg?
-		printf("Error: Number of locks exceeded maximum lock limit. Returning.\n");
+		printf("CreateLock_Syscall: Error: Number of locks exceeded maximum lock limit. Returning.\n");
 		return -1;
 	}
 	
@@ -325,7 +325,7 @@ int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	lock_condLock-> Acquire();
 	if (numConditions >= MAX_CONDITIONS) {
 		// print error msg?
-		printf("Error: Number of CVs exceeded maximum CV limit.\n");
+		printf("CreateCondition_Syscall: Error: Number of CVs exceeded maximum CV limit.\n");
 		return -1;
 	}
 	
@@ -369,35 +369,35 @@ int DestroyLock_Syscall(int index) {
 	// check on return value
 	if (index < 0) {
 		lock_condLock->Release();
-		printf("Lock index less than zero. Invalid.\n");
+		printf("DestroyLock_Syscall: Lock index less than zero. Invalid.\n");
 		// print error msg
 		return 0;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("Wrong address space, foo\n");
+		printf("DestroyLock_Syscall: Lock's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return 0;
 	}
 	if (locks[index].isToBeDeleted || locks[index].deleted) {
 		// Delete has already been called for this lock. don't do anything
-		printf("Delete has already been called for this lock.\n");
+		printf("DestroyLock_Syscall: Delete has already been called for this lock.\n");
 		lock_condLock->Release();
 		return 0;
 	}
 	if (locks[index].lock->getFree() && !locks[index].beingAcquired) {
 		// Lock isn't in use; delete it
-		printf("Lock isn't in use and is now being deleted.\n");
+		printf("DestroyLock_Syscall: Lock isn't in use and is now being deleted.\n");
 		delete locks[index].lock;
-		locks[index].lock = NULL;			// nullify lock pointer; this is now a free space
+		locks[indDestroyLock_Syscall: ex].lock = NULL;			// nullify lock pointer; this is now a free space
 		locks[index].space = NULL;			// make the address space null
 		locks[index].isToBeDeleted = false;
 		locks[index].deleted = true;
 		numLocks --;
 	} else {
 		// Lock is still in use; will delete it later
-		printf("Lock still in use. Delete later.\n");
+		printf("DestroyLock_Syscall: Lock still in use. Delete later.\n");
 		locks[index].isToBeDeleted = true;
 	}
 	
@@ -411,26 +411,26 @@ int DestroyCondition_Syscall(int index) {
 	if (index < 0) {
 		lock_condLock->Release();
 		// print error msg
-		printf("CV index less than zero. Invalid.\n");
+		printf("DestroyCondition_Syscall: CV index less than zero. Invalid.\n");
 		return 0;
 	}
 	if (conditions[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("CV address is wrong. Invalid.\n");
+		printf("DestroyCondition_Syscall: Condition's address space is not equal to this thread's address space. Invalid.\n");
 		lock_condLock->Release();
 		return 0;
 	}
 	if (conditions[index].isToBeDeleted || conditions[index].deleted) {
 		// Delete has already been called for this condition. don't do anything
 		lock_condLock->Release();
-		printf("CV is going to be deleted. Ignored. \n");
+		printf("DestroyCondition_Syscall: CV is going to be deleted. Ignored. \n");
 		return 0;
 	}
 	if (conditions[index].condition->getFree() && !conditions[index].beingAcquired) {
 		// Condition isn't in use; delete it
 		delete conditions[index].condition;
-		printf("CV not in use and is now deleted.\n");
+		printf("DestroyCondition_Syscall: CV not in use and is now deleted.\n");
 		conditions[index].condition = NULL;		// nullify condition pointer; this is now a free space
 		conditions[index].space = NULL;			// make the address space null
 		conditions[index].isToBeDeleted = false;
@@ -438,7 +438,7 @@ int DestroyCondition_Syscall(int index) {
 		numConditions --;
 	} else {
 		// Condition is still in use; will delete it later
-		printf("CV still in use. Will delete later.\n");
+		printf("DestroyCondition_Syscall: CV still in use. Will delete later.\n");
 		conditions[index].isToBeDeleted = true;
 	}
 	
@@ -449,7 +449,7 @@ int DestroyCondition_Syscall(int index) {
 void Acquire_Syscall(int index){
 	lock_condLock->Acquire();
 	if (index < 0) {
-		printf("Lock index less than zero. Invalid.\n");
+		printf("Acquire_Syscall: Lock index less than zero. Invalid.\n");
 		// print error msg
 		lock_condLock->Release();
 		return;
@@ -457,20 +457,20 @@ void Acquire_Syscall(int index){
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("Wrong address space, foo\n");
+		printf("Acquire_Syscall: Lock's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
-		printf("Lock does not exist.\n");
+		printf("Acquire_Syscall: Lock does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
 	//
 	if(locks[index].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
-		printf("Lock is going to be deleted, no furthur action permitted.\n");
+		printf("Acquire_Syscall: Lock is going to be deleted. Ignored.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -485,20 +485,20 @@ void Release_Syscall(int index){
 	lock_condLock->Acquire();
 	if (index < 0) {
 		// print error msg
-		printf("Lock index less than zero. Invalid.\n");
+		printf("Release_Syscall: Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("Wrong address space, foo.\n");
+		printf("Release_Syscall: Lock's address space does not equal this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[index].deleted){
 		// Lock does not exist
-		printf("Lock does not exist.\n");
+		printf("Release_Syscall: Lock does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -518,51 +518,51 @@ void Signal_Syscall(int cIndex, int lIndex) {
 	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
-		printf("Signal index less than zero. Invalid.\n");
+		printf("Signal_Syscall: Signal index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
-		printf("CV's Lock index less than zero. Invalid.\n");
+		printf("Signal_Syscall: CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("CV address space is wrong. Invalid.\n");
+		printf("Signal_Syscall: CV address space is wrong. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
-		printf("CV's Lock index less than zero. Invalid.\n");
+		printf("Signal_Syscall: CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
-		printf("CV does not exist. Invalid.\n");
+		printf("Signal_Syscall: CV does not exist. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
-		printf("CV's Lock does not exist. Invalid.\n");
+		printf("Signal_Syscall: CV's Lock does not exist. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
-		printf("CV is going to be deleted. Ignored. \n");
+		printf("Signal_Syscall: CV is going to be deleted. Ignored. \n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
-		printf("CV's Lock is going to be deleted. Ignored. \n");
+		printf("Signal_Syscall: CV's Lock is going to be deleted. Ignored. \n");
 		lock_condLock->Release();
 		return;
 	}
@@ -577,43 +577,51 @@ void Broadcast_Syscall(int cIndex, int lIndex) {
 	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
+		printf("Broadcast_Syscall: Condition index less than zero. Invalid.\n);
 		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
+		printf("Broadcast_Syscall: Lock index less than zero. Invalid.\n);
 		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Broadcast_Syscall: Condition's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Broadcast_Syscall: Lock's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
+		printf("Broadcast_Syscall: Condition does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
+		printf("Broadcast_Syscall: Lock does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
+		printf("Broadcast_Syscall: Condition is going to be deleted. Ignored.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
+		printf("Broadcast_Syscall: Lock is going to be deleted. Ignored.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -628,43 +636,51 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
+		printf("Wait_Syscall: CV index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
+		printf("Wait_Syscall: Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Wait_Syscall: Condition's address space not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (locks[lIndex].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
+		printf("Wait_Syscall: Lock's address space not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
+		printf("Wait_Syscall: Condition does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].deleted){
 		// Lock does not exist
+		printf("Wait_Syscall: Lock does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(conditions[cIndex].isToBeDeleted){
 		// Condition is going to be deleted, no further action permitted
+		printf("Wait_Syscall: Condition is going to be deleted. Ignored.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
+		printf("Wait_Syscall: Lock is going to be deleted. Ignored.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -785,9 +801,9 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//t->space->AllocateStack();
 		
 		memoryLock->Release();
-		printf("Forking exec thread.\n");
+		printf("Exec_Syscall: Forking exec thread.\n");
 		t->Fork((VoidFunctionPtr)exec_thread, NULL);		// exec_thread NOT RUNNING!
-		printf("Forked thread.\n");
+		printf("Exec_Syscall: Forked thread.\n");
 		return process->processId;
 	}
 	else {
@@ -812,14 +828,14 @@ void Fork_Syscall(unsigned int vaddr) {
 	if (vaddr > 0) {
 		memoryLock->Acquire();
 		if (numProcesses == 0) {
-			printf("There is no process for this thread to Fork to.\n");
+			printf("Fork_Syscall: There is no process for this thread to Fork to.\n");
 			memoryLock->Release();
 			return;
 		}
 		
 		Process *tempProcess;
 		printf("NumProcesses:%d", numProcesses);
-		printf("\nFinding correct process...\n");
+		printf("\nFork_Syscall: Finding correct process...\n");
 		for(int i = 0; i < numProcesses; i++) {
 			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
@@ -827,9 +843,9 @@ void Fork_Syscall(unsigned int vaddr) {
 				break;
 			}
 		}
-		printf("Making new thread\n");
+		printf("\Fork_Syscall: Making new thread\n");
 		Thread *t = new Thread("name");
-		printf("New thread created successfully!\n");
+		printf("Fork_Syscall: New thread created successfully!\n");
 		t->space = tempProcess->space;
 		printf("1\n");
 		tempProcess->numThreads++;
