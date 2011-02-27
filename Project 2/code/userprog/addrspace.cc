@@ -317,7 +317,7 @@ void AddrSpace::DeallocateStack() {
 		printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
-		//pageTable[i].valid = false;		// invalidate the page table entry
+		pageTable[i].valid = FALSE;		// invalidate the page table entry
 	}
 }
 
@@ -325,13 +325,13 @@ void AddrSpace::DeallocateProcess() {
 	DeallocateStack();
 	int paddr;
 	for(int i = 0; i < nonStackPageEnd; i++) {
-		if(pageTable[i].valid) {
+		if(pageTable[i].valid == TRUE) {
 			paddr = pageTable[i].physicalPage;
 			printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 			mainmemLock->Acquire();
 			bitMap.Clear(paddr);
 			mainmemLock->Release();
-			//pageTable[i].valid = FALSE;
+			pageTable[i].valid = FALSE;
 		}
 	}
 
