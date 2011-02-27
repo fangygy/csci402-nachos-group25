@@ -721,25 +721,31 @@ void Exit_Syscall(int status) {
 	}
 	if(process == NULL) {
 		printf("Main/initial thread.\n");
+		currentThread->space->DeallocateProcess();
 		currentThread->Finish();
 	}
 	if(process->numThreads == 1) {
 	//If last thread in process
 		if(numProcesses == 1) {
 		//If last process
+			process->space->DeallocateProcess();
 			printf("Last process\n");
 			interrupt->Halt();
 		}
 		else {
 			printf("Last thread in process\n");
+			numProcesses--;
+			process->space->DeallocateProcess();
+			currentThread->Finish();
 			//What do we do here?
 			//How to deallocate memory from process?
 		}
 	}
 	else {
 		//Deallocate stack? How?
+		process->numThreads--;
 		process->space->DeallocateStack();
-		printf("Just a thread.\n");
+		printf("Just a thread finishing.\n");
 		currentThread->Finish();
 	}
 }
@@ -843,7 +849,7 @@ void Fork_Syscall(unsigned int vaddr) {
 				break;
 			}
 		}
-		printf("\Fork_Syscall: Making new thread\n");
+		printf("Fork_Syscall: Making new thread\n");
 		Thread *t = new Thread("name");
 		printf("Fork_Syscall: New thread created successfully!\n");
 		t->space = tempProcess->space;

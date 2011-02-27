@@ -34,6 +34,7 @@ class AddrSpace {
 	
 	void AllocateStack(unsigned int vaddr);
 	void DeallocateStack();
+	void DeallocateProcess();
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch
@@ -44,6 +45,7 @@ class AddrSpace {
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
+	unsigned int nonStackPageEnd;
 };
 
 #endif // ADDRSPACE_H

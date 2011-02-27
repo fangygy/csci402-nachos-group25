@@ -18,6 +18,7 @@ int main()
 	Write("Testing fork syscall...\n", sizeof("Testing fork syscall...\n"), ConsoleOutput);
 	Fork(testFunc);
 	Fork(testFunc);
+	Exit(0);
 
 	/* not reached */
 }
