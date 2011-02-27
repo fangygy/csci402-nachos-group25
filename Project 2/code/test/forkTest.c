@@ -14,7 +14,7 @@ int forkyforky(){
 }
 
 void testFunc(){
-	Write("A forked function.\n", sizeof("A forked function.\n"), ConsoleOutput);
+	Write("SUCCESS: A forked function.\n", sizeof("SUCCESS: A forked function.\n"), ConsoleOutput);
 	Exit(0);
 }
 
