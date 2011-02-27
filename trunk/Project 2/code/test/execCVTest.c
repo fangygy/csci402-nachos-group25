@@ -1,7 +1,6 @@
-/* CVTest1.c
+/* execCVTest.c
  *	
- * Test program to test functionality of CVs
- * Create, Destroy, Wait, Signal, Broadcast
+ * Test program to test functionality of Exec syscalls
  *	
  *	
  *
@@ -9,10 +8,11 @@
 
 #include "syscall.h"
 
+
 int main()
 {
-	Write("Executing CVTest1...\n\n", sizeof("Executing CVTest1...\n\n"), ConsoleOutput);
-	Exec("../test/CVTest1");
+	Write("Executing CVTest...\n", sizeof("Executing CVTest...\n"), ConsoleOutput);
+	Exec("../test/CVTest");
 	/* not reached */
 	Exit(0);
 }
