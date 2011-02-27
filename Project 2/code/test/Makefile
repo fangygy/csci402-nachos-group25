@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles yieldTest lockTest1 forkTest execTest CVTest1 execCVTest
+all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -68,11 +68,11 @@ yieldTest: yieldTest.o start.o
 	$(LD) $(LDFLAGS) start.o yieldTest.o -o yieldTest.coff
 	../bin/coff2noff yieldTest.coff yieldTest
 
-lockTest1.o: lockTest1.c
-	$(CC) $(CFLAGS) -c lockTest1.c
-lockTest1: lockTest1.o start.o
-	$(LD) $(LDFLAGS) start.o lockTest1.o -o lockTest1.coff
-	../bin/coff2noff lockTest1.coff lockTest1
+lockTest.o: lockTest.c
+	$(CC) $(CFLAGS) -c lockTest.c
+lockTest: lockTest.o start.o
+	$(LD) $(LDFLAGS) start.o lockTest.o -o lockTest.coff
+	../bin/coff2noff lockTest.coff lockTest
 
 forkTest.o: forkTest.c
 	$(CC) $(CFLAGS) -c forkTest.c
@@ -86,11 +86,11 @@ execTest: execTest.o start.o
 	$(LD) $(LDFLAGS) start.o execTest.o -o execTest.coff
 	../bin/coff2noff execTest.coff execTest
 
-CVTest1.o: CVTest1.c
-	$(CC) $(CFLAGS) -c CVTest1.c
-CVTest1: CVTest1.o start.o
-	$(LD) $(LDFLAGS) start.o CVTest1.o -o CVTest1.coff
-	../bin/coff2noff CVTest1.coff CVTest1
+CVTest.o: CVTest.c
+	$(CC) $(CFLAGS) -c CVTest.c
+CVTest: CVTest.o start.o
+	$(LD) $(LDFLAGS) start.o CVTest.o -o CVTest.coff
+	../bin/coff2noff CVTest.coff CVTest
 
 execCVTest.o: execCVTest.c
 	$(CC) $(CFLAGS) -c execCVTest.c
