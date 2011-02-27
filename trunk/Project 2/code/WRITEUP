@@ -1,5 +1,5 @@
-Title: Writeup for Project 1, Spring 2011
-Date: 02/06/11
+Title: Writeup for Project 2, Spring 2011
+Date: 02/27/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
 	Jasper Lee			jasperkl@usc.edu		3483925510
@@ -7,275 +7,61 @@ Group Num 25:
 
 I. Requirements:
 
-	- Build a synchronized, multi-threaded system utilizing shared data and a monitor
-	- Use this system to simulate a passport office, with customer prioritizarion and clerks
+	- Modify the Nachos code to support multiprogramming.
+	- Implement system calls and exception handling.
+	- Use this new system to simulate the passport office done in Project 1
 	
 II. Assumptions:
 
-	- We assumed that using the pseudocode given during lecures as a guideline for Locks and Condition Variables
-		would provide a smooth implementation for our threads
+	- We assumed... //guys? any ideas? I'll leave this part for durther discussion
 
 III. Design:
-	
-	- Customer
-		- Local variables include a unique identifier (SSN), cash on hand (randomly chosen increments of
-			$100, $600, $1100, $1600), and four boolean flags
-			- Each flag keeps track of which clerk the customer has visited: ApplicationClerk, PictureClerk,
-				PassportClerk, and Cashier
-			- WHILE any flag is false, stay inside this loop
-		- There is a random chance to go to passport line before the application and picture clerks
-			- This only happens once
-			- Customer will be punished upon being rejected, waiting a certain number of 
-				currentThread->Yield calls
-		- Visits clerks in order of ApplicationClerk == PictureClerk > PassportClerk > Cashier
-			- If customer has enough money, will always enter the privileged line UNLESS
-				both regular and privileged lines are empty. Gotta save money, right?
-			- When choosing between ApplicationClerk and PictureClerk, chooses whichever has the
-				shortest line, taking into account privileged and empty lines. If both lines are tied
-				or empty, then go to ApplicationClerk.
-		- Checks for Senators in three different situations:
-			- Before entering the office, if senators are present, go directly into the
-				Waiting Room.
-			- Between entering lines for different clerks, if senators are present, go 
-				directly to the Waiting Room.
-			- While in line, if senators are present, go directly to the Waiting Room, but remember
-				that customer was in which line.
-	- Senator
-		- Senators do not actively start lining up until the Passport Office is cleared of
-			all regular customers (can't be in the same room as riff-raffs, eh)
-			- Waits for the Manager to alert them that all customers have gone into the 
-				Waiting Room
-		- Otherwise, behaves exactly the same as customers when dealing with each different type
-			of clerk
-		- After all senators are finished, the Manager alerts all Customers to continue doing
-			whatever they were already doing
-	
-	- AppClerk
-		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
-		- While this thread is running
-			- check to see if the privileged line has customers first, then check the regular line
-			- when checking each line:
-				- decrease the line length
-				- set itself to available
-				- Signal the customer to let it know the clerk is ready
-				- then wait for the customer's response
-				- Once the customer responds, read the SSN from the data array
-				- check the customer type
-				- Set the customer's state to reflect the Application phase DONE
-				- Process the application, then signal the customer and release it
-			- If no customers in either line, go on break
-				- Wake up when Manager sees that there are customers in line
-	
-	- PicClerk
-		- Keeps track of the customer's SSN (also the index) and type (customer or senator)
-		- While this thread is running
-			- check to see if the privileged line has customers first, then check the regular line
-			- when checking each line:
-				- decrease the line length
-				- set itself to available
-				- Signal the customer to let it know the clerk is ready
-				- then wait for the customer's response
-				- Once the customer responds, read the SSN from the data array
-				- check the customer type
-				- Then proceed to take the customer's picture
-					- will loop as long as the picture is disliked by the customer
-					- There is a bool in the picture clerk data array for the customer to let
-					- him know if the picture is liked or not
-					- Will loop out once the picture is liked, and the pic clerk will continue to process
-				- Set the customer's state to reflect the Picture phase DONE
-				- Process the picture then signal the customer and release it
-			- If no customers in either line, go on break
-				- Wake up when Manager sees that there are customers in line
-	
-	- PassClerk
-		- Keep track of the SSN (also the index) and type of the current customer
-		- While this thread is running
-			- check to see if the privileged line has customers first, then check the regular line
-			- when checking each line:
-				- decrease the line length
-				- set self to available
-				- Signal the customer to let it know the clerk is ready
-				- Wait for the customer's response
-				- set state to BUSY
-				- Signal the first customer and wait for them
-				- record their SSN and type
-				- if customer has filed their application and taken their picture
-					- make a note to do their passport
-					- Signal the customer
-				- else
-					- punish and signal the customer
-				- If customer was in privileged line, accept their payment
-				- If I'm supposed to file the passport
-					- Yield (to simulate doing work)
-					- file the passport
-			- If no customers in either line, go on break
-				- Wake up when Manager sees that there are customers in line
-	
-	- Cashier
-		- Keep track of the SSN (also the index) and type of the current customer
-		- While this thread is running
-			- When checking the line:
-				- decrease the line length
-				- set self to available
-				- Signal the customer to let it know the cashier is ready
-				- Wait for the customer's response
-				- set state to BUSY
-				- Signal the first customer and wait for them
-				- record their SSN and type
-				- if customer's passport has been filed
-					- accept the customer's passport fee
-					- Signal the customer
-				- else
-					- punish and signal the customer
-			- If no customers in either line, go on break
-				- Wake up when Manager sees that there are customers in line
-	
-	- Manager
-		- keeps track of the total money made by the office
-		- while this thread is running
-			- constantly check all clerk lines for customers
-			- if customers exist, depending on the number, wake up either
-			- one clerk or all clerks for that line
-			- also checks for senators and broadcasts to everyone 
-			- if a senator is there
-			- will also print out a money report that includes
-			- the office's total money as well as each clerk's money
+	- // List out the new classes we made along with the ones we modified. Off the top of my head 
+	  // I can think of:
+
+	- exception.cc
+	- process.cc/h
+	- syscall.h
+	- addrspace.cc/h
 
 IV. Implementation:
 
 	+ Files Modified
-		+ synch.h, synch.cc
-		+ main.cc
+		+ addrspace.h, addrspace.cc
+		+ exception.cc
+		+ syscall.h
 		+ Makefile.common
+		+ Makefile (in test directory)
 	
 	+ Files added
-		+ officeMonitor.h, officeMonitor.cc
-		+ office.cc
+		+ process.h, process.cc
 	
 	+ Data Structures added
-		-- in file threads.cc/threads.h
-		class Lock {
-		  public:
-			Lock(char* debugName);  		// initialize lock to be FREE
-			~Lock();				// deallocate lock
-			char* getName() { return name; }	// debugging assist
-
-			void Acquire(); // these are the only operations on a lock
-			void Release(); // they are both *atomic*
-
-			bool isHeldByCurrentThread();	// true if the current thread
-							// holds this lock.  Useful for
-							// checking in Release, and in
-							// Condition variable ops below.
-
-		  private:
-			char* name;				// for debugging
-			bool  free; 
-			Thread* holder;			// holder of this lock
-			List *queue; 
-		};
-
-		class Condition {
-		  public:
-			Condition(char* debugName);		// initialize condition to 
-							// "no one waiting"
-			~Condition();			// deallocate the condition
-			char* getName() { return (name); }
-			
-			void Wait(Lock *conditionLock); 	// these are the 3 operations on 
-							// condition variables; releasing the 
-							// lock and going to sleep are 
-							// *atomic* in Wait()
-			void Signal(Lock *conditionLock);   // conditionLock must be held by
-			void Broadcast(Lock *conditionLock);// the currentThread for all of 
-							// these operations
-
-		  private:
-			char* name;
-			Lock* waitingLock;
-			List* queue;
-		};
+		-- in blah class.cc
 		
 	+ Data Structures created
-		-- in file office.cc
-		-- CUSTOMER/SENATOR HELPER FUNCTIONS
-		int doRandomCash ()
-		void checkSenator ()
-		void senLineCashier (int& myCash, int& SSN, bool& visitedCash)
-		void lineCashier (int& myCash, int& SSN, bool& visitedCash)
-		void talkPassClerk (int& SSN, bool& visitedPass, bool inPrivLine)
-		void talkAppClerk (int& SSN, bool& visitedApp, bool inPrivLine)
-		void talkPicClerk (int& SSN, bool& visitedPic, bool inPrivLine)
-		void lineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic)
-		void linePassClerk (int& myCash, int& SSN, bool& visitedPass)
-		void senLineAppPicClerk (int& myCash, int& SSN, bool& visitedApp, bool& visitedPic) 
-		void senLinePassClerk (int& myCash, int& SSN, bool& visitedPass)
-		
-		-- THREAD FUNCTIONS
-		void AppClerk (int index)
-		void PicClerk (int index)
-		void PassClerk (int index)
-		void Cashier (int index)
-		void Manager ()
-		
-		-- in officeMonitor.h/officeMonitor.cc
-		// MAX NUMBER OF AGENTS (for initilalization)
-		static const int MAX_CLERK
-		static const int MAX_CUSTOMER
-		
-		// Constructor
-		OfficeMonitor(int numAC, int numPC, int numPassC, int numCash);
-		
-		// Clerk States
-		enum clerkState {BUSY, AVAILABLE, BREAK};
-		// Customer States
-		enum custState { NONE, PICDONE, APPDONE, APPPICDONE, PASSDONE, ALLDONE };
-		// Customer Types
-		enum custType {CUSTOMER, SENATOR};
+		-- in blah blah .cc
 
 V. Testing:
 
 	+ How to test
-		Compile with gmake in the threads directory.
-		To test part 1 of assignment, run 'nachos -T'
-		To test part 2 of assignment, we have 4 different test cases:
-			Run office with 20 customers and 3 senators.
-			Run office with 30 customers.
-			Run office with 50 customers.
-			Run office with 1 customer and 3 senators.
+		Compile tests with gmake in the test directory.
+		If haven't done so beforehand, gmake programs in userprog directory.
+		To run tests, you must call them in the userprog directory.
 
-			To run each, type either 'nachos -P2,' 'nachos P3',' nachos P4', 
-			or 'nachos P5' respectively
+		To run lockTest, type:
+		nachos -x ../test/lockTest
+
+		To run execTest/forkTest, type:
+		nachos -x ../test/execTest
+
+		To run execCVTest/CVTest, type:
+		nachos -x ../test/execCVTest
 
 	+ Test Output
-		Our part 1 of the assignment runs through all test cases and outputs the proper results as
-		described in test_code.cc.
-		As for part 2, we have 4 different tests to run the passport office. Each test ran perfectly,
-		with customers interacting with clerks without having race conditions or context switching.
-		At the start of all tests, customers will be created and start off with the choice of
-		going to the PictureClerk or the ApplicationClerk first. Customers will always take the
-		shortest line (that is, the shortest between the clerks, as well as shortest between
-		regular and privileged lines), and customers always get on line one at a time.
-		Managers read from one Clerk's money at a time, and customers do not leave the office until
-		they receive thier passport from the Cashier. The Cashier will also not start on the next
-		customer until the last one has left (as do all the clerks). Clerks go on break when thier
-		lines are empty, and managers wake them back up if the lines are no longer empty.
-		Total sales are accurate, don't suffer from race conditions, and customers behave properly 
-		when senators arrive.
+
 
 VI. Discussion:
-
-		In this assignment, we learned how threads work in operating systems and computer code.
-		We experimented on how threads can interact with each other
-		and perform multiple functions simulteaously.
-
-		Our expectation from our design was that everything would go smoothly (aside from some
-		compilation debugging with syntax and such). We meticulously discussed and went through
-		the processes and interactions between the way threads will communicate with each other,
-		tracing between locks and condition variables to make sure race conditions and 
-		context switches don't happen. We were confident things would run smoothly overall.
-
-		Our results are as expected.
 
 
 
