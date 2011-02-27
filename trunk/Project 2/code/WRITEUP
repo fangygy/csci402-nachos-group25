@@ -13,7 +13,7 @@ I. Requirements:
 	
 II. Assumptions:
 
-	- We assumed... //guys? any ideas? I'll leave this part for durther discussion
+	- We assumed... //guys? any ideas? I'll leave this part for further discussion
 
 III. Design:
 	- // List out the new classes we made along with the ones we modified. Off the top of my head 
@@ -52,14 +52,31 @@ V. Testing:
 		To run lockTest, type:
 		nachos -x ../test/lockTest
 
-		To run execTest/forkTest, type:
+		To run execTest or forkTest, type:
 		nachos -x ../test/execTest
 
-		To run execCVTest/CVTest, type:
+		To run execCVTest or CVTest, type:
 		nachos -x ../test/execCVTest
 
 	+ Test Output
+		All our tests output expected results. For more a more in-depth discussion
+		of our test cases, you can reference the TEST_WRITEUP in the test directory.
 
+		- Our most basic test, execTest, tests both good and bad usage of the Exec syscall. 
+		Calling a bad file name or anything other than a proper program will output an 
+		error message but will not crash Nachos. It will then continue on to call Exec on 
+		the second test, forkTest, which tests our Fork syscall. execTest properly executes 
+		forkTest, thus we know Exec works. 
+		- forkTest tests our Fork functionality by calling Fork on a test function that simply
+		prints out a statement to show it works. forkTest calls Fork twice, so we expected 
+		two output statements from the function, which it did. Afterwards, it would call
+		Fork using bad inputs, which printed out the errors that we expected while not crashing the system.
+		- lockTest and CVTest (the latter of which executes with execCVTest) both test the
+		functionality of all our Lock and Condition Variable related syscalls, including Acquire,
+		Release, Wait, Signal, and Broadcast, along with thier respective Create and Destroy syscalls.
+		The test cases utilize simple functions to test the order of execution using
+		the functions Wait, Signal, and Broadcast along with the usage of Acquire and Release. 
+		All tests output expected results without crashing Nachos unexpectedly.
 
 VI. Discussion:
 
