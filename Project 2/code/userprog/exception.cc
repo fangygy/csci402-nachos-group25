@@ -31,8 +31,8 @@
 
 using namespace std;
 
-#define MAX_LOCKS 100
-#define MAX_CONDITIONS 100
+#define MAX_LOCKS 512
+#define MAX_CONDITIONS 512
 int numLocks = 0;
 int numConditions = 0;
 
@@ -373,6 +373,12 @@ int DestroyLock_Syscall(int index) {
 		// print error msg
 		return 0;
 	}
+	if (index >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("DestroyLock_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
+		return 0;
+	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
@@ -412,6 +418,12 @@ int DestroyCondition_Syscall(int index) {
 		lock_condLock->Release();
 		// print error msg
 		printf("DestroyCondition_Syscall: CV index less than zero. Invalid.\n");
+		return 0;
+	}
+	if (index >= MAX_CONDITIONS) {
+		lock_condLock->Release();
+		printf("DestroyCondition_Syscall: CV index >= MAX_CONDITIONS. Invalid.\n");
+		// print error msg
 		return 0;
 	}
 	if (conditions[index].space != currentThread->space) {
@@ -454,6 +466,12 @@ void Acquire_Syscall(int index){
 		lock_condLock->Release();
 		return;
 	}
+	if (index >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Acquire_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
+		return;
+	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
@@ -489,6 +507,12 @@ void Release_Syscall(int index){
 		lock_condLock->Release();
 		return;
 	}
+	if (index >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Release_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
+		return;
+	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
@@ -522,10 +546,22 @@ void Signal_Syscall(int cIndex, int lIndex) {
 		lock_condLock->Release();
 		return;
 	}
+	if (cIndex >= MAX_CONDITIONS) {
+		lock_condLock->Release();
+		printf("Signal_Syscall: CV index >= MAX_CONDITIONS. Invalid.\n");
+		// print error msg
+		return;
+	}
 	if (lIndex < 0) {
 		// print error msg
 		printf("Signal_Syscall: CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
+		return;
+	}
+	if (lIndex >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Signal_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
@@ -581,10 +617,22 @@ void Broadcast_Syscall(int cIndex, int lIndex) {
 		lock_condLock->Release();
 		return;
 	}
+	if (cIndex >= MAX_CONDITIONS) {
+		lock_condLock->Release();
+		printf("Broadcast_Syscall: CV index >= MAX_CONDITION. Invalid.\n");
+		// print error msg
+		return;
+	}
 	if (lIndex < 0) {
 		// print error msg
 		printf("Broadcast_Syscall: Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
+		return;
+	}
+	if (lIndex >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Broadcast_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
@@ -644,6 +692,18 @@ void Wait_Syscall(int cIndex, int lIndex) {
 		// print error msg
 		printf("Wait_Syscall: Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
+		return;
+	}
+	if (cIndex >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Wait_Syscall: CV index >= MAX_CONDITIONS. Invalid.\n");
+		// print error msg
+		return;
+	}
+	if (lIndex >= MAX_LOCKS) {
+		lock_condLock->Release();
+		printf("Wait_Syscall: Lock index >= MAX_LOCKS. Invalid.\n");
+		// print error msg
 		return;
 	}
 	if (conditions[cIndex].space != currentThread->space) {
@@ -720,7 +780,7 @@ void Exit_Syscall(int status) {
 			process = NULL;
 	}
 	if(process == NULL) {
-		printf("Main/initial thread.\n");
+		printf("Exit_Syscall: Main/initial thread.\n");
 		currentThread->space->DeallocateProcess();
 		currentThread->Finish();
 	}
@@ -729,11 +789,11 @@ void Exit_Syscall(int status) {
 		if(numProcesses == 1) {
 		//If last process
 			process->space->DeallocateProcess();
-			printf("Last process\n");
+			printf("Exit_Syscall: Last process\n");
 			interrupt->Halt();
 		}
 		else {
-			printf("Last thread in process\n");
+			printf("Exit_Syscall: Last thread in process\n");
 			numProcesses--;
 			process->space->DeallocateProcess();
 			currentThread->Finish();
@@ -745,17 +805,17 @@ void Exit_Syscall(int status) {
 		//Deallocate stack? How?
 		process->numThreads--;
 		process->space->DeallocateStack();
-		printf("Just a thread finishing.\n");
+		printf("Exit_Syscall: Just a thread finishing.\n");
 		currentThread->Finish();
 	}
 }
 
 void exec_thread() {
-	printf("exec_thread running.\n");
+	//printf("exec_thread running.\n");
 	memoryLock->Acquire();
-	printf("Calling InitRegisters.\n");
+	//printf("Calling InitRegisters.\n");
 	currentThread->space->InitRegisters();
-	printf("Calling RestoreState.\n");
+	//printf("Calling RestoreState.\n");
 	currentThread->space->RestoreState();
 	memoryLock->Release();
 	machine->Run();
@@ -787,9 +847,9 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//Create a new thread.
 		Thread* t = new Thread(fileName);
 		//Allocate the space created to this thread's space.
-		printf("New address space.\n");
+		//printf("New address space.\n");
 		AddrSpace* space = new AddrSpace(f);
-		printf("New address space created.\n");
+		//printf("New address space created.\n");
 		Process* process = new Process;
 		process->space = space;
 		t->space = space;
@@ -809,23 +869,23 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		memoryLock->Release();
 		printf("Exec_Syscall: Forking exec thread.\n");
 		t->Fork((VoidFunctionPtr)exec_thread, NULL);		// exec_thread NOT RUNNING!
-		printf("Exec_Syscall: Forked thread.\n");
+		//printf("Exec_Syscall: Forked thread.\n");
 		return process->processId;
 	}
 	else {
-		printf("Couldn't open file.\n");
+		printf("Exec_Syscall: Couldn't open file.\n");
 		return -1;
 	}
 }
 
 void kernel_thread(unsigned int vaddr) {
-	printf("kernel_thread\n");
+	printf("kernel_thread: Starting allocation.\n");
 	memoryLock->Acquire();
 	
 	currentThread->space->AllocateStack(vaddr);
 
 	memoryLock->Release();
-	printf("About to run\n");
+	//printf("About to run\n");
 	machine->Run();
 }
 
@@ -840,30 +900,30 @@ void Fork_Syscall(unsigned int vaddr) {
 		}
 		
 		Process *tempProcess;
-		printf("NumProcesses:%d", numProcesses);
-		printf("\nFork_Syscall: Finding correct process...\n");
+		//printf("NumProcesses:%d", numProcesses);
+		//printf("\nFork_Syscall: Finding correct process...\n");
 		for(int i = 0; i < numProcesses; i++) {
 			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
-				printf("Found correct process.\n");
+				//printf("Found correct process.\n");
 				break;
 			}
 		}
-		printf("Fork_Syscall: Making new thread\n");
+		//printf("Fork_Syscall: Making new thread\n");
 		Thread *t = new Thread("name");
-		printf("Fork_Syscall: New thread created successfully!\n");
+		//printf("Fork_Syscall: New thread created successfully!\n");
 		t->space = tempProcess->space;
-		printf("1\n");
+		//printf("1\n");
 		tempProcess->numThreads++;
-		printf("2\n");
-		printf("Number of threads: %d\n", tempProcess->numThreads);
+		//printf("2\n");
+		//printf("Number of threads: %d\n", tempProcess->numThreads);
 		memoryLock->Release();
-		printf("Calling t->Fork()\n");
+		//printf("Calling t->Fork()\n");
 		t->Fork((VoidFunctionPtr)kernel_thread, vaddr);
 		return;
 	}
 	else {
-		printf("Bad virtual address for Fork\n");
+		printf("Fork_Syscall: Bad virtual address.\n");
 		return;
 	}
 }

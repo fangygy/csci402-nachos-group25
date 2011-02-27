@@ -143,21 +143,23 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 						// at least until we have
 						// virtual memory
 
+	printf("Initializing address space, num pages %d, size %d\n", 
+					numPages, size);
     DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
 					numPages, size);
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	//pageTable[i].physicalPage = i;
-	mainmemLock->Acquire();
-	pageTable[i].physicalPage = bitMap.Find();
-	printf("New page number: %d\n", pageTable[i].physicalPage);
-	mainmemLock->Release();
-	pageTable[i].valid = TRUE;
-	pageTable[i].use = FALSE;
-	pageTable[i].dirty = FALSE;
-	pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
+		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		//pageTable[i].physicalPage = i;
+		mainmemLock->Acquire();
+		pageTable[i].physicalPage = bitMap.Find();
+		//printf("New page number: %d\n", pageTable[i].physicalPage);
+		mainmemLock->Release();
+		pageTable[i].valid = TRUE;
+		pageTable[i].use = FALSE;
+		pageTable[i].dirty = FALSE;
+		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
     }
@@ -271,22 +273,22 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 		newPageTable[i].valid = pageTable[i].valid;
 		newPageTable[i].use = pageTable[i].use;
 		newPageTable[i].dirty = pageTable[i].dirty;
-		newPageTable[i].readOnly = pageTable[i].readOnly; 
+		newPageTable[i].readOnly = pageTable[i].readOnly;
 	}
 	
-	printf("Adding more pages.\n");
+	//printf("Adding more pages.\n");
 	for(int i = numPages; i < numPages + 8; i++) {
 		newPageTable[i].virtualPage = i;
 		mainmemLock->Acquire();
 		newPageTable[i].physicalPage = bitMap.Find();
-		printf("%d vaddr: New page number: %d\n", vaddr, newPageTable[i].physicalPage);
+		//printf("%d vaddr: New page number: %d\n", vaddr, newPageTable[i].physicalPage);
 		mainmemLock->Release();
 		newPageTable[i].valid = TRUE;
 		newPageTable[i].use = FALSE;
 		newPageTable[i].dirty = FALSE;
 		newPageTable[i].readOnly = FALSE;
 	}
-	printf("Added more pages.\n");
+	printf("AddrSpace: Added more pages.\n");
 	
 	currentThread->firstPageTable = numPages;
 	numPages += 8;
@@ -296,15 +298,15 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 	
 	
 	machine->pageTableSize = numPages;
-	printf("Writing new registers\n");
+	//printf("Writing new registers\n");
 	machine->WriteRegister(PCReg, vaddr);	
-	printf("Writing next register\n");
+	//printf("Writing next register\n");
     machine->WriteRegister(NextPCReg, vaddr+4);
-	printf("Restoring state.\n");
+	//printf("Restoring state.\n");
 	RestoreState();
-	printf("Writing last register\n");
+	//printf("Writing last register\n");
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
-	printf("After last write.\n");
+	//printf("After last write.\n");
 	
 }
 
@@ -314,11 +316,12 @@ void AddrSpace::DeallocateStack() {
 	for(int i = index; i < (index + 8); i++) {
 		paddr = pageTable[i].physicalPage;
 		mainmemLock->Acquire();
-		printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
+		//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
 		pageTable[i].valid = FALSE;		// invalidate the page table entry
 	}
+	printf("AddrSpace: Deallocated stack.\n");
 }
 
 void AddrSpace::DeallocateProcess() {
@@ -327,12 +330,12 @@ void AddrSpace::DeallocateProcess() {
 	for(int i = 0; i < nonStackPageEnd; i++) {
 		if(pageTable[i].valid == TRUE) {
 			paddr = pageTable[i].physicalPage;
-			printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
+			//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 			mainmemLock->Acquire();
 			bitMap.Clear(paddr);
 			mainmemLock->Release();
 			pageTable[i].valid = FALSE;
 		}
 	}
-
+	printf("AddrSpace: Deallocated process.\n");
 }
