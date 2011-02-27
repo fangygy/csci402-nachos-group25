@@ -9,6 +9,10 @@
 
 #include "syscall.h"
 
+int forkyforky(){
+	return 1;
+}
+
 void testFunc(){
 	Write("A forked function.\n", sizeof("A forked function.\n"), ConsoleOutput);
 	Exit(0);

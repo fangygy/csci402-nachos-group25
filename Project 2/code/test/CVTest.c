@@ -34,11 +34,10 @@ void testFunc(){
 }
 
 int main()
-{
-	Write("Starting condition variable test\n", sizeof("Starting condition variable test\n"), ConsoleOutput);
+{	Write("Starting condition variable test\n", sizeof("Starting condition variable test\n"), ConsoleOutput);
 	
-	Destroy(condition);
-	Destroy(-1);
+	DestroyCondition(condition);
+	DestroyCondition(-1);
 
 	lock = CreateLock("TestLock", 16);
 	condition = CreateCondition("TestCondition", 23); 
@@ -64,7 +63,7 @@ int main()
 	Acquire(lock);
 	Write("Acquired lock. \n", sizeof("Acquired lock. \n"), ConsoleOutput);
 	
-	Destroy(condition);
+	DestroyCondition(condition);
 
 	/* not reached */
 }
