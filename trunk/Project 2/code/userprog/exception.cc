@@ -390,7 +390,7 @@ int DestroyLock_Syscall(int index) {
 		// Lock isn't in use; delete it
 		printf("DestroyLock_Syscall: Lock isn't in use and is now being deleted.\n");
 		delete locks[index].lock;
-		locks[indDestroyLock_Syscall: ex].lock = NULL;			// nullify lock pointer; this is now a free space
+		locks[index].lock = NULL;			// nullify lock pointer; this is now a free space
 		locks[index].space = NULL;			// make the address space null
 		locks[index].isToBeDeleted = false;
 		locks[index].deleted = true;
@@ -577,13 +577,13 @@ void Broadcast_Syscall(int cIndex, int lIndex) {
 	lock_condLock->Acquire();
 	if (cIndex < 0) {
 		// print error msg
-		printf("Broadcast_Syscall: Condition index less than zero. Invalid.\n);
+		printf("Broadcast_Syscall: Condition index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
 	if (lIndex < 0) {
 		// print error msg
-		printf("Broadcast_Syscall: Lock index less than zero. Invalid.\n);
+		printf("Broadcast_Syscall: Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
