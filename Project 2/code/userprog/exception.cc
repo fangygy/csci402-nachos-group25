@@ -692,7 +692,7 @@ void Wait_Syscall(int cIndex, int lIndex) {
 }
 
 
-void Exit_Syscall() {
+void Exit_Syscall(int status) {
 	Process* process;
 	// find the current process
 	for(int i = 0; i < numProcesses; i++) {
@@ -700,21 +700,30 @@ void Exit_Syscall() {
 		if(process->space == currentThread->space) {
 			break;
 		}
+		else
+			process = NULL;
 	}
-	
+	if(process == NULL) {
+		printf("Main/initial thread.\n");
+		currentThread->Finish();
+	}
 	if(process->numThreads == 1) {
 	//If last thread in process
 		if(numProcesses == 1) {
 		//If last process
+			printf("Last process\n");
 			interrupt->Halt();
 		}
 		else {
+			printf("Last thread in process\n");
 			//What do we do here?
 			//How to deallocate memory from process?
 		}
 	}
 	else {
 		//Deallocate stack? How?
+		process->space->DeallocateStack();
+		printf("Just a thread.\n");
 		currentThread->Finish();
 	}
 }
@@ -794,6 +803,7 @@ void kernel_thread(unsigned int vaddr) {
 	currentThread->space->AllocateStack(vaddr);
 
 	memoryLock->Release();
+	printf("About to run\n");
 	machine->Run();
 }
 
@@ -813,18 +823,20 @@ void Fork_Syscall(unsigned int vaddr) {
 		for(int i = 0; i < numProcesses; i++) {
 			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
+				printf("Found correct process.\n");
 				break;
 			}
 		}
-		printf("\Making new thread\n");
+		printf("Making new thread\n");
 		Thread *t = new Thread("name");
 		printf("New thread created successfully!\n");
 		t->space = tempProcess->space;
 		printf("1\n");
 		tempProcess->numThreads++;
 		printf("2\n");
+		printf("Number of threads: %d\n", tempProcess->numThreads);
 		memoryLock->Release();
-		printf("\Calling t->Fork()\n");
+		printf("Calling t->Fork()\n");
 		t->Fork((VoidFunctionPtr)kernel_thread, vaddr);
 		return;
 	}
@@ -876,7 +888,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Exit:
 		DEBUG('a', "Exit syscall.\n");
-		
+		Exit_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_Exec:
 		DEBUG('a', "Exec syscall.\n");
