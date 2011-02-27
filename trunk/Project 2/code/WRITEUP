@@ -12,12 +12,17 @@ I. Requirements:
 	- Use this new system to simulate the passport office done in Project 1
 	
 II. Assumptions:
-
-	- We assumed... //guys? any ideas? I'll leave this part for further discussion
+		We hoped that everything would go as planned. After designing our code and test cases, we
+	hoped our implementations would go smoothly without too many severe problems that would
+	cause any major setbacks. We worked slowly snd took every class and function one step at a time.
+	We did have expectations that things would be rough near the middle of the project phase
+	as we encountered road bumps with understanding out assignment and the syntax we need to know
+	to accomplish them. We might have had some doubts whether or not we would be able to submit this project
+	within the deadline, and assumed using another slipdate as we stumbled with the 
+	implementation of the Fork, Exec, and Exit syscalls since it involved utilizing stacks and
+	page allocations where we had little experience.
 
 III. Design:
-	- // List out the new classes we made along with the ones we modified. Off the top of my head 
-	  // I can think of:
 
 	- exception.cc
 	- process.cc/h
@@ -35,6 +40,7 @@ IV. Implementation:
 	
 	+ Files added
 		+ process.h, process.cc
+		+ lockTest.c, CVTest.c, forkTest.c, execTest.c, execCVTest.c
 	
 	+ Data Structures added
 		-- in blah class.cc
@@ -79,7 +85,13 @@ V. Testing:
 		All tests output expected results without crashing Nachos unexpectedly.
 
 VI. Discussion:
+	+ Experiment expectation
 
 
+	+ Experiment result
+		// What do you think guys?
+
+	+ Explanation
+		// explain our experiment result
 
 VII. Miscellaneous:
