@@ -137,6 +137,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 						// to leave room for the stack
     size = numPages * PageSize;
 
+	nonStackPageEnd = numPages - 8;
     ASSERT(numPages <= NumPhysPages);		// check we're not trying
 						// to run anything too big --
 						// at least until we have
@@ -151,6 +152,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 	//pageTable[i].physicalPage = i;
 	mainmemLock->Acquire();
 	pageTable[i].physicalPage = bitMap.Find();
+	printf("New page number: %d\n", pageTable[i].physicalPage);
 	mainmemLock->Release();
 	pageTable[i].valid = TRUE;
 	pageTable[i].use = FALSE;
@@ -232,7 +234,7 @@ AddrSpace::InitRegisters()
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
     DEBUG('a', "Initializing stack register to %x\n", numPages * PageSize - 16);
 	
-	currentThread->firstPageTable = ((numPages * PageSize - 16) / PageSize);
+	currentThread->firstPageTable = nonStackPageEnd;
 }
 
 //----------------------------------------------------------------------
@@ -277,6 +279,7 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 		newPageTable[i].virtualPage = i;
 		mainmemLock->Acquire();
 		newPageTable[i].physicalPage = bitMap.Find();
+		printf("%d vaddr: New page number: %d\n", vaddr, newPageTable[i].physicalPage);
 		mainmemLock->Release();
 		newPageTable[i].valid = TRUE;
 		newPageTable[i].use = FALSE;
@@ -285,12 +288,14 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 	}
 	printf("Added more pages.\n");
 	
-	currentThread->firstPageTable = ((numPages * PageSize - 16) / PageSize);
+	currentThread->firstPageTable = numPages;
 	numPages += 8;
 	TranslationEntry *deleteTable = pageTable;
 	pageTable = newPageTable;
 	delete deleteTable;
 	
+	
+	machine->pageTableSize = numPages;
 	printf("Writing new registers\n");
 	machine->WriteRegister(PCReg, vaddr);	
 	printf("Writing next register\n");
@@ -307,10 +312,27 @@ void AddrSpace::DeallocateStack() {
 	int index = currentThread->firstPageTable;
 	int paddr;		// physical address of thread stack
 	for(int i = index; i < (index + 8); i++) {
-		paddr = pageTable[index].physicalPage;
+		paddr = pageTable[i].physicalPage;
 		mainmemLock->Acquire();
+		printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
-		pageTable[i].valid = FALSE;		// invalidate the page table entry
+		//pageTable[i].valid = false;		// invalidate the page table entry
 	}
+}
+
+void AddrSpace::DeallocateProcess() {
+	DeallocateStack();
+	int paddr;
+	for(int i = 0; i < nonStackPageEnd; i++) {
+		if(pageTable[i].valid) {
+			paddr = pageTable[i].physicalPage;
+			printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
+			mainmemLock->Acquire();
+			bitMap.Clear(paddr);
+			mainmemLock->Release();
+			//pageTable[i].valid = FALSE;
+		}
+	}
+
 }
