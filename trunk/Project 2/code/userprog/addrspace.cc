@@ -231,6 +231,8 @@ AddrSpace::InitRegisters()
    // accidentally reference off the end!
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
     DEBUG('a', "Initializing stack register to %x\n", numPages * PageSize - 16);
+	
+	currentThread->firstPageTable = ((numPages * PageSize - 16) / PageSize);
 }
 
 //----------------------------------------------------------------------
@@ -270,27 +272,34 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 		newPageTable[i].readOnly = pageTable[i].readOnly; 
 	}
 	
+	printf("Adding more pages.\n");
 	for(int i = numPages; i < numPages + 8; i++) {
-		pageTable[i].virtualPage = i;
+		newPageTable[i].virtualPage = i;
 		mainmemLock->Acquire();
-		pageTable[i].physicalPage = bitMap.Find();
+		newPageTable[i].physicalPage = bitMap.Find();
 		mainmemLock->Release();
-		pageTable[i].valid = TRUE;
-		pageTable[i].use = FALSE;
-		pageTable[i].dirty = FALSE;
-		pageTable[i].readOnly = FALSE;
+		newPageTable[i].valid = TRUE;
+		newPageTable[i].use = FALSE;
+		newPageTable[i].dirty = FALSE;
+		newPageTable[i].readOnly = FALSE;
 	}
+	printf("Added more pages.\n");
 	
-	currentThread->firstPageTable = numPages;
+	currentThread->firstPageTable = ((numPages * PageSize - 16) / PageSize);
 	numPages += 8;
 	TranslationEntry *deleteTable = pageTable;
 	pageTable = newPageTable;
 	delete deleteTable;
 	
+	printf("Writing new registers\n");
 	machine->WriteRegister(PCReg, vaddr);	
+	printf("Writing next register\n");
     machine->WriteRegister(NextPCReg, vaddr+4);
-	currentThread->space->RestoreState();
+	printf("Restoring state.\n");
+	RestoreState();
+	printf("Writing last register\n");
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
+	printf("After last write.\n");
 	
 }
 
