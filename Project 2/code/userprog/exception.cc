@@ -868,6 +868,10 @@ void Fork_Syscall(unsigned int vaddr) {
 	}
 }
 
+void Yield_Syscall() {
+	currentThread->Yield();
+}
+
 void ExceptionHandler(ExceptionType which) {
     int type = machine->ReadRegister(2); // Which syscall?
     int rv=0; 	// the return value from a syscall
@@ -906,7 +910,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_Yield:
 		DEBUG('a', "Yield syscall.\n");
-		currentThread->Yield();
+		Yield_Syscall();
 		break;
 		case SC_Exit:
 		DEBUG('a', "Exit syscall.\n");
