@@ -7,11 +7,10 @@
  */
 
 #include "syscall.h"
+#define NV 0x9999
 
-const int zOffset = 48;
 int i;
 int rand;
-char numChar;
 
 int main()
 {
@@ -22,12 +21,12 @@ int main()
 		rand = Random(10);
 		/*rand += zOffset;*/
 		
-		numChar = (char) rand + '0';
-		
-		Write((char)numChar, (int)2, ConsoleOutput);
-		Write(", ", sizeof(", "), ConsoleOutput);
+		Trace("Value ", i);
+		Trace(": ", rand);
+		Trace("\n", NV);
 	}
-	Write("\n", sizeof("\n"), ConsoleOutput);
+	
+	Trace("\n", NV);
 	
 	/* not reached */
 	Exit(0);
