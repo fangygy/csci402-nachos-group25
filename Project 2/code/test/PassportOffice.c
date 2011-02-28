@@ -5,9 +5,9 @@
  */
  
 #include "syscall.h"
-#define NUM_CLERKS 3
-#define NUM_CUSTOMERS 6
-#define NUM_SENATORS 0
+#define NUM_CLERKS 5
+#define NUM_CUSTOMERS 30
+#define NUM_SENATORS 5
 
 /* enum for booleans */
 enum BOOLEAN {  
@@ -703,13 +703,16 @@ void PassClerk() {
 				Acquire(fileLock[mySSN]);
 				fileState[mySSN] = PASSDONE;
 				Release(fileLock[mySSN]);
-				if(cType = CUSTOMER){
+				if(cType == CUSTOMER){
 					Write("PassportClerk has finished filing Customer's passport\n", sizeof("PassportClerk has finished filing Customer's passport\n"), ConsoleOutput);
 				}
 				else{
 					Write("PassportClerk has finished filing Senator's passport\n", sizeof("PassportClerk has finished filing Senator's passport\n"), ConsoleOutput);
 				}
 			}
+			
+			doPassport = false;
+			mySSN = 0;
 		}
 
 		else if (regPassLineLength > 0){
@@ -784,6 +787,8 @@ void PassClerk() {
 					Write("PassportClerk has finished filing Senator's passport\n", sizeof("PassportClerk has finished filing Senator's passport\n"), ConsoleOutput);
 				}
 			}
+			doPassport = false;
+			mySSN = 0;
 		}
 		else{
 			/* No one in line...take a break */
@@ -809,6 +814,7 @@ void CashClerk() {
 		if(cashClerkIndex[i] == FREE) {
 			myIndex = i;
 			cashClerkIndex[i] = USED;
+			cashState[i] = BUSY;
 			break;
 		}
 	}
@@ -877,7 +883,8 @@ void CashClerk() {
 				}
 				else{
 					Write("Cashier gives valid certification to Senator\n", sizeof("Cashier gives valid certification to Senator\n"), ConsoleOutput);
-				}			}
+				}			
+			}	
 			else {
 				cashDataBool[myIndex] = false;
 				if(myCustType == CUSTOMER){
@@ -944,7 +951,7 @@ void Manager(){
 				Broadcast(regACLineCV, acpcLineLock);
 				Broadcast(privACLineCV, acpcLineLock);
 				Broadcast(regPCLineCV, acpcLineLock);
-				Broadcast(privACLineCV, acpcLineLock);
+				Broadcast(privPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
 
 				/* PassClerk Lines */
@@ -1228,6 +1235,7 @@ void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 			/* Found him, store it and set him to busy */
 			myClerk = i;
 			picState[i] = BUSY;
+			Release(picLock[i]);
 			break;
 		}
 		else {
@@ -1235,6 +1243,7 @@ void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 		}
 	}
 	
+	Acquire(picLock[myClerk]);
 	/* Give the clerk your index */
 	picData[myClerk] = myIndex;
 	if (privLine == true) {
@@ -1357,6 +1366,7 @@ void LineAppPicClerk(int myIndex) {
 					numAppWait--;
 					Release(senatorLock);
 					TalkAppClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1395,6 +1405,7 @@ void LineAppPicClerk(int myIndex) {
 					numPicWait--;
 					Release(senatorLock);
 					TalkPicClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1434,6 +1445,7 @@ void LineAppPicClerk(int myIndex) {
 					Release(senatorLock);
 					TalkAppClerk(myIndex, true);
 					myCustMoney[myIndex] -= 500;
+					break;
 				}
 			}
 		}
@@ -1473,6 +1485,7 @@ void LineAppPicClerk(int myIndex) {
 					Release(senatorLock);
 					TalkPicClerk(myIndex, true);
 					myCustMoney[myIndex] -= 500;
+					break;
 				}
 			}
 		}
@@ -1513,6 +1526,7 @@ void LineAppPicClerk(int myIndex) {
 					TalkAppClerk(myIndex, true);
 					
 					myCustMoney[myIndex] -= 500;
+					break;
 				}
 			}
 		}
@@ -1550,8 +1564,9 @@ void LineAppPicClerk(int myIndex) {
 				/* Else, a clerk is waiting for me, so move ahead */
 					numPicWait--;
 					Release(senatorLock);
-					TalkAppClerk(myIndex, true);
+					TalkPicClerk(myIndex, true);
 					myCustMoney[myIndex] -= 500;
+					break;
 				}
 			}
 		}
@@ -1592,6 +1607,7 @@ void LineAppPicClerk(int myIndex) {
 					numAppWait--;
 					Release(senatorLock);
 					TalkAppClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1630,6 +1646,7 @@ void LineAppPicClerk(int myIndex) {
 					numPicWait--;
 					Release(senatorLock);
 					TalkPicClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1668,6 +1685,7 @@ void LineAppPicClerk(int myIndex) {
 					numAppWait--;
 					Release(senatorLock);
 					TalkAppClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1705,7 +1723,8 @@ void LineAppPicClerk(int myIndex) {
 				/* Else, a clerk is waiting for me, so move ahead */
 					numPicWait--;
 					Release(senatorLock);
-					TalkAppClerk(myIndex, false);
+					TalkPicClerk(myIndex, false);
+					break;
 				}
 			}
 		}
@@ -1724,6 +1743,7 @@ void TalkPassClerk(int myIndex, enum BOOLEAN privLine) {
 			/* Found him, store it and set him to busy */
 			myClerk = i;
 			passState[i] = BUSY;
+			Release(passLock[i]);
 			break;
 		}
 		else {
@@ -1731,6 +1751,7 @@ void TalkPassClerk(int myIndex, enum BOOLEAN privLine) {
 		}
 	}
 	
+	Acquire(passLock[myClerk]);
 	/* Give the clerk your index */
 	passData[myClerk] = myIndex;
 	if (privLine == true) {
@@ -1959,6 +1980,7 @@ void LineTalkCashClerk(int myIndex) {
 			/* Found him, store it and set him to busy */
 			myClerk = i;
 			cashState[i] = BUSY;
+			Release(cashLock[i]);
 			break;
 		}
 		else {
@@ -1966,6 +1988,7 @@ void LineTalkCashClerk(int myIndex) {
 		}
 	}
 	
+	Acquire(cashLock[myClerk]);
 	/* Give the clerk your index */
 	cashData[myClerk] = myIndex;
 	
@@ -2189,7 +2212,7 @@ void SenLineAppPicClerk(int myIndex) {
 			Acquire(senatorLock);
 			numPicWait--;
 			Release(senatorLock);
-			TalkAppClerk(myIndex, true);
+			TalkPicClerk(myIndex, true);
 			myCustMoney[myIndex] -= 500;
 		}
 	}
@@ -2240,7 +2263,7 @@ void SenLineAppPicClerk(int myIndex) {
 			Acquire(senatorLock);
 			numPicWait--;
 			Release(senatorLock);
-			TalkAppClerk(myIndex, false);
+			TalkPicClerk(myIndex, false);
 		}
 	}
 }
@@ -2334,24 +2357,24 @@ void SenLineTalkCashClerk(int myIndex) {
 	/* Success, proceed onwards and upwards. */	
 		Release(cashLock[myClerk]);
 		visitedCash[myIndex] = true;
-		Write("A customer gets valid certification from Cashier.\n",
-			sizeof("A customer gets valid certification from Cashier.\n"),
+		Write("A senator gets valid certification from Cashier.\n",
+			sizeof("A senator gets valid certification from Cashier.\n"),
 			ConsoleOutput);
-		Write("A customer pays $100 to Cashier for their passport.\n",
-			sizeof("A customer pays $100 to Cashier for their passport.\n"),
+		Write("A senator pays $100 to Cashier for their passport.\n",
+			sizeof("A senator pays $100 to Cashier for their passport.\n"),
 			ConsoleOutput);
-		Write("A customer's passport is now recorded by Cashier.\n",
-			sizeof("A customer's passport is now recorded by Cashier.\n"),
+		Write("A senator's passport is now recorded by Cashier.\n",
+			sizeof("A senator's passport is now recorded by Cashier.\n"),
 			ConsoleOutput);
 		myCustMoney[myIndex] -= 100;
 	}
 	else {
 		Release(cashLock[myClerk]);
-		Write("A customer is not certified by Cashier.\n",
-			sizeof("A customer is not certified by Cashier.\n"),
+		Write("A senator is not certified by Cashier.\n",
+			sizeof("A senator is not certified by Cashier.\n"),
 			ConsoleOutput);
-		Write("A customer is punished to wait by Cashier.\n",
-			sizeof("A customer is punished to wait by Cashier.\n"),
+		Write("A senator is punished to wait by Cashier.\n",
+			sizeof("A senator is punished to wait by Cashier.\n"),
 			ConsoleOutput);
 		
 		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
@@ -2413,6 +2436,7 @@ void Senator() {
 		/* Next visit the passport clerk */
 		while (visitedPass[myIndex] != true) {
 			SenLinePassClerk(myIndex);
+			break;
 		}
 		
 		/* Finally, visit the cashier */
@@ -2425,7 +2449,7 @@ void Senator() {
 	Acquire(senatorLock);
 	officeSenator--;
 	Release(senatorLock);
-	Write("A senator leaves the Passport Office.\n", sizeof("A senator leaves the Passport Office.\n"), ConsoleOutput);
+	Write("SENATOR HAS LEFT OFFICE!!!!\n", sizeof("SENATOR HAS LEFT OFFICE!!!!\n"), ConsoleOutput);
 	Exit(0);
 }
 	
@@ -2435,7 +2459,7 @@ int main() {
 	InitializeData();
 	Write("InitializeData has been called.\n", sizeof("InitializeData has been called.\n"), ConsoleOutput);
 	
-	for (i = 0; i < NUM_CUSTOMERS; i++) {
+	for (i = 0; i < NUM_CUSTOMERS-1; i++) {
 		Fork(Customer);
 	}
 	
@@ -2446,7 +2470,7 @@ int main() {
 		Fork(CashClerk);
 	}
 	
-	for (i = 0; i < NUM_SENATORS; i++) {
+	for (i = 0; i < NUM_SENATORS-1; i++) {
 		Fork(Senator);
 	}
 	
