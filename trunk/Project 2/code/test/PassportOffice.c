@@ -6,7 +6,7 @@
  
 #include "syscall.h"
 #define NUM_CLERKS 3
-#define NUM_CUSTOMERS 5
+#define NUM_CUSTOMERS 6
 #define NUM_SENATORS 0
 
 /* enum for booleans */
@@ -1162,6 +1162,7 @@ void TalkAppClerk(int myIndex, enum BOOLEAN privLine) {
 			/* Found him, store it and set him to busy */
 			myClerk = i;
 			appState[i] = BUSY;
+			Release(appLock[i]);
 			break;
 		}
 		else {
@@ -1169,6 +1170,7 @@ void TalkAppClerk(int myIndex, enum BOOLEAN privLine) {
 		}
 	}
 	
+	Acquire(appLock[myClerk]);
 	/* Give the clerk your index */
 	appData[myClerk] = myIndex;
 	if (privLine == true) {
