@@ -1132,29 +1132,49 @@ void Manager(){
 			/* Print out stuff */
 
 			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
+			Write("Manager: Acquiring appLock to read AppClerk money...\n", sizeof("Manager: Acquiring appLock to read AppClerk money...\n"), ConsoleOutput);
 			Acquire(appMoneyLock);
+			Write("Manager: Acquired appLock.\n", sizeof("Manager: Acquired appLock.\n"), ConsoleOutput);
 			Trace("Total money received from ApplicationClerk = ", appMoney);
 			Write("\n", sizeof("\n"), ConsoleOutput);
-			totalMoney += appMoney;
+			totalMoney += appMoney + 1;
+			Trace("Total money so far from AppClerk: ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			Release(appMoneyLock);
+			Write("Manager: Released appLock.\n", sizeof("Manager: Released appLock.\n"), ConsoleOutput);
 			
+			Write("Manager: Acquiring picLock to read PicClerk money...\n", sizeof("Manager: Acquiring picLock to read PicClerk money...\n"), ConsoleOutput);
 			Acquire(picMoneyLock);
+			Write("Manager: Acquired picLock.\n", sizeof("Manager: Acquired picLock.\n"), ConsoleOutput);
 			Trace("Total money received from PictureClerk = ", picMoney);
 			Write("\n", sizeof("\n"), ConsoleOutput);
-			totalMoney += picMoney;
+			totalMoney += picMoney + 1;
+			Trace("Total money so far from PicClerk: ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			Release(picMoneyLock);
+			Write("Manager: Released picLock.\n", sizeof("Manager: Released picLock.\n"), ConsoleOutput);
 
+			Write("Manager: Acquiring passLock to read PassportClerk money...\n", sizeof("Manager: Acquiring passLock to read PassportClerk money...\n"), ConsoleOutput);
 			Acquire(passMoneyLock);
+			Write("Manager: Acquired passLock.\n", sizeof("Manager: Acquired passLock.\n"), ConsoleOutput);
 			Trace("Total money received from PassportClerk = ", passMoney);
 			Write("\n", sizeof("\n"), ConsoleOutput);
-			totalMoney += passMoney;
+			totalMoney += passMoney + 1;
+			Trace("Total money so far from PassportClerk: ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			Release(passMoneyLock);
+			Write("Manager: Released passLock.\n", sizeof("Manager: Released passLock.\n"), ConsoleOutput);
 
+			Write("Manager: Acquiring cashLock to read Cashier money...\n", sizeof("Manager: Acquiring cashLock to read Cashier money...\n"), ConsoleOutput);
 			Acquire(cashMoneyLock);
+			Write("Manager: Acquired cashLock.\n", sizeof("Manager: Acquired cashLock.\n"), ConsoleOutput);
 			Trace("Total money received from Cashier = ", cashMoney);
 			Write("\n", sizeof("\n"), ConsoleOutput);
-			totalMoney += cashMoney;
+			totalMoney += cashMoney + 1;
+			Trace("Total money so far from Cashier: ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			Release(cashMoneyLock);
+			Write("Manager: Released cashLock.\n", sizeof("Manager: Released cashLock.\n"), ConsoleOutput);
 
 			Trace("Total money made by office = ", totalMoney);
 			Write("\n", sizeof("\n"), ConsoleOutput);
