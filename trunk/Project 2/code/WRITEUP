@@ -87,10 +87,26 @@ V. Testing:
 		the functions Wait, Signal, and Broadcast along with the usage of Acquire and Release. 
 		All tests output expected results without crashing Nachos unexpectedly.
 
+		- All passport tests show that when there are no customers in the simulation (either never entered, or all have left
+		the office), then the program exits normally.
 		- passportTest1 tests two Customers only, to make sure no two Customers get in the same line at the same time.
 		Customers get in line depending on the shortest line, but will always get in line one at a time
+		This test also shows how the regular and privileged lines are managed:
+		That customers are "smart" enough to go into regular lines if both regular and privileged lines are equal lengths,
+		whether they have enough money for it or not, and otherwise will always pick the shortest line if they have the
+		funds for it. If the customer has no funds, then the customer will compare regular lines only.
 		- passportTest2 tests the Manager and reading money from each Clerk. The Manager will read
 		one Clerk's money total at a time, and add that total to his calculated sum.
+		This test also tests that the Clerks all go on break when there are no customers,
+		as there are never any customers, thus no customers in thier lines.
+		- passport3 tests a regular passport runthrough with 5 customers and one of each clerk type. 
+		At the end, it is shown clearly that Customers do not leave the office until they receive thier passport from the cashier,
+		and the one cashier will not begin the next customer until the first one finishes leaving the office.
+		This test also shows that total sales never suffer from a race condition, as the funds correspond to
+		the amount of cash the customers give to the clerks. It can also count as another test to show that
+		the clerks all go on break when they are done with all the customers in thier line.
+		Additionally, this test also demonstrates that the Manager calls back Clerks from break when there are too many
+		customers in their line (as seen near the middle of the output block).
 
 VI. Discussion:
 	+ Experiment expectation
