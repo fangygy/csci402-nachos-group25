@@ -12,6 +12,4 @@
 	Exec("../test/PassportOffice");
 	
 	Exit(0);
- 
- 
  }

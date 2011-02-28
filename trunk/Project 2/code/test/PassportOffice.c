@@ -11,10 +11,13 @@
 #define NV 0x9999
 
 /* enum for booleans */
-enum BOOLEAN {  
+enum BOOLEAN {
 	false,
 	true
 };
+
+/* Global shutdown boolean */
+enum BOOLEAN shutdown;
 
 /* enum for the state of a clerk */
 enum CLERK_STATE {
@@ -43,32 +46,6 @@ enum INDEX_USED {
 	USED,
 	FREE
 };
-
-void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char* msg) {
-	/* Example */
-	/* CustTrace("Cust", myIndex, "Pass", myClerk, "Here is mah message to the PassClerk.\n") */
-	/* CustTrace("Cust", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
-	Trace(custType, myIndex);
-	if (clerkType != 0x00) {
-		Trace(" -> ", NV);
-		Trace(clerkType, myClerk);
-	}
-	Trace(": ", NV);
-	Trace(msg, NV);
-}
-
-void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
-	/* Example */
-	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
-	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
-	Trace(clerkType, myIndex);
-	if (custType != 0x00) {
-		Trace(" -> ", NV);
-		Trace(custType, myCust);
-	}
-	Trace(": ", NV);
-	Trace(msg, NV);
-}
 
 /* Index initialization lock and data*/
 int indexLock;
@@ -114,10 +91,14 @@ int myCustMoney[NUM_CUSTOMERS + NUM_SENATORS];
 enum BOOLEAN visitedApp[NUM_CUSTOMERS + NUM_SENATORS], visitedPic[NUM_CUSTOMERS + NUM_SENATORS],
 	visitedPass[NUM_CUSTOMERS + NUM_SENATORS], visitedCash[NUM_CUSTOMERS + NUM_SENATORS];
 
+/* Lock for synchronized output */
+int traceLock;
+
 void InitializeData() {
 	int i;
 	
 	indexLock = CreateLock("IndexLock", sizeof("IndexLock"));
+	traceLock = CreateLock("TraceLock", sizeof("TraceLock"));
 	
 	officeCustomer = 0;
 	waitingCustomer = 0;
@@ -153,6 +134,8 @@ void InitializeData() {
 	regPassLineCV = CreateCondition("RegPassLineCV", sizeof("RegPassLineCV"));
 	privPassLineCV = CreateCondition("PrivPassLineCV", sizeof("PrivPassLineCV"));
 	cashLineCV = CreateCondition("CashLineCV", sizeof("CashLineCV"));
+	
+	shutdown = false;
 	
 	for(i = 0; i < NUM_CLERKS; i++) {
 		appLock[i] = CreateLock("AppLock",  sizeof("AppLock"));
@@ -210,6 +193,40 @@ void InitializeData() {
 		visitedCash[i] = false;
 	}
 }
+/*
+* Antonio Cade
+* Thread-specific Trace functions
+*
+*/
+void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char* msg) {
+	/* Example */
+	/* CustTrace("Cust", myIndex, "Pass", myClerk, "Here is mah message to the PassClerk.\n") */
+	/* CustTrace("Cust", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+	Acquire(traceLock);
+	Trace(custType, myIndex);
+	if (clerkType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(clerkType, myClerk);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+	Release(traceLock);
+}
+
+void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	/* Example */
+	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
+	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+	Acquire(traceLock);
+	Trace(clerkType, myIndex);
+	if (custType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(custType, myCust);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+	Release(traceLock);
+}
 
 /*
 *	Yinlerthai Chan
@@ -238,6 +255,10 @@ void AppClerk() {
 	Release(indexLock);
 	
 	while(loop == true){
+		if (shutdown == true) {
+			ClerkTrace("App", myIndex, 0x00, 0, "Shutting down.\n");
+			Exit(0);
+		}
 		Acquire(senatorLock);
 		Acquire(customerLock);
 		if(officeSenator > 0 && officeCustomer > 0){
@@ -415,6 +436,10 @@ void PicClerk() {
 	Release(indexLock);
 
 	while(loop == true){
+		if (shutdown == true) {
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Shutting down.\n");
+			Exit(0);
+		}
 		Acquire(senatorLock);
 		Acquire(customerLock);
 		if (officeSenator > 0 && officeCustomer > 0) {
@@ -645,6 +670,10 @@ void PassClerk() {
 	Release(indexLock);
 
 	while(loop == true){
+		if (shutdown == true) {
+			ClerkTrace("Pass", myIndex, 0x00, 0, "Shutting down.\n");
+			Exit(0);
+		}
 		Acquire(senatorLock);
 		Acquire(customerLock);
 		if(officeSenator > 0 && officeCustomer > 0){
@@ -854,11 +883,15 @@ void CashClerk() {
 	
 	Acquire(cashLock[myIndex]);
 	cashState[myIndex] = BUSY;
+	ClerkTrace("Cash", myIndex, 0x00, 0, "release 1\n");
 	Release(cashLock[myIndex]);
 	
 	/* Main loop for cashier */
 	while (loop == true) {
-	
+		if (shutdown == true) {
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Shutting down.\n");
+			Exit(0);
+		}
 		Acquire(senatorLock);
 		Acquire(customerLock);
 		/* If there are both customers AND senators in the office,
@@ -930,6 +963,7 @@ void CashClerk() {
 			Release(fileLock[mySSN]);
 			Signal(cashCV[myIndex], cashLock[myIndex]);
 			cashState[myIndex] = BUSY;
+			ClerkTrace("Cash", myIndex, 0x00, 0, "release 2\n");
 			Release(cashLock[myIndex]);
 			Yield();
 		}
@@ -941,6 +975,8 @@ void CashClerk() {
 			Acquire(cashLock[myIndex]);
 			cashState[myIndex] = BREAK;
 			Wait(cashCV[myIndex], cashLock[myIndex]);
+			
+			/*ClerkTrace("Cash", myIndex, 0x00, 0, "release 3\n");*/
 			Release(cashLock[myIndex]);
 			
 			ClerkTrace("Cash", myIndex, 0x00, 0, "Returning from break.\n");
@@ -1186,8 +1222,53 @@ void Manager(){
 			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
 			
 			Write("No more customers in passport office, ending simulation.\n", sizeof("No more customers in passport office, ending simulation.\n"), ConsoleOutput);
-			Write("\n", sizeof("\n"), ConsoleOutput);			Halt();
-			break;
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			/* Halt(); */
+			/* SET GLOBAL "SHUTDOWN" TO TRUE */
+			shutdown = true;
+			
+			/* WAKE EVERYONE UP */
+			ClerkTrace("Mgr", 0, 0x00, 0, "Notifying everyone that Passport Office is closing.\n");
+			for(i = 0; i < NUM_CLERKS; i++){
+				Acquire(appLock[i]);
+				if(appState[i] == BREAK){
+					Signal(appCV[i], appLock[i]);
+					appState[i] = BUSY;
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
+					Release(appLock[i]);
+				}
+			}
+			for(i = 0; i < NUM_CLERKS; i++){
+				Acquire(picLock[i]);
+				if(picState[i] == BREAK){
+					Signal(picCV[i], picLock[i]);
+					picState[i] = BUSY;
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PicClerk back from break.\n");
+					Release(picLock[i]);
+				}
+			}
+			for(i = 0; i < NUM_CLERKS; i++){
+				Acquire(passLock[i]);
+				if(passState[i] == BREAK){
+					Signal(passCV[i], passLock[i]);
+					passState[i] = BUSY;
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PassClerk back from break.\n");
+					Release(passLock[i]);
+				}
+			}
+			for(i = 0; i < NUM_CLERKS; i++){
+				Acquire(cashLock[i]);
+				if(cashState[i] == BREAK){
+					Signal(cashCV[i], cashLock[i]);
+					cashState[i] = BUSY;
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a Cashier back from break.\n");
+					Release(cashLock[i]);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Released CashLock.\n");
+				}
+			}
+			ClerkTrace("Mgr", 0, 0x00, 0, "All done. Shutting down.\n");
+			Exit(0);
+			/*break;*/
 		}
 		Yield();
 	}
@@ -2646,7 +2727,7 @@ int main() {
 	InitializeData();
 	Write("InitializeData has been called.\n", sizeof("InitializeData has been called.\n"), ConsoleOutput);
 	
-	for (i = 0; i < NUM_CUSTOMERS-1; i++) {
+	for (i = 0; i < NUM_CUSTOMERS; i++) {
 		Fork(Customer);
 	}
 	
@@ -2657,7 +2738,7 @@ int main() {
 		Fork(CashClerk);
 	}
 	
-	for (i = 0; i < NUM_SENATORS-1; i++) {
+	for (i = 0; i < NUM_SENATORS; i++) {
 		Fork(Senator);
 	}
 	
