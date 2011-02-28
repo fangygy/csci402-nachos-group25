@@ -21,6 +21,8 @@
 #include "noff.h"
 #include "table.h"
 #include "synch.h"
+#include <ctime>		// For seeding random
+#include <cstdlib>	// For generating random
 
 extern "C" { int bzero(char *, int); };
 
@@ -148,6 +150,9 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
     DEBUG('a', "Initializing address space, num pages %d, size %d\n", 
 					numPages, size);
 // first, set up the translation 
+
+	srand(time(NULL));		//Initializing random number generator for seeding random values
+	
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #

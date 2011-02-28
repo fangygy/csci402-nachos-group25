@@ -28,6 +28,8 @@
 #include "process.h"
 #include <stdio.h>
 #include <iostream>
+#include <ctime>		// For seeding random
+#include <cstdlib>	// For generating random
 
 using namespace std;
 
@@ -879,14 +881,19 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 }
 
 void kernel_thread(unsigned int vaddr) {
-	printf("kernel_thread: Starting allocation.\n");
-	memoryLock->Acquire();
-	
-	currentThread->space->AllocateStack(vaddr);
+	if (vaddr > 0) {
+		//printf("kernel_thread: Starting allocation.\n");
+		memoryLock->Acquire();
+		
+		currentThread->space->AllocateStack(vaddr);
 
-	memoryLock->Release();
-	//printf("About to run\n");
-	machine->Run();
+		memoryLock->Release();
+		//printf("About to run\n");
+		machine->Run();
+	} else {
+		printf("kernel_thread: Bad virtual address.\n");
+		return;
+	}
 }
 
 void Fork_Syscall(unsigned int vaddr) {
@@ -926,6 +933,48 @@ void Fork_Syscall(unsigned int vaddr) {
 		printf("Fork_Syscall: Bad virtual address.\n");
 		return;
 	}
+}
+
+int Random_Syscall(int max) {
+	int value = rand() % max;
+	return value;
+}
+
+void Trace_Syscall(unsigned int vaddr, int val) {
+	// Write the buffer to the given disk file.  If ConsoleOutput is
+    // the fileID, data goes to the synchronized console instead.  If
+    // a Write arrives for the synchronized Console, and no such
+    // console exists, create one. For disk files, the file is looked
+    // up in the current address space's open file table and used as
+    // the target of the write.
+    
+    char *buf;		// Kernel buffer for output
+    OpenFile *f;	// Open file for output
+	int len = 128;	// buffer size
+    
+    if ( !(buf = new char[len]) ) {
+		printf("%s","Error allocating kernel buffer for write!\n");
+		return;
+    } else {
+        if ( copyin(vaddr,len,buf) == -1 ) {
+			printf("%s","Bad pointer passed to to write: data not written\n");
+			delete[] buf;
+			return;
+		}
+    }
+	
+	for (int ii = 0; ii < len; ii++) {
+		if (buf[ii] == 0x00) {	// at end of input chars
+			if (val == 0x9999) {	// val = "nothing"
+				break;
+			}
+			printf("%d", val);
+			break;
+		}
+		printf("%c", buf[ii]);
+	}
+
+    delete[] buf;
 }
 
 void Yield_Syscall() {
@@ -1024,6 +1073,16 @@ void ExceptionHandler(ExceptionType which) {
 		case SC_DestroyCondition:
 		DEBUG('a', "Destroy condition syscall.\n");
 		rv = DestroyCondition_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_Random:
+		DEBUG('a', "Random number syscall.\n");
+			rv = Random_Syscall(machine->ReadRegister(4));
+		break;
+		
+		case SC_Trace:
+		DEBUG('a', "Trace syscall.\n");
+		Trace_Syscall(machine->ReadRegister(4),
+					machine->ReadRegister(5));
 		break;
 	}
 

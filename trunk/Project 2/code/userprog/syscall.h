@@ -38,6 +38,8 @@
 #define SC_DestroyLock		17
 #define SC_CreateCondition	18
 #define SC_DestroyCondition	19
+#define SC_Random			20
+#define SC_Trace			21
 
 #define MAXFILENAME 256
 
@@ -184,6 +186,13 @@ int CreateCondition(char* name, int length);
 */
 int DestroyCondition(int index);
 
+/* Returns a random number from 0 to max.
+*/
+int Random(int max);
+
+/* Print a sentence and a number to the console window.
+*/
+void Trace(int vaddr, int val);
 
 
 #endif /* IN_ASM */

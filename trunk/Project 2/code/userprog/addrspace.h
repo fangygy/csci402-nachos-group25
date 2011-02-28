@@ -17,6 +17,9 @@
 #include "filesys.h"
 #include "table.h"
 
+#include <ctime>		// For seeding random
+#include <cstdlib>	// For generating random
+
 #define UserStackSize		1024 	// increase this as necessary!
 
 #define MaxOpenFiles 256
