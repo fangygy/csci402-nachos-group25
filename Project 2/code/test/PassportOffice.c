@@ -6,8 +6,8 @@
  
 #include "syscall.h"
 #define NUM_CLERKS 3
-#define NUM_CUSTOMERS 3
-#define NUM_SENATORS 2
+#define NUM_CUSTOMERS 10
+#define NUM_SENATORS 0
 
 /* enum for booleans */
 enum BOOLEAN {  
@@ -175,7 +175,8 @@ void InitializeData() {
 			fileType[i] = SENATOR;
 		}
 		
-		myCustMoney[i] = 1600;
+		customerIndex[i] = FREE;
+		myCustMoney[i] = 1100;
 		visitedApp[i] = false;
 		visitedPic[i] = false;
 		visitedPass[i] = false;
@@ -369,7 +370,7 @@ void AppClerk() {
 void PicClerk() {
 	int myIndex;
 	int mySSN;
-	int i;
+	int i;	
 	enum CUST_TYPE cType = CUSTOMER;
 	enum BOOLEAN loop = true;	
 
@@ -633,9 +634,13 @@ void PassClerk() {
 		if(privPassLineLength > 0){
 		/* Decrement line length, set state to AVAIL, signal 1st customer and wait for them */
 			privPassLineLength--;
-			Acquire(senatorLock);
-			passState[myIndex] = AVAILABLE;
 			
+			Acquire(senatorLock);
+			numPassWait++;
+			Release(senatorLock);
+			
+			Acquire(passLock[myIndex]);
+			passState[myIndex] = AVAILABLE;
 			Signal(privPassLineCV, passLineLock);
 			Release(passLineLock);
 			Wait(passCV[myIndex], passLock[myIndex]); /* wait for customer to signal me */
@@ -710,9 +715,13 @@ void PassClerk() {
 		else if (regPassLineLength > 0){
 		/* Decrement line length, set state to AVAIL, signal 1st customer and wait for them */
 			regPassLineLength--;
-			Acquire(senatorLock);
-			passState[myIndex] = AVAILABLE;
 			
+			Acquire(senatorLock);
+			numPassWait++;
+			Release(senatorLock);
+			
+			Acquire(passLock[myIndex]);
+			passState[myIndex] = AVAILABLE;
 			Signal(regPassLineCV, passLineLock);
 			Release(passLineLock);
 			Wait(passCV[myIndex], passLock[myIndex]); /* wait for customer to signal me */
@@ -790,7 +799,10 @@ void PassClerk() {
 
 void CashClerk() {
 	int myIndex;
+	int myCustomer;
+	enum CUST_TYPE myCustType;
 	int i;
+	enum BOOLEAN loop = true;
 	
 	Acquire(indexLock);
 	for(i = 0; i < NUM_CLERKS; i++) {
@@ -801,6 +813,90 @@ void CashClerk() {
 		}
 	}
 	Release(indexLock);
+	
+	Acquire(cashLock[myIndex]);
+	cashState[myIndex] = BUSY;
+	Release(cashLock[myIndex]);
+	
+	/* Main loop for cashier */
+	while (loop == true) {
+	
+		Acquire(senatorLock);
+		Acquire(customerLock);
+		/* If there are both customers AND senators in the office,
+		*	then wait until manager tells you to work again. */
+		if (officeSenator > 0 && officeCustomer > 0) {
+			Release(senatorLock);
+			Release(customerLock);
+			
+			Acquire(clerkWaitLock);
+			Wait(clerkWaitCV, clerkWaitLock);
+			Release(clerkWaitLock);
+		}
+		else {
+			Release(senatorLock);
+			Release(customerLock);
+		}
+		
+		/* Checking my line. */
+		Acquire(cashLineLock);
+		if (cashLineLength > 0) {
+			
+			cashLineLength--;
+			
+			Acquire(senatorLock);
+			numCashWait++;
+			Release(senatorLock);
+			
+			Acquire(cashLock[myIndex]);
+			cashState[myIndex] = AVAILABLE;
+			Signal(cashLineCV, cashLineLock);
+			Release(cashLineLock);
+			Wait(cashCV[myIndex], cashLock[myIndex]);
+			
+			myCustomer = cashData[myIndex];
+			
+			Acquire(fileLock[myCustomer]);
+			myCustType = fileType[myCustomer];
+			
+			if (fileState[myCustomer] == PASSDONE) {
+				cashDataBool[myIndex] = true;
+				for (i = 0; i < 50; i++) {
+					Yield();
+				}
+				
+				fileState[myCustomer] = ALLDONE;
+				
+				Acquire(cashMoneyLock);
+				cashMoney += 100;
+				Release(cashMoneyLock);
+			}
+			else {
+				cashDataBool[myIndex] = false;
+			}
+			
+			Release(fileLock[myCustomer]);
+			Signal(cashCV[myIndex], cashLock[myIndex]);
+			cashState[myIndex] = BUSY;
+			Release(cashLock[myIndex]);
+			Yield();
+		}
+		else {
+		/* Nobody in line, break */
+			Write("A cashier is going on break.\n",
+				sizeof("A cashier is going on break.\n"),
+				ConsoleOutput);
+			Release(cashLineLock);
+			Acquire(cashLock[myIndex]);
+			cashState[myIndex] = BREAK;
+			Wait(cashCV[myIndex], cashLock[myIndex]);
+			Release(cashLock[myIndex]);
+			
+			Write("A cashier has returned from break.\n",
+				sizeof("A cashier has returned from break.\n"),
+				ConsoleOutput);
+		}		
+	}
 }
 /*
 *	Yinlerthai Chan & Jasper Lee:
@@ -815,6 +911,7 @@ void Manager(){
 	enum BOOLEAN loop = true;
 
 	while(loop == true){
+		/*Write("Manager loop.\n", sizeof("Manager loop.\n"), ConsoleOutput); */
 		/* Check for any senators present */
 		Acquire(senatorLock);
 		/* If there are senators present and customers in office, then 
@@ -850,6 +947,7 @@ void Manager(){
 
 				Yield();
 				Acquire(customerLock);
+				Write("Waking up customers loop.\n", sizeof("Waking up customers loop.\n"), ConsoleOutput);
 			}
 			Release(customerLock);
 
@@ -1009,6 +1107,7 @@ void Manager(){
 		if(officeCustomer + officeSenator + waitingCustomer == 0){
 			/* Print out stuff */
 			Write("Manager: Print out stuff.\n", sizeof("Manager: Print out stuff.\n"), ConsoleOutput);
+			Halt();
 			break;
 		}
 		Yield();
@@ -1021,6 +1120,8 @@ void Manager(){
 void DoWaitingRoom() {
 	/* Going to waiting room so decrement customer count in office and increase in waiting room before waiting */
 	
+	Write("A customer has entered the waiting room.\n", sizeof("A customer has entered the waiting room.\n"),
+		ConsoleOutput);
 	Acquire(customerLock);
 	officeCustomer--;
 	waitingCustomer++;
@@ -1029,6 +1130,7 @@ void DoWaitingRoom() {
 	Acquire(custWaitLock);
 	Wait(custWaitCV, custWaitLock);
 	Release(custWaitLock);
+	Write("A customer has woken up from the waiting room.\n", sizeof("A customer has woken up from the waiting room.\n"), ConsoleOutput);
 	
 	Acquire(customerLock);
 	officeCustomer++;
@@ -1038,12 +1140,159 @@ void DoWaitingRoom() {
 
 /* Helper function for direct interaction between a customer and an application clerk */
 void TalkAppClerk(int myIndex, enum BOOLEAN privLine) {
-
+	int myClerk;
+	int i;
+	/* Search for an available clerk */
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Acquire(appLock[i]);
+		if (appState[i] == AVAILABLE) {
+			/* Found him, store it and set him to busy */
+			myClerk = i;
+			appState[i] = BUSY;
+			break;
+		}
+		else {
+			Release(appLock[i]);
+		}
+	}
+	
+	/* Give the clerk your index */
+	appData[myClerk] = myIndex;
+	if (privLine == true) {
+		if (fileType[myIndex] == CUSTOMER) {
+			Write("A customer is willing to pay 500 to ApplicationClerk to move ahead in line.\n",
+				sizeof("A customer is willing to pay 500 to ApplicationClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+		else {
+			Write("A senator is willing to pay 500 to ApplicationClerk to move ahead in line.\n",
+				sizeof("A senator is willing to pay 500 to ApplicationClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+	}
+	if (fileType[myIndex] == CUSTOMER) {
+		Write("A customer gives his application to the ApplicationClerk.\n",
+			sizeof("A customer gives his application to the ApplicationClerk.\n"),
+			ConsoleOutput);
+	}
+	else {
+		Write("A senator gives his application to the ApplicationClerk.\n",
+			sizeof("A senator gives his application to the ApplicationClerk.\n"),
+			ConsoleOutput);
+	}
+	
+	/* Signal and wait for him to respond */
+	Signal(appCV[myClerk], appLock[myClerk]);
+	Wait(appCV[myClerk], appLock[myClerk]);
+	Release(appLock[myClerk]);
+	
+	if (fileType[myIndex] == CUSTOMER) {
+		Write("A customer is informed by ApplicationClerk that his application is filed.\n",
+			sizeof("A customer is informed by ApplicationClerk that his application is filed.\n"),
+			ConsoleOutput);
+	}
+	else {
+		Write("A senator is informed by ApplicationClerk that his application is filed.\n",
+			sizeof("A senator is informed by ApplicationClerk that his application is filed.\n"),
+			ConsoleOutput);
+	}
+	
+	/* Be sure to tell myself I have visited an ApplicationClerk */
+	visitedApp[myIndex] = true;
 }
 
 /* Helper function for direct interaction between a customer and a picture clerk */
 void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
-
+	int myClerk;
+	int i;
+	enum BOOLEAN hatePicture = true;
+	/* Search for an available clerk */
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Acquire(picLock[i]);
+		if (picState[i] == AVAILABLE) {
+			/* Found him, store it and set him to busy */
+			myClerk = i;
+			picState[i] = BUSY;
+			break;
+		}
+		else {
+			Release(picLock[i]);
+		}
+	}
+	
+	/* Give the clerk your index */
+	picData[myClerk] = myIndex;
+	if (privLine == true) {
+		if (fileType[myIndex] == CUSTOMER) {
+			Write("A customer is willing to pay 500 to PictureClerk to move ahead in line.\n",
+				sizeof("A customer is willing to pay 500 to PictureClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+		else {
+			Write("A senator is willing to pay 500 to PictureClerk to move ahead in line.\n",
+				sizeof("A senator is willing to pay 500 to PictureClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+	}
+	
+	/* Signal and wait for him to respond */
+	Signal(picCV[myClerk], picLock[myClerk]);
+	Wait(picCV[myClerk], picLock[myClerk]);
+	
+	while (picDataBool[myClerk] == false) {
+		
+		/* Technically, should be random, but don't know how to implement.
+		* 	Will just always hate the first picture given for now */
+		if (hatePicture == true) {
+			picDataBool[myClerk] = false;
+			if (fileType[myIndex] == CUSTOMER) {
+				Write("A customer doesn't like the picture provided by PictureClerk.\n",
+					sizeof("A customer doesn't like the picture provided by PictureClerk.\n"),
+					ConsoleOutput);
+			}
+			else {
+				Write("A senator doesn't like the picture provided by PictureClerk.\n",
+					sizeof("A senator doesn't like the picture provided by PictureClerk.\n"),
+					ConsoleOutput);
+			}
+			hatePicture = false;
+			
+			Signal(picCV[myClerk], picLock[myClerk]);
+			Wait(picCV[myClerk], picLock[myClerk]);
+		}
+		else {
+			picDataBool[myClerk] = true;
+			if (fileType[myIndex] == CUSTOMER) {
+				Write("A customer likes the picture provided by PictureClerk.\n",
+					sizeof("A customer likes the picture provided by PictureClerk.\n"),
+					ConsoleOutput);
+			}
+			else {
+				Write("A senator likes the picture provided by PictureClerk.\n",
+					sizeof("A senator likes the picture provided by PictureClerk.\n"),
+					ConsoleOutput);
+			}
+			
+			Signal(picCV[myClerk], picLock[myClerk]);
+			Wait(picCV[myClerk], picLock[myClerk]);
+			break;
+		}
+	}
+	
+	Release(picLock[myClerk]);
+	if (fileType[myIndex] == CUSTOMER) {
+		Write("A customer is told by PictureClerk that the procedure has been completed.\n",
+			sizeof("A customer is told by PictureClerk that the procedure has been completed.\n"),
+					ConsoleOutput);		
+	}
+	else {
+		Write("A senator is told by PictureClerk that the procedure has been completed.\n",
+			sizeof("A senator is told by PictureClerk that the procedure has been completed.\n"),
+					ConsoleOutput);		
+	}	
+	
+	/* Be sure to tell myself I have visited an PictureClerk */
+	visitedPic[myIndex] = true;
 }
 
 /* Helper function for a customer choosing which clerk - app or pic - to go to, and then which line - 
@@ -1061,7 +1310,7 @@ void LineAppPicClerk(int myIndex) {
 		*	Go into regular line to save money because both are empty. */
 		if (regACLineLength == 0 && privACLineLength == 0 && visitedApp[myIndex] == false) {
 			
-			while (visitedApp[myIndex] = false) {
+			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
 				Wait(regACLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1075,7 +1324,16 @@ void LineAppPicClerk(int myIndex) {
 					regACLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for ApplicationClerk.\n",
+						sizeof("A customer was in the regular wait queue for ApplicationClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of ApplicationClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of ApplicationClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1090,7 +1348,7 @@ void LineAppPicClerk(int myIndex) {
 		/* Same as above except for pic clerk */
 		else if (regPCLineLength == 0 && privPCLineLength == 0 && visitedPic[myIndex] == false) {
 			
-			while (visitedPic[myIndex] = false) {
+			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
 				Wait(regPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1104,7 +1362,16 @@ void LineAppPicClerk(int myIndex) {
 					regPCLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for PictureClerk.\n",
+						sizeof("A customer was in the regular wait queue for PictureClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of PictureClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of PictureClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1119,7 +1386,7 @@ void LineAppPicClerk(int myIndex) {
 		/* Already been to picture clerk, so go to privileged application clerk line*/
 		else if (visitedPic[myIndex] == true) {
 			
-			while (visitedApp[myIndex] = false) {
+			while (visitedApp[myIndex] == false) {
 				privACLineLength++;
 				Wait(privACLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1133,7 +1400,16 @@ void LineAppPicClerk(int myIndex) {
 					privACLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the privileged wait queue for ApplicationClerk.\n",
+						sizeof("A customer was in the privileged wait queue for ApplicationClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the privileged wait queue of ApplicationClerk.\n",
+						sizeof("A customer rejoins the privileged wait queue of ApplicationClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1149,7 +1425,7 @@ void LineAppPicClerk(int myIndex) {
 		/* If already been to application clerk then go to privileged picture clerk line */
 		else if (visitedApp[myIndex] == true) {
 			
-			while (visitedPic[myIndex] = false) {
+			while (visitedPic[myIndex] == false) {
 				privPCLineLength++;
 				Wait(privPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1163,7 +1439,16 @@ void LineAppPicClerk(int myIndex) {
 					privPCLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the privileged wait queue for PictureClerk.\n",
+						sizeof("A customer was in the privileged wait queue for PictureClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the privileged wait queue of PrivilegedClerk.\n",
+						sizeof("A customer rejoins the privileged wait queue of PrivilegedClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1179,7 +1464,7 @@ void LineAppPicClerk(int myIndex) {
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (privACLineLength <= privPCLineLength) {
 			
-			while (visitedApp[myIndex] = false) {
+			while (visitedApp[myIndex] == false) {
 				privACLineLength++;
 				Wait(privACLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1193,7 +1478,16 @@ void LineAppPicClerk(int myIndex) {
 					privACLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the privileged wait queue for ApplicationClerk.\n",
+						sizeof("A customer was in the privileged wait queue for ApplicationClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the privileged wait queue of ApplicationClerk.\n",
+						sizeof("A customer rejoins the privileged wait queue of ApplicationClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1210,7 +1504,7 @@ void LineAppPicClerk(int myIndex) {
 		/* Else picture's is shorter */
 		else {
 			
-			while (visitedPic[myIndex] = false) {
+			while (visitedPic[myIndex] == false) {
 				privPCLineLength++;
 				Wait(privPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1224,7 +1518,16 @@ void LineAppPicClerk(int myIndex) {
 					privPCLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the privileged wait queue for PictureClerk.\n",
+						sizeof("A customer was in the privileged wait queue for PictureClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the privileged wait queue of PictureClerk.\n",
+						sizeof("A customer rejoins the privileged wait queue of PictureClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1242,7 +1545,7 @@ void LineAppPicClerk(int myIndex) {
 	else {
 		if (visitedPic[myIndex] == true) {
 			
-			while (visitedApp[myIndex] = false) {
+			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
 				Wait(regACLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1256,7 +1559,16 @@ void LineAppPicClerk(int myIndex) {
 					regACLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for ApplicationClerk.\n",
+						sizeof("A customer was in the regular wait queue for ApplicationClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of ApplicationClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of ApplicationClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1271,7 +1583,7 @@ void LineAppPicClerk(int myIndex) {
 		/* If already been to application clerk then go to privileged picture clerk line */
 		else if (visitedApp[myIndex] == true) {
 			
-			while (visitedPic[myIndex] = false) {
+			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
 				Wait(regPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1285,7 +1597,16 @@ void LineAppPicClerk(int myIndex) {
 					regPCLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for PictureClerk.\n",
+						sizeof("A customer was in the regular wait queue for PictureClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of PictureClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of PictureClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1300,7 +1621,7 @@ void LineAppPicClerk(int myIndex) {
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (regACLineLength <= regPCLineLength) {
 			
-			while (visitedApp[myIndex] = false) {
+			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
 				Wait(regACLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1314,7 +1635,16 @@ void LineAppPicClerk(int myIndex) {
 					regACLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for ApplicationClerk.\n",
+						sizeof("A customer was in the regular wait queue for ApplicationClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of ApplicationClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of ApplicationClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1329,7 +1659,7 @@ void LineAppPicClerk(int myIndex) {
 		/* Else picture's is shorter */
 		else {
 			
-			while (visitedPic[myIndex] = false) {
+			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
 				Wait(regPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -1343,7 +1673,16 @@ void LineAppPicClerk(int myIndex) {
 					regPCLineLength--;
 					Release(acpcLineLock);
 					
+					Write("A customer was in the regular wait queue for PictureClerk.\n",
+						sizeof("A customer was in the regular wait queue for PictureClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
 					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of PictureClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of PictureClerk.\n"),
+						ConsoleOutput);
 					
 					Acquire(acpcLineLock);
 				}
@@ -1355,6 +1694,296 @@ void LineAppPicClerk(int myIndex) {
 				}
 			}
 		}
+	}
+}
+
+/* Helper function for customer talking to a passport clerk */
+void TalkPassClerk(int myIndex, enum BOOLEAN privLine) {
+	int myClerk;
+	int i;
+	
+	/* Search for an available clerk */
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Acquire(passLock[i]);
+		if (passState[i] == AVAILABLE) {
+			/* Found him, store it and set him to busy */
+			myClerk = i;
+			passState[i] = BUSY;
+			break;
+		}
+		else {
+			Release(passLock[i]);
+		}
+	}
+	
+	/* Give the clerk your index */
+	passData[myClerk] = myIndex;
+	if (privLine == true) {
+		if (fileType[myIndex] == CUSTOMER) {
+			Write("A customer is willing to pay 500 to PassportClerk to move ahead in line.\n",
+				sizeof("A customer is willing to pay 500 to PassportClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+		else {
+			Write("A senator is willing to pay 500 to PassportClerk to move ahead in line.\n",
+				sizeof("A senator is willing to pay 500 to PassportClerk to move ahead in line.\n"),
+				ConsoleOutput);
+		}
+	}
+	
+	/* Signal and wait for him to respond */
+	Signal(passCV[myClerk], passLock[myClerk]);
+	Wait(passCV[myClerk], passLock[myClerk]);
+	
+	if (passDataBool[myClerk] == true) {
+	/* Success, proceed onwards and upwards. */	
+		Release(passLock[myClerk]);
+		visitedPass[myIndex] = true;
+		if (fileType[myIndex] == CUSTOMER) {
+			Write("A customer is certified by PassportClerk.\n",
+				sizeof("A customer is certified by PassportClerk.\n"),
+				ConsoleOutput);
+		}
+		else {
+			Write("A senator is certified by PassportClerk.\n",
+				sizeof("A senator is certified by PassportClerk.\n"),
+				ConsoleOutput);
+		}
+	}
+	else {
+		Release(passLock[myClerk]);
+		if (fileType[myIndex] == CUSTOMER) {
+			Write("A customer is not certified by PassportClerk.\n",
+				sizeof("A customer is not certified by PassportClerk.\n"),
+				ConsoleOutput);
+		}
+		else {
+			Write("A senator is not certified by PassportClerk.\n",
+				sizeof("A senator is not certified by PassportClerk.\n"),
+				ConsoleOutput);
+		}
+		
+		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
+		Yield();
+	}
+}
+
+/* Helper function for helping a customer choose which line - privileged or regular - to enter
+*	when in the passport clerk's line. */
+void LinePassClerk(int myIndex) {
+
+	Acquire(passLineLock);
+	/* Check money first */
+	if (myCustMoney[myIndex] > 500) {
+		
+		/* If both lines for him are empty, just go into regular */
+		if (regPassLineLength == 0 && privPassLineLength == 0) {
+			
+			while (visitedPass[myIndex] == false) {
+				regPassLineLength++;
+				Wait(regPassLineCV, passLineLock);
+				Release(passLineLock);
+			
+				Acquire(senatorLock);
+				/* As always, check for senators */
+				if (officeSenator > 0 && numPassWait == 0) {
+					Release(senatorLock);
+					
+					Acquire(passLineLock);
+					regPassLineLength--;
+					Release(passLineLock);
+					
+					Write("A customer was in the regular wait queue for PassportClerk.\n",
+						sizeof("A customer was in the regular wait queue for PassportClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
+					DoWaitingRoom();
+					Write("A customer rejoins the regular wait queue of PassportClerk.\n",
+						sizeof("A customer rejoins the regular wait queue of PassportClerk.\n"),
+						ConsoleOutput);
+						
+					Acquire(passLineLock);
+				}
+				else {
+					numPassWait--;
+					Release(senatorLock);
+					TalkPassClerk(myIndex, false);
+					break;
+				}
+			}
+		}
+		/* Else just go into privileged line */
+		else {
+		
+			while (visitedPass[myIndex] == false) {
+				privPassLineLength++;
+				Wait(privPassLineCV, passLineLock);
+				Release(passLineLock);
+			
+				Acquire(senatorLock);
+				/* As always, check for senators */
+				if (officeSenator > 0 && numPassWait == 0) {
+					Release(senatorLock);
+					
+					Acquire(passLineLock);
+					privPassLineLength--;
+					Release(passLineLock);
+					
+					Write("A customer was in the privileged wait queue for PassportClerk.\n",
+						sizeof("A customer was in the privileged wait queue for PassportClerk.\n"),
+						ConsoleOutput);
+					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+						ConsoleOutput);
+					DoWaitingRoom();
+					Write("A customer rejoins the privileged wait queue of PassportClerk.\n",
+						sizeof("A customer rejoins the privileged wait queue of PassportClerk.\n"),
+						ConsoleOutput);
+						
+					Acquire(passLineLock);
+				}
+				else {
+					numPassWait--;
+					Release(senatorLock);
+					TalkPassClerk(myIndex, true);
+					
+					myCustMoney[myIndex] -= 500;
+					break;
+				}
+			}
+		}
+	}
+	/* Not enough money, regular line for me */
+	else {
+	
+		while (visitedPass[myIndex] == false) {
+			regPassLineLength++;
+			Wait(regPassLineCV, passLineLock);
+			Release(passLineLock);
+		
+			Acquire(senatorLock);
+			/* As always, check for senators */
+			if (officeSenator > 0 && numPassWait == 0) {
+				Release(senatorLock);
+				
+				Acquire(passLineLock);
+				regPassLineLength--;
+				Release(passLineLock);
+				
+				Write("A customer was in the regular wait queue for PassportClerk.\n",
+					sizeof("A customer was in the regular wait queue for PassportClerk.\n"),
+					ConsoleOutput);
+				Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+					sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+					ConsoleOutput);
+				DoWaitingRoom();
+				Write("A customer rejoins the regular wait queue of PassportClerk.\n",
+					sizeof("A customer rejoins the regular wait queue of PassportClerk.\n"),
+					ConsoleOutput);
+					
+				Acquire(passLineLock);
+			}
+			else {
+				numPassWait--;
+				Release(senatorLock);
+				TalkPassClerk(myIndex, false);
+				break;
+			}
+		}
+	}
+}
+
+/* Helper function to line and talk with cashier. Cashier only has a regular line. */
+void LineTalkCashClerk(int myIndex) {
+	int myClerk;
+	int i;
+	
+	/* Just get in cashier's only line */
+	while (visitedCash[myIndex] == false) {
+		
+		Acquire(cashLineLock);
+		cashLineLength++;
+		Wait(cashLineCV, cashLineLock);
+		Release(cashLineLock);
+		
+		Acquire(senatorLock);
+		/* Same as always */
+		if (officeSenator > 0 && numCashWait == 0) {
+			Release(senatorLock);
+			
+			Acquire(cashLineLock);
+			cashLineLength--;
+			Release(cashLineLock);
+			
+			Write("A customer was in the wait queue for Cashier.\n",
+				sizeof("A customer was in the wait queue for Cashier.\n"),
+				ConsoleOutput);
+			Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+				sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
+				ConsoleOutput);
+			DoWaitingRoom();
+			Write("A customer rejoins the wait queue of Cashier.\n",
+				sizeof("A customer rejoins the wait queue of Cashier.\n"),
+				ConsoleOutput);
+			
+			Acquire(cashLineLock);
+		}
+		else {
+			numCashWait--;
+			Release(senatorLock);
+			break;
+		}
+	}
+	
+	/* Search for an available clerk */
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Acquire(cashLock[i]);
+		if (cashState[i] == AVAILABLE) {
+			/* Found him, store it and set him to busy */
+			myClerk = i;
+			cashState[i] = BUSY;
+			break;
+		}
+		else {
+			Release(cashLock[i]);
+		}
+	}
+	
+	/* Give the clerk your index */
+	cashData[myClerk] = myIndex;
+	
+	/* Signal and wait for him to respond */
+	Signal(cashCV[myClerk], cashLock[myClerk]);
+	Wait(cashCV[myClerk], cashLock[myClerk]);
+	
+	if (cashDataBool[myClerk] == true) {
+	/* Success, proceed onwards and upwards. */	
+		Release(cashLock[myClerk]);
+		visitedCash[myIndex] = true;
+		Write("A customer gets valid certification from Cashier.\n",
+			sizeof("A customer gets valid certification from Cashier.\n"),
+			ConsoleOutput);
+		Write("A customer pays $100 to Cashier for their passport.\n",
+			sizeof("A customer pays $100 to Cashier for their passport.\n"),
+			ConsoleOutput);
+		Write("A customer's passport is now recorded by Cashier.\n",
+			sizeof("A customer's passport is now recorded by Cashier.\n"),
+			ConsoleOutput);
+		myCustMoney[myIndex] -= 100;
+	}
+	else {
+		Release(cashLock[myClerk]);
+		Write("A customer is not certified by Cashier.\n",
+			sizeof("A customer is not certified by Cashier.\n"),
+			ConsoleOutput);
+		Write("A customer is punished to wait by Cashier.\n",
+			sizeof("A customer is punished to wait by Cashier.\n"),
+			ConsoleOutput);
+		
+		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
+		Yield();
 	}
 }
 
@@ -1401,12 +2030,13 @@ void Customer() {
 	officeCustomer++;
 	Release(customerLock);
 	
-	while (visitedApp[i] != true || visitedPic[i] != true || visitedPass[i] != true || visitedCash[i] != true) {
+	while (visitedApp[myIndex] != true || visitedPic[myIndex] != true || visitedPass[myIndex] != true || visitedCash[myIndex] != true) {
 		
 		/* Do we need to make a random chance to visit the passport clerk first? */
+		/* TODO: VISIT THE PASSPORT CLERK RANDOM CHANCE */
 		
 		/* Visit application and picture clerks first */
-		while (visitedApp[i] != true || visitedPic[i] != true) {
+		while (visitedApp[myIndex] != true || visitedPic[myIndex] != true) {
 			
 			/* Check for senators before getting into line */
 			Acquire(senatorLock);
@@ -1417,15 +2047,395 @@ void Customer() {
 			else {
 				Release(senatorLock);
 			}
+			Write("Getting in line.\n", sizeof("Getting in line.\n"), ConsoleOutput);
 			LineAppPicClerk(myIndex);
+		}
+		
+		/* Next visit the passport clerk */
+		while (visitedPass[myIndex] != true) {
+			
+			/* Check for senators first */
+			Acquire(senatorLock);
+			if (officeSenator > 0) {
+				Release(senatorLock);
+				DoWaitingRoom();
+			}
+			else {
+				Release(senatorLock);
+			}
+			LinePassClerk(myIndex);
+		}
+		
+		/* Finally, visit the cashier */
+		while (visitedCash[myIndex] != true) {
+			
+			/* ...senators */
+			Acquire(senatorLock);
+			if (officeSenator > 0) {
+				Release(senatorLock);
+				DoWaitingRoom();
+			}
+			else {
+				Release(senatorLock);
+			}
+			LineTalkCashClerk(myIndex);
+		}
+	}
+	
+	/* Finished with this office, leaving */
+	Acquire(customerLock);
+	officeCustomer--;
+	Release(customerLock);
+	Write("A customer leaves the Passport Office.\n", sizeof("A customer leaves the Passport Office.\n"), ConsoleOutput);
+	Exit(0);
+}
+
+/* Helper function for senator checking which line to enter */
+void SenLineAppPicClerk(int myIndex) {
+
+	Acquire(acpcLineLock);
+	/* First check if have enough money to enter a privileged line */
+	if (myCustMoney[myIndex] > 500) {
+		
+		/* If haven't gone to application clerk, go there if both of his lines are empty.
+		*	Go into regular line to save money because both are empty. */
+		if (regACLineLength == 0 && privACLineLength == 0 && visitedApp[myIndex] == false) {
+			
+			Write("A senator is getting into regular app line.\n",
+				sizeof("A senator is getting into regular app line.\n"),
+				ConsoleOutput);
+			regACLineLength++;
+			Wait(regACLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numAppWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, false);
+		}
+		/* Same as above except for pic clerk */
+		else if (regPCLineLength == 0 && privPCLineLength == 0 && visitedPic[myIndex] == false) {
+			
+			regPCLineLength++;
+			Wait(regPCLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numPicWait--;
+			Release(senatorLock);
+			TalkPicClerk(myIndex, false);
+		}
+		/* Already been to picture clerk, so go to privileged application clerk line*/
+		else if (visitedPic[myIndex] == true) {
+			
+			privACLineLength++;
+			Wait(privACLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numAppWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, true);
+			myCustMoney[myIndex] -= 500;
+		}
+		/* If already been to application clerk then go to privileged picture clerk line */
+		else if (visitedApp[myIndex] == true) {
+			
+				privPCLineLength++;
+				Wait(privPCLineCV, acpcLineLock);
+				Release(acpcLineLock);
+				
+				Acquire(senatorLock);
+				numPicWait--;
+				Release(senatorLock);
+				TalkPicClerk(myIndex, true);
+				myCustMoney[myIndex] -= 500;
+		}
+		/* If application clerk's privileged line length is shorter than picture clerk's */
+		else if (privACLineLength <= privPCLineLength) {
+			
+			privACLineLength++;
+			Wait(privACLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numAppWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, true);
+			
+			myCustMoney[myIndex] -= 500;
+		}
+		/* Else picture's is shorter */
+		else {
+			privPCLineLength++;
+			Wait(privPCLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numPicWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, true);
+			myCustMoney[myIndex] -= 500;
+		}
+	}
+	/* Don't have enough money, just check regular lines */
+	else {
+		if (visitedPic[myIndex] == true) {
+			
+			regACLineLength++;
+			Wait(regACLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numAppWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, false);
+		}
+		/* If already been to application clerk then go to privileged picture clerk line */
+		else if (visitedApp[myIndex] == true) {
+			
+				regPCLineLength++;
+				Wait(regPCLineCV, acpcLineLock);
+				Release(acpcLineLock);
+				
+				Acquire(senatorLock);
+				numPicWait--;
+				Release(senatorLock);
+				TalkPicClerk(myIndex, false);
+		}
+		/* If application clerk's privileged line length is shorter than picture clerk's */
+		else if (regACLineLength <= regPCLineLength) {
+			
+			regACLineLength++;
+			Wait(regACLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numAppWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, false);
+		}
+		/* Else picture's is shorter */
+		else {
+			
+			regPCLineLength++;
+			Wait(regPCLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numPicWait--;
+			Release(senatorLock);
+			TalkAppClerk(myIndex, false);
 		}
 	}
 }
+
+/* Helper function for senator to enter passport clerk line */
+void SenLinePassClerk(int myIndex) {
+
+	Acquire(passLineLock);
+	/* Check money first */
+	if (myCustMoney[myIndex] > 500) {
+		
+		/* If both lines for him are empty, just go into regular */
+		if (regPassLineLength == 0 && privPassLineLength == 0) {
+				
+			regPassLineLength++;
+			Wait(regPassLineCV, passLineLock);
+			Release(passLineLock);
+		
+			Acquire(senatorLock);
+			numPassWait--;
+			Release(senatorLock);
+			TalkPassClerk(myIndex, false);
+		}
+		/* Else just go into privileged line */
+		else {
+		
+			privPassLineLength++;
+			Wait(privPassLineCV, passLineLock);
+			Release(passLineLock);
+		
+			Acquire(senatorLock);
+			numPassWait--;
+			Release(senatorLock);
+			TalkPassClerk(myIndex, true);
+			
+			myCustMoney[myIndex] -= 500;
+		}
+	}
+	/* Not enough money, regular line for me */
+	else {
+	
+		regPassLineLength++;
+		Wait(regPassLineCV, passLineLock);
+		Release(passLineLock);
+	
+		Acquire(senatorLock);
+		numPassWait--;
+		Release(senatorLock);
+		TalkPassClerk(myIndex, false);
+	}
+}
+
+/* Helper function for senator to line and talk to cashier. */
+void SenLineTalkCashClerk(int myIndex) {
+	int myClerk;
+	int i;
+	
+	/* Just get in cashier's only line */
+	
+	Acquire(cashLineLock);
+	cashLineLength++;
+	Wait(cashLineCV, cashLineLock);
+	Release(cashLineLock);
+	
+	Acquire(senatorLock);
+	numCashWait--;
+	Release(senatorLock);
+	
+	/* Search for an available clerk */
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Acquire(cashLock[i]);
+		if (cashState[i] == AVAILABLE) {
+			/* Found him, store it and set him to busy */
+			myClerk = i;
+			cashState[i] = BUSY;
+			break;
+		}
+		else {
+			Release(cashLock[i]);
+		}
+	}
+	
+	/* Give the clerk your index */
+	cashData[myClerk] = myIndex;
+	
+	/* Signal and wait for him to respond */
+	Signal(cashCV[myClerk], cashLock[myClerk]);
+	Wait(cashCV[myClerk], cashLock[myClerk]);
+	
+	if (cashDataBool[myClerk] == true) {
+	/* Success, proceed onwards and upwards. */	
+		Release(cashLock[myClerk]);
+		visitedCash[myIndex] = true;
+		Write("A customer gets valid certification from Cashier.\n",
+			sizeof("A customer gets valid certification from Cashier.\n"),
+			ConsoleOutput);
+		Write("A customer pays $100 to Cashier for their passport.\n",
+			sizeof("A customer pays $100 to Cashier for their passport.\n"),
+			ConsoleOutput);
+		Write("A customer's passport is now recorded by Cashier.\n",
+			sizeof("A customer's passport is now recorded by Cashier.\n"),
+			ConsoleOutput);
+		myCustMoney[myIndex] -= 100;
+	}
+	else {
+		Release(cashLock[myClerk]);
+		Write("A customer is not certified by Cashier.\n",
+			sizeof("A customer is not certified by Cashier.\n"),
+			ConsoleOutput);
+		Write("A customer is punished to wait by Cashier.\n",
+			sizeof("A customer is punished to wait by Cashier.\n"),
+			ConsoleOutput);
+		
+		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
+		Yield();
+	}
+}
+
+/* Senator's forked function thread.
+*	Runs similarly to Customer except only enters when customers are out of the office. */
+void Senator() {
+	int myIndex;
+	int i;
+	
+	/* Gives this customer the first available customer/senator index and sets their type to CUSTOMER */
+	Acquire(indexLock);
+	for (i = 0; i < NUM_CUSTOMERS + NUM_SENATORS; i++) {
+		if (customerIndex[i] == FREE) {
+			myIndex = i;
+			customerIndex[i] = USED;
+			fileType[i] = SENATOR;
+			break;
+		}
+	}
+	Release(indexLock);
+	
+	/* Before entering, check for customers */
+	Acquire(senatorLock);
+	Write("A senator is entering the Passport Office.\n", 
+		sizeof("A senator is entering the Passport Office.\n"),
+		ConsoleOutput);
+	officeSenator++;
+	Release(senatorLock);
+	
+	Acquire(customerLock);
+	/* If there are customers still inside, wait for them to leave. */
+	if (officeCustomer > 0) {
+		Release(customerLock);
+		
+		Acquire(senWaitLock);
+		Write("A senator is waiting.\n", sizeof("A senator is waiting.\n"), ConsoleOutput);
+		Wait(senWaitCV, senWaitLock);
+		Write("A senator has stopped waiting.\n", sizeof("A senator has stopped waiting.\n"), ConsoleOutput);
+		Release(senWaitLock);
+	}
+	else {
+		Release(customerLock);
+	}
+	
+	while (visitedApp[myIndex] != true || visitedPic[myIndex] != true || visitedPass[myIndex] != true || visitedCash[myIndex] != true) {
+		
+		/* Do we need to make a random chance to visit the passport clerk first? */
+		/* TODO: VISIT THE PASSPORT CLERK RANDOM CHANCE */
+		
+		/* Visit application and picture clerks first */
+		while (visitedApp[myIndex] != true || visitedPic[myIndex] != true) {
+			SenLineAppPicClerk(myIndex);
+		}
+		
+		/* Next visit the passport clerk */
+		while (visitedPass[myIndex] != true) {
+			SenLinePassClerk(myIndex);
+		}
+		
+		/* Finally, visit the cashier */
+		while (visitedCash[myIndex] != true) {
+			SenLineTalkCashClerk(myIndex);
+		}
+	}
+	
+	/* Finished with this office, leaving */
+	Acquire(senatorLock);
+	officeSenator--;
+	Release(senatorLock);
+	Write("A senator leaves the Passport Office.\n", sizeof("A senator leaves the Passport Office.\n"), ConsoleOutput);
+	Exit(0);
+}
 	
 int main() {
+	int i;
 	Write("Calling InitializeData\n", sizeof("Calling InitializeData\n"), ConsoleOutput);
 	InitializeData();
 	Write("InitializeData has been called.\n", sizeof("InitializeData has been called.\n"), ConsoleOutput);
+	
+	for (i = 0; i < NUM_CUSTOMERS; i++) {
+		Fork(Customer);
+	}
+	
+	for (i = 0; i < NUM_CLERKS; i++) {
+		Fork(AppClerk);
+		Fork(PicClerk);
+		Fork(PassClerk);
+		Fork(CashClerk);
+	}
+	
+	for (i = 0; i < NUM_SENATORS; i++) {
+		Fork(Senator);
+	}
+	
+	Fork(Manager);
 	
 	Exit(0);
 }
