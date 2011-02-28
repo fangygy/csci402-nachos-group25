@@ -27,19 +27,19 @@ void Waiter1(){
 		sizeof("Waiter1: Woke up from wait on a signal. Releasing lockOld, sched. for deletion.\n"), ConsoleOutput);
 	Release(lockOld);
 	
-	/* Give Douche time to mess us up */
-	Yield();
+	
+	
 	Write("Waiter1: Acquiring lockOld, sched. for deletion.\n",
 		sizeof("Waiter1: Acquiring lockOld, sched. for deletion.\n"), ConsoleOutput);
 	Acquire(lockOld);
 	
-	Write("Waiter1: Waiting on a bad lock. \n", sizeof("Waiter1: Waiting on a bad lock. \n"), ConsoleOutput);
+	/*Write("Waiter1: Waiting on a bad lock. \n", sizeof("Waiter1: Waiting on a bad lock. \n"), ConsoleOutput);
 	Wait(-1, -1);
 	Wait(-1, 0);
 	Wait(0,-1);
 	Wait(100, lockOld);
 	Wait(cvOld, 100);
-	Write("Waiter1: Finished.\n", sizeof("Waiter1: Finished.\n"), ConsoleOutput);
+	Write("Waiter1: Finished.\n", sizeof("Waiter1: Finished.\n"), ConsoleOutput);*/
 	Exit(0);
 }
 
@@ -58,11 +58,11 @@ void Waiter2(){
 	Release(lockOld);
 	
 	/* LockNew section */
-	Write("Waiter2: Acquiring lockNew...\n", sizeof("Waiter2: Acquiring lockNew...\n"), ConsoleOutput);
+	/*Write("Waiter2: Acquiring lockNew...\n", sizeof("Waiter2: Acquiring lockNew...\n"), ConsoleOutput);
 	Acquire(lockNew);
 	Write("Waiter2: Acquired lockNew and waiting on deleted cvNew.\n",
 		sizeof("Waiter2: Acquired lockNew and waiting on deleted cvNew.\n"), ConsoleOutput);
-	Wait(cvNew, lockNew);
+	Wait(cvNew, lockNew);*/
 	
 	/*Write("Waiter2: Woke up from wait on a signal. Releasing lockNew.\n",
 		sizeof("Waiter2: Woke up from wait on a signal. Releasing lockNew.\n"), ConsoleOutput);*/
@@ -127,10 +127,14 @@ void Douche() {
 	Release(lockOld);
 	
 	/* cvNew SABOTAGE!!! >:D */
-	Broadcast(cvNew, lockOld);
+	Write("Douche: Acquiring lockNew... \n", sizeof("Douche: Acquiring lockNew... \n"), ConsoleOutput);
+	Acquire(lockOld);
+	Broadcast(cvNew, lockNew);
 	Write("Douche: Destroying cvNew.\n",
 		sizeof("Douche: Destroying cvNew.\n"), ConsoleOutput);
 	DestroyCondition(cvNew);
+	Write("Douche: Releasing lockNew... \n", sizeof("Douche: Releasing lockNew... \n"), ConsoleOutput);
+	Release(lockNew);
 	
 	Write("Douche: Finished.\n", sizeof("Douche: Finished.\n"), ConsoleOutput);
 	Exit(0);
@@ -144,9 +148,9 @@ int main() {
 	cvOld = CreateCondition("cvOld", 20);
 	cvNew = CreateCondition("cvNew", 20);
 	
-	Fork(Douche);
 	Fork(Waiter1);
 	Fork(Waiter2);
+	Fork(Douche);
 	
 	/* Give waiters time to wait on CVs */
 	for (i = 0; i < 100; i++) {

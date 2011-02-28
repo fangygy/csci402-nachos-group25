@@ -26,7 +26,7 @@ int main()
 
 	Write("Testing bad fork syscalls...\n", sizeof("Testing bad fork syscalls...\n"), ConsoleOutput);
 	Fork(0);
-	Fork(-1);
+	Fork(-1);	/* HALP! */
 	Fork("sdfjks");
 	Fork(forkyforky);
 
