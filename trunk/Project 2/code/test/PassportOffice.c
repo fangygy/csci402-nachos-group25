@@ -1130,8 +1130,38 @@ void Manager(){
 
 		if(officeCustomer + officeSenator + waitingCustomer == 0){
 			/* Print out stuff */
-			Write("Manager: Print out stuff.\n", sizeof("Manager: Print out stuff.\n"), ConsoleOutput);
-			Halt();
+
+			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
+			Acquire(appMoneyLock);
+			Trace("Total money received from ApplicationClerk = ", appMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			totalMoney += appMoney;
+			Release(appMoneyLock);
+			
+			Acquire(picMoneyLock);
+			Trace("Total money received from PictureClerk = ", picMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			totalMoney += picMoney;
+			Release(picMoneyLock);
+
+			Acquire(passMoneyLock);
+			Trace("Total money received from PassportClerk = ", passMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			totalMoney += passMoney;
+			Release(passMoneyLock);
+
+			Acquire(cashMoneyLock);
+			Trace("Total money received from Cashier = ", cashMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			totalMoney += cashMoney;
+			Release(cashMoneyLock);
+
+			Trace("Total money made by office = ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
+			
+			Write("No more customers in passport office, ending simulation.\n", sizeof("No more customers in passport office, ending simulation.\n"), ConsoleOutput);
+			Write("\n", sizeof("\n"), ConsoleOutput);			Halt();
 			break;
 		}
 		Yield();
