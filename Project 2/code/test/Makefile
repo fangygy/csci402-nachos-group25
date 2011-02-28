@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest destroyCVTest execDestroyTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice
+all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest destroyCVTest execDestroyTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests passportTest1
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -151,6 +151,18 @@ ExecTwoPassportOffice.o: ExecTwoPassportOffice.c
 ExecTwoPassportOffice: ExecTwoPassportOffice.o start.o
 	$(LD) $(LDFLAGS) start.o ExecTwoPassportOffice.o -o ExecTwoPassportOffice.coff
 	../bin/coff2noff ExecTwoPassportOffice.coff ExecTwoPassportOffice
+
+passportTest1.o: passportTest1.c
+	$(CC) $(CFLAGS) -c passportTest1.c
+passportTest1: passportTest1.o start.o
+	$(LD) $(LDFLAGS) start.o passportTest1.o -o passportTest1.coff
+	../bin/coff2noff passportTest1.coff passportTest1
+
+execPassportTests.o: execPassportTests.c
+	$(CC) $(CFLAGS) -c execPassportTests.c
+execPassportTests: execPassportTests.o start.o
+	$(LD) $(LDFLAGS) start.o execPassportTests.o -o execPassportTests.coff
+	../bin/coff2noff execPassportTests.coff execPassportTests
 
 clean:
 	rm -f *.o *.coff

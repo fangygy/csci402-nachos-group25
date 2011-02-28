@@ -941,12 +941,6 @@ int Random_Syscall(int max) {
 }
 
 void Trace_Syscall(unsigned int vaddr, int val) {
-	// Write the buffer to the given disk file.  If ConsoleOutput is
-    // the fileID, data goes to the synchronized console instead.  If
-    // a Write arrives for the synchronized Console, and no such
-    // console exists, create one. For disk files, the file is looked
-    // up in the current address space's open file table and used as
-    // the target of the write.
     
     char *buf;		// Kernel buffer for output
     OpenFile *f;	// Open file for output
