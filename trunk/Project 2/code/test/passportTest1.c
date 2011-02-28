@@ -1379,7 +1379,8 @@ void LineAppPicClerk(int myIndex) {
 		/* If haven't gone to application clerk, go there if both of his lines are empty.
 		*	Go into regular line to save money because both are empty. */
 		if (regACLineLength == 0 && privACLineLength == 0 && visitedApp[myIndex] == false) {
-			
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular AppLine.\n", sizeof(": getting into the regular AppLine.\n"), ConsoleOutput);
 			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
 				Wait(regACLineCV, acpcLineLock);
@@ -1418,6 +1419,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* Same as above except for pic clerk */
 		else if (regPCLineLength == 0 && privPCLineLength == 0 && visitedPic[myIndex] == false) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular PicLine.\n", sizeof(": getting into the regular PicLine.\n"), ConsoleOutput);
 			
 			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
@@ -1457,6 +1460,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* Already been to picture clerk, so go to privileged application clerk line*/
 		else if (visitedPic[myIndex] == true) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the privileged AppLine.\n", sizeof(": getting into the privileged AppLine.\n"), ConsoleOutput);
 			
 			while (visitedApp[myIndex] == false) {
 				privACLineLength++;
@@ -1497,6 +1502,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* If already been to application clerk then go to privileged picture clerk line */
 		else if (visitedApp[myIndex] == true) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the privileged PicLine.\n", sizeof(": getting into the privileged PicLine.\n"), ConsoleOutput);
 			
 			while (visitedPic[myIndex] == false) {
 				privPCLineLength++;
@@ -1537,6 +1544,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (privACLineLength <= privPCLineLength) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the privileged AppLine.\n", sizeof(": getting into the privileged AppLine.\n"), ConsoleOutput);
 			
 			while (visitedApp[myIndex] == false) {
 				privACLineLength++;
@@ -1578,6 +1587,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* Else picture's is shorter */
 		else {
+			Trace("Customer ", myIndex);
+			Write(": getting into the privileged PicLine.\n", sizeof(": getting into the privileged PicLine.\n"), ConsoleOutput);
 			
 			while (visitedPic[myIndex] == false) {
 				privPCLineLength++;
@@ -1620,6 +1631,8 @@ void LineAppPicClerk(int myIndex) {
 	/* Don't have enough money, just check regular lines */
 	else {
 		if (visitedPic[myIndex] == true) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular AppLine.\n", sizeof(": getting into the regular AppLine.\n"), ConsoleOutput);
 			
 			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
@@ -1657,8 +1670,10 @@ void LineAppPicClerk(int myIndex) {
 				}
 			}
 		}
-		/* If already been to application clerk then go to privileged picture clerk line */
+		/* If already been to application clerk then go to regular picture clerk line */
 		else if (visitedApp[myIndex] == true) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular PicLine.\n", sizeof(": getting into the regular PicLine.\n"), ConsoleOutput);
 			
 			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
@@ -1698,6 +1713,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (regACLineLength <= regPCLineLength) {
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular AppLine.\n", sizeof(": getting into the regular AppLine.\n"), ConsoleOutput);
 			
 			while (visitedApp[myIndex] == false) {
 				regACLineLength++;
@@ -1737,6 +1754,8 @@ void LineAppPicClerk(int myIndex) {
 		}
 		/* Else picture's is shorter */
 		else {
+			Trace("Customer ", myIndex);
+			Write(": getting into the regular PicLine.\n", sizeof(": getting into the regular PicLine.\n"), ConsoleOutput);
 			
 			while (visitedPic[myIndex] == false) {
 				regPCLineLength++;
@@ -2131,7 +2150,15 @@ void Customer() {
 			else {
 				Release(senatorLock);
 			}
-			Write("Getting in line.\n", sizeof("Getting in line.\n"), ConsoleOutput);
+			Write("Customer: Getting in the ACPC line.\n", sizeof("Customer: Getting in the ACPC line.\n"), ConsoleOutput);
+			Trace("RegAppLine: ", regACLineLength);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Trace("PrivAppLine: ", privACLineLength);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Trace("RegPicLine: ", regPCLineLength);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Trace("PrivPicLine: ", privPCLineLength);
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			LineAppPicClerk(myIndex);
 		}
 		
