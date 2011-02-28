@@ -98,7 +98,7 @@ execCVTest: execCVTest.o start.o
 	$(LD) $(LDFLAGS) start.o execCVTest.o -o execCVTest.coff
 	../bin/coff2noff execCVTest.coff execCVTest
 
-multiExecCVTest.o: multiExecCVTest.c
+multiExecTest.o: multiExecTest.c
 	$(CC) $(CFLAGS) -c multiExecTest.c
 multiExecTest: multiExecTest.o start.o
 	$(LD) $(LDFLAGS) start.o multiExecTest.o -o multiExecTest.coff

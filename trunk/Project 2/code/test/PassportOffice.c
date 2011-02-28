@@ -8,6 +8,7 @@
 #define NUM_CLERKS 5
 #define NUM_CUSTOMERS 30
 #define NUM_SENATORS 5
+#define NV 0x9999
 
 /* enum for booleans */
 enum BOOLEAN {  
@@ -42,6 +43,9 @@ enum INDEX_USED {
 	USED,
 	FREE
 };
+
+void CustTrace(int index, ) {
+}
 
 /* Index initialization lock and data*/
 int indexLock;
@@ -1227,7 +1231,15 @@ void TalkAppClerk(int myIndex, enum BOOLEAN privLine) {
 void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 	int myClerk;
 	int i;
-	enum BOOLEAN hatePicture = true;
+	int chanceToHate;
+	enum BOOLEAN hatePicture = false;
+	/* 20% chance to hate picture */
+	chanceToHate = Random(10);
+	
+	if (chanceToHate < 2) {
+		hatePicture = true;
+	}
+	
 	/* Search for an available clerk */
 	for (i = 0; i < NUM_CLERKS; i++) {
 		Acquire(picLock[i]);
@@ -1279,6 +1291,7 @@ void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 					sizeof("A senator doesn't like the picture provided by PictureClerk.\n"),
 					ConsoleOutput);
 			}
+			/* random? */
 			hatePicture = false;
 			
 			Signal(picCV[myClerk], picLock[myClerk]);
