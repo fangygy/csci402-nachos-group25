@@ -1130,7 +1130,7 @@ void Manager(){
 
 		if(officeCustomer + officeSenator + waitingCustomer == 0){
 			/* Print out stuff */
-			
+
 			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
 			Acquire(appMoneyLock);
 			Trace("Total money received from ApplicationClerk = ", appMoney);
@@ -1161,7 +1161,8 @@ void Manager(){
 			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
 			
 			Write("No more customers in passport office, ending simulation.\n", sizeof("No more customers in passport office, ending simulation.\n"), ConsoleOutput);
-			Write("\n", sizeof("\n"), ConsoleOutput);Halt();
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Halt();
 			break;
 		}
 		Yield();
@@ -2506,8 +2507,12 @@ int main() {
 	InitializeData();
 	Write("InitializeData has been called.\n", sizeof("InitializeData has been called.\n"), ConsoleOutput);
 	
-	Fork(Customer);
-	Fork(Customer);
+	Fork(AppClerk);
+	Fork(PicClerk);
+	Fork(PassClerk);
+	Fork(CashClerk);
+
+	Fork(Manager);
 
 	
 	Exit(0);
