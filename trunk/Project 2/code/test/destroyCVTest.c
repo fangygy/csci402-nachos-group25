@@ -127,7 +127,7 @@ void Douche() {
 	Release(lockOld);
 	
 	/* cvNew SABOTAGE!!! >:D */
-	Broadcast(cvNew);
+	Broadcast(cvNew, lockOld);
 	Write("Douche: Destroying cvNew.\n",
 		sizeof("Douche: Destroying cvNew.\n"), ConsoleOutput);
 	DestroyCondition(cvNew);
