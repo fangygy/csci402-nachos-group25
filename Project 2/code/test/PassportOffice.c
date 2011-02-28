@@ -290,7 +290,8 @@ void AppClerk() {
 				Release(fileLock[mySSN]);
 			}
 			else{
-				Write("Error. Customer does not have picture application or no application. What are you doing here?\n", sizeof("Error. Customer does not have picture application or no application. What are you doing here?\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Cust", mySSN,
+					"ERROR:Customer doesn't have a picture application or no application. What are you doing here?\n");
 				Release(fileLock[mySSN]);
 			}
 
@@ -299,20 +300,20 @@ void AppClerk() {
 			}
 
 			if(cType == CUSTOMER){
-				Write("AppClerk informs Customer that the app has been filed.\n", sizeof("AppClerk informs Customer that the app has been filed.\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Cust", mySSN, "Customer's app has been filed.\n");
 			}
 			else{
-				Write("AppClerk informs Senator that the app has been filed.\n", sizeof("AppClerk informs Senator that the app has been filed.\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Sen", mySSN, "Senator's app has been filed.\n");
 			}
 
 			Acquire(appMoneyLock);
 			appMoney += 500;
 
 			if(cType == CUSTOMER){
-				Write("AppClerk accepts money = 500 from Customer\n", sizeof("AppClerk accepts money = 500 from Customer\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
 			}
 			else{
-				Write("AppClerk accepts money = 500 from Senator\n", sizeof("AppClerk accepts money = 500 from Senator\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Sen", mySSN, "Accepts $500 from Senator.\n");
 			}
 
 			Release(appMoneyLock);
@@ -355,7 +356,8 @@ void AppClerk() {
 				Release(fileLock[mySSN]);
 			}
 			else{
-				Write("Error. Customer does not have picture application or no application. What are you doing here?\n", sizeof("Error. Customer does not have picture application or no application. What are you doing here?\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Cust", mySSN,
+					"ERROR:Customer doesn't have a picture application or no application. What are you doing here?\n");
 				Release(fileLock[mySSN]);
 			}
 
@@ -364,10 +366,10 @@ void AppClerk() {
 			}
 
 			if(cType == CUSTOMER){
-				Write("AppClerk informs Customer that the app has been filed.\n", sizeof("AppClerk informs Customer that the app has been filed.\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Cust", mySSN, "Informs Customer their app has been filed.\n");
 			}
 			else{
-				Write("AppClerk informs Senator that the app has been filed.\n", sizeof("AppClerk informs Senator that the app has been filed.\n"), ConsoleOutput);
+				ClerkTrace("App", myIndex, "Sen", mySSN, "Informs Senator their app has been filed.\n");
 			}
 
 			Signal(appCV[myIndex], appLock[myIndex]); /* signal customer awake */
@@ -378,10 +380,10 @@ void AppClerk() {
 			Release(acpcLineLock);
 			Acquire(appLock[myIndex]);
 			appState[myIndex] = BREAK;
-			Write("ApplicationClerk is going on break\n", sizeof("ApplicationClerk is going on break\n"), ConsoleOutput);
+			ClerkTrace("App", myIndex, 0x00, 0, "Going on break.\n");
 
 			Wait(appCV[myIndex], appLock[myIndex]);
-			Write("ApplicationClerk returned from break\n", sizeof("ApplicationClerk returned from break\n"), ConsoleOutput);
+			ClerkTrace("App", myIndex, 0x00, 0, "Returning from break.\n");
 			Release(appLock[myIndex]);
 		}
 	}
@@ -465,14 +467,15 @@ void PicClerk() {
 				Release(fileLock[mySSN]);
 			}
 			else{
-				Write("Error. Customer does not have either an application or no application. What are you doing here?\n", sizeof("Error. Customer does not have either an application or no application. What are you doing here?\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN,
+					"ERROR: Customer does not have either an application or no application. What are you doing here?\n");
 				Release(fileLock[mySSN]);
 			}
 
 			if (cType == CUSTOMER) {
-				Write("PictureClerk takes picture of Customer\n",sizeof("PictureClerk takes picture of Customer\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer.\n");
 			} else {
-				Write("PictureClerk takes picture of Senator\n",sizeof("PictureClerk takes picture of Senator\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator.\n");
 			}
 				/* yield to take picture
 				* print statement: "Taking picture"
@@ -488,10 +491,10 @@ void PicClerk() {
 
 				if(picDataBool[myIndex] ==false){
 					if (cType == CUSTOMER) {
-						Write("PictureClerk takes picture of Customer again\n",sizeof("PictureClerk takes picture of Customer again\n"),ConsoleOutput);
+						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
 
 					} else {
-						Write("PictureClerk takes picture of Senator again\n",sizeof("PictureClerk takes picture of Senator again\n"),ConsoleOutput);
+						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
 					}
 				}
 			}
@@ -504,9 +507,9 @@ void PicClerk() {
 				Yield();
 			}*/
 			if (cType == CUSTOMER) {
-				Write("Picture informs Customer that the procedure has been completed\n", sizeof("Picture informs Customer that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
 			} else {
-				Write("Picture informs Senator that the procedure has been completed\n", sizeof("Picture informs Senator that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
 			}
 
 			/* signal customer awake */
@@ -514,9 +517,9 @@ void PicClerk() {
 			picMoney += 500;
 
 			if (cType == CUSTOMER) {
-				Write("PictureClerk accepts money = $500 from Customer\n",sizeof("PictureClerk accepts money = $500 from Customer\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
 			} else {
-				Write("PictureClerk accepts money = $500 from Senator\n",sizeof("PictureClerk accepts money = $500 from Senator\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Senator.\n");
 			}
 
 			Release(picMoneyLock);
@@ -560,14 +563,15 @@ void PicClerk() {
 				Release(fileLock[mySSN]);
 			}
 			else{
-				Write("Error. Customer does not have either an application or no application. What are you doing here?\n", sizeof("Error. Customer does not have either an application or no application. What are you doing here?\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN,
+					"ERROR: Customer does not have either an application or no application. What are you doing here?\n");
 				Release(fileLock[mySSN]);
 			}
 
 			if (cType == CUSTOMER) {
-				Write("PictureClerk takes picture of Customer\n",sizeof("PictureClerk takes picture of Customer\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer.\n");
 			} else {
-				Write("PictureClerk takes picture of Senator\n",sizeof("PictureClerk takes picture of Senator\n"),ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator.\n");
 			}
 				/* yield to take picture
 				* print statement: "Taking picture"
@@ -583,10 +587,9 @@ void PicClerk() {
 
 				if(picDataBool[myIndex] ==false){
 					if (cType == CUSTOMER) {
-						Write("PictureClerk takes picture of Customer again\n",sizeof("PictureClerk takes picture of Customer again\n"),ConsoleOutput);
-
+						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
 					} else {
-						Write("PictureClerk takes picture of Senator again\n",sizeof("PictureClerk takes picture of Senator again\n"),ConsoleOutput);
+						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
 					}
 				}
 			}
@@ -599,9 +602,9 @@ void PicClerk() {
 				Yield();
 			}*/
 			if (cType == CUSTOMER) {
-				Write("Picture informs Customer that the procedure has been completed\n", sizeof("Picture informs Customer that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
 			} else {
-				Write("Picture informs Senator that the procedure has been completed\n", sizeof("Picture informs Senator that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
 			}
 
 			picDataBool[myIndex] = false;
@@ -613,10 +616,10 @@ void PicClerk() {
 			Release(acpcLineLock);
 			Acquire(picLock[myIndex]);
 			picState[myIndex] = BREAK;
-			Write("PictureClerk is going on break\n",sizeof("PictureClerk is going on break\n"), ConsoleOutput);
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Going on break.\n");
 			Wait(picCV[myIndex], picLock[myIndex]);
-			Write("PictureClerk returned from break\n",sizeof("PictureClerk returned from break\n"), ConsoleOutput);
-
+			
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Returning on break.\n");
 			Release(picLock[myIndex]);     /* release clerk lock */
 		}
 	}
@@ -686,21 +689,21 @@ void PassClerk() {
 				doPassport = true;
 
 				if(cType == CUSTOMER){
-					Write("PassClerk gives valid certification to Customer\n", sizeof("PassClerk gives valid certification to Customer\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives valid certification to Customer.\n");
 				}
 				else{
-					Write("PassClerk gives valid certification to Senator\n", sizeof("PassClerk gives valid certification to Senator\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");
 				}
 			} else {
 				passDataBool[myIndex] = false;
 				doPassport = false;
 				if(cType == CUSTOMER){
-					Write("PassClerk gives invalid certification to Customer\n", sizeof("PassClerk gives invalid certification to Customer\n"), ConsoleOutput);
-					Write("PassClerk punishes Customer to wait\n", sizeof("PassClerk punishes Customer to wait\n"), ConsoleOutput);				
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");				
 				}
 				else{
-					Write("PassClerk gives invalid certification to Senator\n", sizeof("PassClerk gives invalid certification to Senator\n"), ConsoleOutput);
-					Write("PassClerk punishes Senator to wait\n", sizeof("PassClerk punishes Senator to wait\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives invalid certification to Senator.\n");
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Punishes Senator to wait.\n");	
 				}
 			}
 			Release(fileLock[mySSN]);
@@ -711,12 +714,12 @@ void PassClerk() {
 			Release(passMoneyLock);
 
 			if(cType == CUSTOMER){
-				Write("PassportClerk accepts money = $500 from Customer\n", sizeof("PassportClerk accepts money = $500 from Customer\n"), ConsoleOutput);
-				Write("PassportClerk informs Customer that the procedure has been completed\n", sizeof("PassportClerk informs Customer that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pass", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
+				ClerkTrace("Pass", myIndex, "Cust", mySSN, "Informs Customer that the procedure has been completed.\n");
 			}
 			else{
-				Write("PassportClerk accepts money = $500 from Senator\n", sizeof("PassportClerk accepts money = $500 from Senator\n"), ConsoleOutput);
-				Write("PassportClerk informs Senator that the procedure has been completed\n", sizeof("PassportClerk informs Senator that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pass", myIndex, "Sen", mySSN, "Accepts $500 from Senator.\n");
+				ClerkTrace("Pass", myIndex, "Sen", mySSN, "Informs Senator that the produre has been completed.\n");
 			}
 
 			Signal(passCV[myIndex], passLock[myIndex]); /* signal customer awake */
@@ -731,10 +734,10 @@ void PassClerk() {
 				fileState[mySSN] = PASSDONE;
 				Release(fileLock[mySSN]);
 				if(cType == CUSTOMER){
-					Write("PassportClerk has finished filing Customer's passport\n", sizeof("PassportClerk has finished filing Customer's passport\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Finished filing Customer's passport.\n");
 				}
 				else{
-					Write("PassportClerk has finished filing Senator's passport\n", sizeof("PassportClerk has finished filing Senator's passport\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Finished filing Senator's passport.\n");
 				}
 			}
 			
@@ -770,28 +773,28 @@ void PassClerk() {
 				doPassport = true;
 
 				if(cType == CUSTOMER){
-					Write("PassClerk gives valid certification to Customer\n", sizeof("PassClerk gives valid certification to Customer\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives valid certification to Customer.\n");
 				}
 				else{
-					Write("PassClerk gives valid certification to Senator\n", sizeof("PassClerk gives valid certification to Senator\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");
 				}
 			} else {
 				passDataBool[myIndex] = false;
 				doPassport = false;
 				if(cType == CUSTOMER){
-					Write("PassClerk gives invalid certification to Customer\n", sizeof("PassClerk gives invalid certification to Customer\n"), ConsoleOutput);
-					Write("PassClerk punishes Customer to wait\n", sizeof("PassClerk punishes Customer to wait\n"), ConsoleOutput);				
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");			
 				}
 				else{
-					Write("PassClerk gives invalid certification to Senator\n", sizeof("PassClerk gives invalid certification to Senator\n"), ConsoleOutput);
-					Write("PassClerk punishes Senator to wait\n", sizeof("PassClerk punishes Senator to wait\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives invalid certification to Senator.\n");
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Punishes Senator to wait.\n");	
 				}
 			}
 			if(cType == CUSTOMER){
-				Write("PassportClerk informs Customer that the procedure has been completed\n", sizeof("PassportClerk informs Customer that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pass", myIndex, "Cust", mySSN, "Informs Customer that the procedure has been completed.\n");
 			}
 			else{
-				Write("PassportClerk informs Senator that the procedure has been completed\n", sizeof("PassportClerk informs Senator that the procedure has been completed\n"), ConsoleOutput);
+				ClerkTrace("Pass", myIndex, "Sen", mySSN, "Informs Senator that the procedure has been completed.\n");
 			}
 
 			Release(fileLock[mySSN]);
@@ -808,10 +811,10 @@ void PassClerk() {
 				fileState[mySSN] = PASSDONE;
 				Release(fileLock[mySSN]);
 				if(cType == CUSTOMER){
-					Write("PassportClerk has finished filing Customer's passport\n", sizeof("PassportClerk has finished filing Customer's passport\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Finished filing Customer's passport.\n");
 				}
 				else{
-					Write("PassportClerk has finished filing Senator's passport\n", sizeof("PassportClerk has finished filing Senator's passport\n"), ConsoleOutput);
+					ClerkTrace("Pass", myIndex, "Sen", mySSN, "Finished filing Senator's passport.\n");
 				}
 			}
 			doPassport = false;
@@ -821,9 +824,11 @@ void PassClerk() {
 			/* No one in line...take a break */
 			Release(passLineLock);
 			Acquire(passLock[myIndex]);
+			ClerkTrace("Pass", myIndex, 0x00, 0, "Goin on break.\n");
 			passState[myIndex] = BREAK;
 			Wait(passCV[myIndex], passLock[myIndex]);
-			Write("PassportClerk returned from break\n", sizeof("PassportClerk returned from break\n"), ConsoleOutput);
+			
+			ClerkTrace("Pass", myIndex, 0x00, 0, "Returning from break.\n");
 			Release(passLock[myIndex]);
 		}
 	}
@@ -831,7 +836,7 @@ void PassClerk() {
 
 void CashClerk() {
 	int myIndex;
-	int myCustomer;
+	int mySSN;
 	enum CUST_TYPE myCustType;
 	int i;
 	enum BOOLEAN loop = true;
@@ -887,42 +892,42 @@ void CashClerk() {
 			Release(cashLineLock);
 			Wait(cashCV[myIndex], cashLock[myIndex]);
 			
-			myCustomer = cashData[myIndex];
+			mySSN = cashData[myIndex];
 			
-			Acquire(fileLock[myCustomer]);
-			myCustType = fileType[myCustomer];
+			Acquire(fileLock[mySSN]);
+			myCustType = fileType[mySSN];
 			
-			if (fileState[myCustomer] == PASSDONE) {
-				Write("Cashier certifies Customer\n", sizeof("Cashier certifies Customer\n"), ConsoleOutput);
+			if (fileState[mySSN] == PASSDONE) {
+				/*ClerkTrace("Cash", myIndex, "Cust", mySSN, "Certifies Customer.\n");*/
 				cashDataBool[myIndex] = true;
 				for (i = 0; i < 50; i++) {
 					Yield();
 				}
 				
-				fileState[myCustomer] = ALLDONE;
+				fileState[mySSN] = ALLDONE;
 				
 				Acquire(cashMoneyLock);
 				cashMoney += 100;
 				Release(cashMoneyLock);
 				
 				if(myCustType == CUSTOMER){
-					Write("Cashier gives valid certification to Customer\n", sizeof("Cashier gives valid certification to Customer\n"), ConsoleOutput);
+					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives valid certification to Customer.\n");
 				}
 				else{
-					Write("Cashier gives valid certification to Senator\n", sizeof("Cashier gives valid certification to Senator\n"), ConsoleOutput);
+					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");
 				}			
 			}	
 			else {
 				cashDataBool[myIndex] = false;
 				if(myCustType == CUSTOMER){
-					Write("Cashier gives invalid certification to Customer\n", sizeof("Cashier gives invalid certification to Customer\n"), ConsoleOutput);
+					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
 				}
 				else{
-					Write("Cashier gives invalid certification to Senator\n", sizeof("Cashier gives invalid certification to Senator\n"), ConsoleOutput);
+					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");
 				}			
 			}
 			
-			Release(fileLock[myCustomer]);
+			Release(fileLock[mySSN]);
 			Signal(cashCV[myIndex], cashLock[myIndex]);
 			cashState[myIndex] = BUSY;
 			Release(cashLock[myIndex]);
@@ -930,18 +935,15 @@ void CashClerk() {
 		}
 		else {
 		/* Nobody in line, break */
-			Write("A cashier is going on break.\n",
-				sizeof("A cashier is going on break.\n"),
-				ConsoleOutput);
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Going on break.\n");
+			
 			Release(cashLineLock);
 			Acquire(cashLock[myIndex]);
 			cashState[myIndex] = BREAK;
 			Wait(cashCV[myIndex], cashLock[myIndex]);
 			Release(cashLock[myIndex]);
 			
-			Write("A cashier has returned from break.\n",
-				sizeof("A cashier has returned from break.\n"),
-				ConsoleOutput);
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Returning from break.\n");
 		}		
 	}
 }
@@ -994,7 +996,7 @@ void Manager(){
 
 				Yield();
 				Acquire(customerLock);
-				Write("Waking up customers loop.\n", sizeof("Waking up customers loop.\n"), ConsoleOutput);
+				ClerkTrace("Mgr", 0, 0x00, 0, "Waking up customers loop.\n");
 			}
 			Release(customerLock);
 
@@ -1040,7 +1042,7 @@ void Manager(){
 					Signal(appCV[i], appLock[i]);
 					appState[i] = BUSY;
 					Release(appLock[i]);
-					Write("Manager calls back an ApplicationClerk from break\n", sizeof("Manager calls back an ApplicationClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
 				}
 			}
 		}
@@ -1052,7 +1054,7 @@ void Manager(){
 					Signal(appCV[i], appLock[i]);
 					appState[i] = BUSY;
 					Release(appLock[i]);
-					Write("Manager calls back an ApplicationClerk from break\n", sizeof("Manager calls back an ApplicationClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
 					break;
 				}
 			}
@@ -1070,7 +1072,7 @@ void Manager(){
 					Signal(picCV[i], picLock[i]);
 					picState[i] = BUSY;
 					Release(picLock[i]);
-					Write("Manager calls back a PictureClerk from break\n", sizeof("Manager calls back a PictureClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PicClerk back from break.\n");
 				}
 			}
 		}
@@ -1082,7 +1084,7 @@ void Manager(){
 					Signal(picCV[i], picLock[i]);
 					picState[i] = BUSY;
 					Release(picLock[i]);
-					Write("Manager calls back a PictureClerk from break\n", sizeof("Manager calls back a PictureClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PicClerk back from break.\n");
 					break;
 				}
 			}
@@ -1100,7 +1102,7 @@ void Manager(){
 					Signal(passCV[i], passLock[i]);
 					passState[i] = BUSY;
 					Release(passLock[i]);
-					Write("Manager calls back a PassporClerk from break\n", sizeof("Manager calls back a PassportClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PassClerk back from break.\n");
 				}
 			}
 		}
@@ -1112,7 +1114,7 @@ void Manager(){
 					Signal(passCV[i], passLock[i]);
 					passState[i] = BUSY;
 					Release(passLock[i]);
-					Write("Manager calls back a PassporClerk from break\n", sizeof("Manager calls back a PassportClerk from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PassClerk back from break.\n");
 					break;
 				}
 			}
@@ -1130,7 +1132,7 @@ void Manager(){
 					Signal(cashCV[i], cashLock[i]);
 					cashState[i] = BUSY;
 					Release(cashLock[i]);
-					Write("Manager calls back a Cashier from break\n", sizeof("Manager calls back a Cashier from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a Cashier back from break.\n");
 				}
 			}
 		}
@@ -1142,7 +1144,7 @@ void Manager(){
 					Signal(cashCV[i], cashLock[i]);
 					cashState[i] = BUSY;
 					Release(cashLock[i]);
-					Write("Manager calls back a Cashier from break\n", sizeof("Manager calls back a Cashier from break\n"), ConsoleOutput);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a Cashier back from break.\n");
 					break;
 				}
 			}
@@ -2115,7 +2117,7 @@ void LineTalkCashClerk(int myIndex) {
 	while (visitedCash[myIndex] == false) {
 		
 		Acquire(cashLineLock);
-		CustTrace("Cust", myIndex, 0x00, "Entering Cashier line.\n");
+		CustTrace("Cust", myIndex, 0x00, 0, "Entering Cashier line.\n");
 		cashLineLength++;
 		Wait(cashLineCV, cashLineLock);
 		Release(cashLineLock);
