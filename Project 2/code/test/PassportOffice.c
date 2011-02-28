@@ -1465,6 +1465,14 @@ void LineAppPicClerk(int myIndex) {
 			
 			while (visitedPic[myIndex] == false) {
 				CustTrace("Cust", myIndex, 0x00, 0, "Entering empty regular picture line.\n");
+				regPCLineLength++;
+				Wait(regPCLineCV, acpcLineLock);
+				Release(acpcLineLock);
+				
+				Acquire(senatorLock);
+				/* If there are senators in the office and no clerks waiting for me, go to waiting room */
+				if (officeSenator > 0 && numPicWait == 0) {
+					Release(senatorLock);
 					regPCLineLength--;
 					Release(acpcLineLock);
 					
