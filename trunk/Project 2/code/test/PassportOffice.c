@@ -44,7 +44,24 @@ enum INDEX_USED {
 	FREE
 };
 
-void CustTrace(enum CUST_TYPE type, int myIndex, char*  aType, int myClerk) {
+void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char* msg) {
+	Trace(custType, myIndex);
+	if (clerkType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(clerkType, myClerk);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+}
+
+void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	Trace(clerkType, myIndex);
+	if (custType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(custType, myCust);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
 }
 
 /* Index initialization lock and data*/
@@ -1913,16 +1930,19 @@ void LinePassClerk(int myIndex) {
 					privPassLineLength--;
 					Release(passLineLock);
 					
-					Write("A customer was in the privileged wait queue for PassportClerk.\n",
+					/*Write("A customer was in the privileged wait queue for PassportClerk.\n",
 						sizeof("A customer was in the privileged wait queue for PassportClerk.\n"),
-						ConsoleOutput);
-					Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+						ConsoleOutput);*/
+					CustTrace("Cust", myIndex, 0x00, 0, "Was in privileged PassportClerk line.\n");
+					/*Write("A customer leaves the Passport Office as a Senator has arrived.\n",
 						sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
-						ConsoleOutput);
+						ConsoleOutput);*/
+					CustTrace("Cust", myIndex, 0x00, 0, "Senator has arrived; Leaves PassportClerk line.\n");
 					DoWaitingRoom();
-					Write("A customer rejoins the privileged wait queue of PassportClerk.\n",
+					/*Write("A customer rejoins the privileged wait queue of PassportClerk.\n",
 						sizeof("A customer rejoins the privileged wait queue of PassportClerk.\n"),
-						ConsoleOutput);
+						ConsoleOutput);*/
+					CustTrace("Cust", myIndex, 0x00, 0, "Rejoins privileged PassportClerk line.\n");
 						
 					Acquire(passLineLock);
 				}
@@ -1954,16 +1974,19 @@ void LinePassClerk(int myIndex) {
 				regPassLineLength--;
 				Release(passLineLock);
 				
-				Write("A customer was in the regular wait queue for PassportClerk.\n",
+				/*Write("A customer was in the regular wait queue for PassportClerk.\n",
 					sizeof("A customer was in the regular wait queue for PassportClerk.\n"),
-					ConsoleOutput);
-				Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+					ConsoleOutput);*/
+				CustTrace("Cust", myIndex, 0x00, 0, "Was in regular PassportClerk line.\n");
+				/*Write("A customer leaves the Passport Office as a Senator has arrived.\n",
 					sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
-					ConsoleOutput);
+					ConsoleOutput);*/
+				CustTrace("Cust", myIndex, 0x00, 0, "Senator has arrived; Leaves PassportClerk line.\n");
 				DoWaitingRoom();
-				Write("A customer rejoins the regular wait queue of PassportClerk.\n",
+				/*Write("A customer rejoins the regular wait queue of PassportClerk.\n",
 					sizeof("A customer rejoins the regular wait queue of PassportClerk.\n"),
-					ConsoleOutput);
+					ConsoleOutput);*/
+				CustTrace("Cust", myIndex, 0x00, 0, "Rejoins regular PassportClerk line.\n");
 					
 				Acquire(passLineLock);
 			}
@@ -1999,16 +2022,19 @@ void LineTalkCashClerk(int myIndex) {
 			cashLineLength--;
 			Release(cashLineLock);
 			
-			Write("A customer was in the wait queue for Cashier.\n",
+			/*Write("A customer was in the wait queue for Cashier.\n",
 				sizeof("A customer was in the wait queue for Cashier.\n"),
-				ConsoleOutput);
-			Write("A customer leaves the Passport Office as a Senator has arrived.\n",
+				ConsoleOutput);*/
+			CustTrace("Cust", myIndex, "Cash", myClerk, "Was in Cashier line.\n");
+			/*Write("A customer leaves the Passport Office as a Senator has arrived.\n",
 				sizeof("A customer leaves the Passport Office as a Senator has arrived.\n"),
-				ConsoleOutput);
+				ConsoleOutput);*/
+			CustTrace("Cust", myIndex, "Cash", myClerk, "Senator has arrived; Leaves the Passport Office.\n");
 			DoWaitingRoom();
-			Write("A customer rejoins the wait queue of Cashier.\n",
+			/*Write("A customer rejoins the wait queue of Cashier.\n",
 				sizeof("A customer rejoins the wait queue of Cashier.\n"),
-				ConsoleOutput);
+				ConsoleOutput);*/
+			CustTrace("Cust", myIndex, "Cash", myClerk, "Rejoins Cashier line.\n");
 			
 			Acquire(cashLineLock);
 		}
@@ -2046,25 +2072,16 @@ void LineTalkCashClerk(int myIndex) {
 	/* Success, proceed onwards and upwards. */	
 		Release(cashLock[myClerk]);
 		visitedCash[myIndex] = true;
-		Write("A customer gets valid certification from Cashier.\n",
-			sizeof("A customer gets valid certification from Cashier.\n"),
-			ConsoleOutput);
-		Write("A customer pays $100 to Cashier for their passport.\n",
-			sizeof("A customer pays $100 to Cashier for their passport.\n"),
-			ConsoleOutput);
-		Write("A customer's passport is now recorded by Cashier.\n",
-			sizeof("A customer's passport is now recorded by Cashier.\n"),
-			ConsoleOutput);
+		
+		CustTrace("Cust", myIndex, "Cash", myClerk, "Got valid certification.\n");
+		CustTrace("Cust", myIndex, "Cash", myClerk, "Pays $100 for passport.\n");
+		CustTrace("Cust", myIndex, "Cash", myClerk, "Passport is now recorded by Cashier.\n");
 		myCustMoney[myIndex] -= 100;
 	}
 	else {
 		Release(cashLock[myClerk]);
-		Write("A customer is not certified by Cashier.\n",
-			sizeof("A customer is not certified by Cashier.\n"),
-			ConsoleOutput);
-		Write("A customer is punished to wait by Cashier.\n",
-			sizeof("A customer is punished to wait by Cashier.\n"),
-			ConsoleOutput);
+		CustTrace("Cust", myIndex, "Cash", myClerk, "Not certified by Cashier.\n");
+		CustTrace("Cust", myIndex, "Cash", myClerk, "Punished to wait.\n");
 		
 		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
 		Yield();
