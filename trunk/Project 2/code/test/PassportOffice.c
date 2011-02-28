@@ -44,7 +44,7 @@ enum INDEX_USED {
 	FREE
 };
 
-void CustTrace(int index, ) {
+void CustTrace(enum CUST_TYPE type, int myIndex, char*  aType, int myClerk) {
 }
 
 /* Index initialization lock and data*/
@@ -1276,9 +1276,6 @@ void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 	Wait(picCV[myClerk], picLock[myClerk]);
 	
 	while (picDataBool[myClerk] == false) {
-		
-		/* Technically, should be random, but don't know how to implement.
-		* 	Will just always hate the first picture given for now */
 		if (hatePicture == true) {
 			picDataBool[myClerk] = false;
 			if (fileType[myIndex] == CUSTOMER) {
@@ -1291,8 +1288,14 @@ void TalkPicClerk(int myIndex, enum BOOLEAN privLine) {
 					sizeof("A senator doesn't like the picture provided by PictureClerk.\n"),
 					ConsoleOutput);
 			}
-			/* random? */
-			hatePicture = false;
+			
+			/* 20% chance to hate picture. */
+			chanceToHate = Random(10);
+			if (chanceToHate < 2) {
+				hatePicture = true;
+			} else {
+				hatePicture = false;
+			}
 			
 			Signal(picCV[myClerk], picLock[myClerk]);
 			Wait(picCV[myClerk], picLock[myClerk]);
