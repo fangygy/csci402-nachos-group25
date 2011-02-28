@@ -143,7 +143,7 @@ void Lock::Acquire()
 
 	if (currentThread == holder) {
 		(void) interrupt->SetLevel(oldLevel);
-		printf("%s: Lock owner acquiring own lock. Returning...\n", currentThread->getName());
+		printf("%s: Lock owner acquiring own lock (%s). Returning...\n", currentThread->getName(), name);
 		return;
 	}
 
@@ -171,7 +171,7 @@ void Lock::Release()
 	IntStatus oldLevel = interrupt->SetLevel(IntOff); //disable interrupts
 
 	if (currentThread != holder) {	//If non-lockowner is calling release, exit function
-		printf("%s: Non-lockowner attempting to release lock. Preventing.", currentThread->getName());
+		printf("%s: Non-lockowner attempting to release lock(%s). Preventing.", currentThread->getName(), name);
 		printf("\n");
 		(void) interrupt->SetLevel(oldLevel);
 		return;
