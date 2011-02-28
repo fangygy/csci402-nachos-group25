@@ -39,7 +39,7 @@ StartProcess(char *filename)
     currentThread->space = space;
 	
 	/* */
-	
+	/*
 	Process* process = new Process;
 	process->space = space;
 	process->name = filename;
@@ -48,7 +48,7 @@ StartProcess(char *filename)
 	numProcesses++;
 	process->numThreads = 1;
 	machine->WriteRegister(2, process->processId);
-	
+	*/
 	/* */
 
     delete executable;			// close file
