@@ -14,6 +14,7 @@
 #include "addrspace.h"
 #include "synch.h"
 #include "string.h"
+#include "process.h"
 
 #define QUANTUM 100
 
@@ -36,6 +37,19 @@ StartProcess(char *filename)
     space = new AddrSpace(executable);
 
     currentThread->space = space;
+	
+	/* */
+	
+	Process* process = new Process;
+	process->space = space;
+	process->name = filename;
+	//Update the process table and related data structures.
+	process->processId = processTable.Put(process);
+	numProcesses++;
+	process->numThreads = 1;
+	machine->WriteRegister(2, process->processId);
+	
+	/* */
 
     delete executable;			// close file
 
