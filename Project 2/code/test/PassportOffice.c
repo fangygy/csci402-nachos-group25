@@ -472,10 +472,10 @@ void PicClerk() {
 
 			/* file picture using
 			* current thread yield
-			*/
+			
 			for(i = 0; i < 20; i++){
 				Yield();
-			}
+			}*/
 			if (cType == CUSTOMER) {
 				Write("Picture informs Customer that the procedure has been completed\n", sizeof("Picture informs Customer that the procedure has been completed\n"), ConsoleOutput);
 			} else {
@@ -567,10 +567,10 @@ void PicClerk() {
 
 			/* file picture using
 			* current thread yield
-			*/
+			
 			for(i = 0; i < 20; i++){
 				Yield();
-			}
+			}*/
 			if (cType == CUSTOMER) {
 				Write("Picture informs Customer that the procedure has been completed\n", sizeof("Picture informs Customer that the procedure has been completed\n"), ConsoleOutput);
 			} else {
@@ -777,7 +777,7 @@ void PassClerk() {
 				Acquire(fileLock[mySSN]);
 				fileState[mySSN] = PASSDONE;
 				Release(fileLock[mySSN]);
-				if(cType = CUSTOMER){
+				if(cType == CUSTOMER){
 					Write("PassportClerk has finished filing Customer's passport\n", sizeof("PassportClerk has finished filing Customer's passport\n"), ConsoleOutput);
 				}
 				else{
@@ -860,6 +860,7 @@ void CashClerk() {
 			myCustType = fileType[myCustomer];
 			
 			if (fileState[myCustomer] == PASSDONE) {
+				Write("Cashier certifies Customer\n", sizeof("Cashier certifies Customer\n"), ConsoleOutput);
 				cashDataBool[myIndex] = true;
 				for (i = 0; i < 50; i++) {
 					Yield();
@@ -870,9 +871,21 @@ void CashClerk() {
 				Acquire(cashMoneyLock);
 				cashMoney += 100;
 				Release(cashMoneyLock);
-			}
+				
+				if(myCustType == CUSTOMER){
+					Write("Cashier gives valid certification to Customer\n", sizeof("Cashier gives valid certification to Customer\n"), ConsoleOutput);
+				}
+				else{
+					Write("Cashier gives valid certification to Senator\n", sizeof("Cashier gives valid certification to Senator\n"), ConsoleOutput);
+				}			}
 			else {
 				cashDataBool[myIndex] = false;
+				if(myCustType == CUSTOMER){
+					Write("Cashier gives invalid certification to Customer\n", sizeof("Cashier gives invalid certification to Customer\n"), ConsoleOutput);
+				}
+				else{
+					Write("Cashier gives invalid certification to Senator\n", sizeof("Cashier gives invalid certification to Senator\n"), ConsoleOutput);
+				}			
 			}
 			
 			Release(fileLock[myCustomer]);
