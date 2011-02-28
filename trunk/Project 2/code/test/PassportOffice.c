@@ -45,6 +45,9 @@ enum INDEX_USED {
 };
 
 void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char* msg) {
+	/* Example */
+	/* CustTrace("Cust", myIndex, "Pass", myClerk, "Here is mah message to the PassClerk.\n") */
+	/* CustTrace("Cust", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
 	Trace(custType, myIndex);
 	if (clerkType != 0x00) {
 		Trace(" -> ", NV);
@@ -55,6 +58,9 @@ void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char*
 }
 
 void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	/* Example */
+	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
+	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
 	Trace(clerkType, myIndex);
 	if (custType != 0x00) {
 		Trace(" -> ", NV);
