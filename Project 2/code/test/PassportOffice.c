@@ -6,7 +6,7 @@
  
 #include "syscall.h"
 #define NUM_CLERKS 3
-#define NUM_CUSTOMERS 10
+#define NUM_CUSTOMERS 5
 #define NUM_SENATORS 0
 
 /* enum for booleans */
@@ -1020,7 +1020,7 @@ void Manager(){
 			for(i = 0; i < NUM_CLERKS; i++){
 				if(picState[i] == BREAK){
 					Acquire(picLock[i]);
-					Signal(picCV[i], appLock[i]);
+					Signal(picCV[i], picLock[i]);
 					picState[i] = BUSY;
 					Release(picLock[i]);
 					Write("Manager calls back a PictureClerk from break\n", sizeof("Manager calls back a PictureClerk from break\n"), ConsoleOutput);
@@ -2086,7 +2086,7 @@ void Customer() {
 	Acquire(customerLock);
 	officeCustomer--;
 	Release(customerLock);
-	Write("A customer leaves the Passport Office.\n", sizeof("A customer leaves the Passport Office.\n"), ConsoleOutput);
+	Write("CUST HAS LEFT OFFICE!!!!\n", sizeof("CUST HAS LEFT OFFICE!!!!\n"), ConsoleOutput);
 	Exit(0);
 }
 
@@ -2436,6 +2436,7 @@ int main() {
 	}
 	
 	Fork(Manager);
+	Write("Everything has been created.\n", sizeof("Everything has been created.\n"), ConsoleOutput);
 	
 	Exit(0);
 }
