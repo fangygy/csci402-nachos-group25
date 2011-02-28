@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest destroyCVTest execDestroyTest writeTest PassportOffice ExecPassportOffice
+all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest destroyCVTest execDestroyTest writeTest traceTest randTest PassportOffice ExecPassportOffice
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -98,6 +98,12 @@ execCVTest: execCVTest.o start.o
 	$(LD) $(LDFLAGS) start.o execCVTest.o -o execCVTest.coff
 	../bin/coff2noff execCVTest.coff execCVTest
 
+multiExecCVTest.o: multiExecCVTest.c
+	$(CC) $(CFLAGS) -c multiExecTest.c
+multiExecTest: multiExecTest.o start.o
+	$(LD) $(LDFLAGS) start.o multiExecTest.o -o multiExecTest.coff
+	../bin/coff2noff multiExecTest.coff multiExecTest
+
 destroyCVTest.o: destroyCVTest.c
 	$(CC) $(CFLAGS) -c destroyCVTest.c
 destroyCVTest: destroyCVTest.o start.o
@@ -115,6 +121,18 @@ writeTest.o: writeTest.c
 writeTest: writeTest.o start.o
 	$(LD) $(LDFLAGS) start.o writeTest.o -o writeTest.coff
 	../bin/coff2noff writeTest.coff writeTest
+
+traceTest.o: traceTest.c
+	$(CC) $(CFLAGS) -c traceTest.c
+traceTest: traceTest.o start.o
+	$(LD) $(LDFLAGS) start.o traceTest.o -o traceTest.coff
+	../bin/coff2noff traceTest.coff traceTest
+
+randTest.o: randTest.c
+	$(CC) $(CFLAGS) -c randTest.c
+randTest: randTest.o start.o
+	$(LD) $(LDFLAGS) start.o randTest.o -o randTest.coff
+	../bin/coff2noff randTest.coff randTest
 	
 PassportOffice.o: PassportOffice.c
 	$(CC) $(CFLAGS) -c PassportOffice.c
