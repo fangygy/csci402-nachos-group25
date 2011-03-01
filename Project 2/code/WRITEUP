@@ -35,19 +35,59 @@ IV. Implementation:
 		+ addrspace.h, addrspace.cc
 		+ exception.cc
 		+ syscall.h
+		+ system.h, system.cc
 		+ Makefile.common
 		+ Makefile (in test directory)
+		+ machine.h
 	
 	+ Files added
 		+ process.h, process.cc
 		+ lockTest.c, CVTest.c, forkTest.c, execTest.c, execCVTest.c
 	
 	+ Data Structures added
-		-- in blah class.cc
-		
-	+ Data Structures created
-		-- in blah blah .cc
+		-- in file process.h
+		struct Process {
+			AddrSpace* space;			// The address space of this process
+			char* name;					// A name for debugging
+			SpaceId processId;			// SpaceId of location in processTable
+			int numThreads;				// Number of threads in this process
+		};
+		-- in file exception.cc
+		struct KernelLock {
+			Lock* lock;					// The lock this KernelLock references
+			AddrSpace* space;			// The space the lock is associated with
+			bool beingAcquired;			// Prevents deletion while being acquired
+			bool isToBeDeleted;			// Used to delete lock after thread releases it
+			bool deleted;				// Used to verify status of lock
+			
+			KernelLock() {
+				lock = NULL;
+				beingAcquired = false;
+				space = NULL;
+				isToBeDeleted = false;
+				deleted = true;
+			}
+		};
 
+		struct KernelCondition {
+			Condition* condition;		// Condition this KernelCondition refers to
+			AddrSpace* space;			// The space associated with this condition
+			bool beingAcquired;			// Prevents deletion while waiting
+			bool isToBeDeleted;			// Used to delete after waking up from a wait
+			bool deleted;				// Used to verify status of lock
+			
+			KernelCondition() {
+				condition = NULL;
+				beingAcquired = false;
+				space = NULL;
+				isToBeDeleted = false;
+				deleted = true;
+			}
+		};
+	+ Data Structures created
+		-- Syscalls in exception.cc
+		-- AllocateStack(unsigned int vaddr), DeallocateStack, DeallocateProcess
+			- For allocating more stack space or deallocating space
 V. Testing:
 
 	+ How to test
