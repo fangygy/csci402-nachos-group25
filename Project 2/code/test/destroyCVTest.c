@@ -84,45 +84,45 @@ void Signaller(){
 	Exit(0);
 }
 
-void Douche() {
-	Write("Douche: Starting up.\n", sizeof("Douche: Starting up.\n"), ConsoleOutput);
+void Troll() {
+	Write("Troll: Starting up.\n", sizeof("Troll: Starting up.\n"), ConsoleOutput);
 	
 	/* LockNew abuse */
-	Write("Douche: Acquiring lockNew.\n", sizeof("Douche: Acquiring lockNew.\n"), ConsoleOutput);
+	Write("Troll: Acquiring lockNew.\n", sizeof("Troll: Acquiring lockNew.\n"), ConsoleOutput);
 	Acquire(lockNew);
-	Write("Douche: Waiting on cvOld with lockNew(bad).\n",
-		sizeof("Douche: Waiting on cvOld with lockNew(bad).\n"), ConsoleOutput);
+	Write("Troll: Waiting on cvOld with lockNew(bad).\n",
+		sizeof("Troll: Waiting on cvOld with lockNew(bad).\n"), ConsoleOutput);
 	Wait(cvOld, lockNew);
-	Write("Douche: Releasing lockNew.\n", sizeof("Douche: Releasing lockNew.\n"), ConsoleOutput);
+	Write("Troll: Releasing lockNew.\n", sizeof("Troll: Releasing lockNew.\n"), ConsoleOutput);
 	Release(lockNew);
 	
 	/* LockOld section */
-	Write("Douche: Acquiring lockOld... \n", sizeof("Douche: Acquiring lockOld... \n"), ConsoleOutput);
+	Write("Troll: Acquiring lockOld... \n", sizeof("Troll: Acquiring lockOld... \n"), ConsoleOutput);
 	Acquire(lockOld);
-	Write("Douche: Waiting on cvOld with lockOld.\n",
-		sizeof("Douche: Waiting on cvOld with lockOld.\n"), ConsoleOutput);
+	Write("Troll: Waiting on cvOld with lockOld.\n",
+		sizeof("Troll: Waiting on cvOld with lockOld.\n"), ConsoleOutput);
 	Wait(cvOld, lockOld);
 	
 	
 	/* LockOld SABOTAGE!!! >:D */
-	Write("Douche: Destroying lockOld.\n",
-		sizeof("Douche: Destroying lockOld.\n"), ConsoleOutput);
+	Write("Troll: Destroying lockOld.\n",
+		sizeof("Troll: Destroying lockOld.\n"), ConsoleOutput);
 	DestroyLock(lockOld);
 	
-	Write("Douche: Releasing lockOld... \n", sizeof("Douche: Releasing lockOld... \n"), ConsoleOutput);
+	Write("Troll: Releasing lockOld... \n", sizeof("Troll: Releasing lockOld... \n"), ConsoleOutput);
 	Release(lockOld);
 	
 	/* cvNew SABOTAGE!!! >:D */
-	Write("Douche: Acquiring lockNew... \n", sizeof("Douche: Acquiring lockNew... \n"), ConsoleOutput);
+	Write("Troll: Acquiring lockNew... \n", sizeof("Troll: Acquiring lockNew... \n"), ConsoleOutput);
 	Acquire(lockNew);
 	Broadcast(cvNew, lockNew);
-	Write("Douche: Destroying cvNew.\n",
-		sizeof("Douche: Destroying cvNew.\n"), ConsoleOutput);
+	Write("Troll: Destroying cvNew.\n",
+		sizeof("Troll: Destroying cvNew.\n"), ConsoleOutput);
 	DestroyCondition(cvNew);
-	Write("Douche: Releasing lockNew... \n", sizeof("Douche: Releasing lockNew... \n"), ConsoleOutput);
+	Write("Troll: Releasing lockNew... \n", sizeof("Troll: Releasing lockNew... \n"), ConsoleOutput);
 	Release(lockNew);
 	
-	Write("Douche: Finished.\n", sizeof("Douche: Finished.\n"), ConsoleOutput);
+	Write("Troll: Finished.\n", sizeof("Troll: Finished.\n"), ConsoleOutput);
 	Exit(0);
 }
 
@@ -136,7 +136,7 @@ int main() {
 	
 	Fork(Waiter1);
 	Fork(Waiter2);
-	Fork(Douche);
+	Fork(Troll);
 	
 	/* Give waiters time to wait on CVs */
 	for (i = 0; i < 100; i++) {

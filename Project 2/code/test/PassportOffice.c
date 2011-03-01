@@ -5,9 +5,9 @@
  */
  
 #include "syscall.h"
-#define NUM_CLERKS 2
-#define NUM_CUSTOMERS 10
-#define NUM_SENATORS 2
+#define NUM_CLERKS 5
+#define NUM_CUSTOMERS 30
+#define NUM_SENATORS 5
 #define NV 0x9999
 
 /* enum for booleans */
@@ -883,7 +883,6 @@ void CashClerk() {
 	
 	Acquire(cashLock[myIndex]);
 	cashState[myIndex] = BUSY;
-	ClerkTrace("Cash", myIndex, 0x00, 0, "release 1\n");
 	Release(cashLock[myIndex]);
 	
 	/* Main loop for cashier */
@@ -963,7 +962,6 @@ void CashClerk() {
 			Release(fileLock[mySSN]);
 			Signal(cashCV[myIndex], cashLock[myIndex]);
 			cashState[myIndex] = BUSY;
-			ClerkTrace("Cash", myIndex, 0x00, 0, "release 2\n");
 			Release(cashLock[myIndex]);
 			Yield();
 		}
@@ -976,7 +974,6 @@ void CashClerk() {
 			cashState[myIndex] = BREAK;
 			Wait(cashCV[myIndex], cashLock[myIndex]);
 			
-			/*ClerkTrace("Cash", myIndex, 0x00, 0, "release 3\n");*/
 			Release(cashLock[myIndex]);
 			
 			ClerkTrace("Cash", myIndex, 0x00, 0, "Returning from break.\n");
@@ -1234,7 +1231,6 @@ void Manager(){
 				if(appState[i] == BREAK){
 					Signal(appCV[i], appLock[i]);
 					appState[i] = BUSY;
-					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
 					Release(appLock[i]);
 				}
 			}
@@ -1243,7 +1239,6 @@ void Manager(){
 				if(picState[i] == BREAK){
 					Signal(picCV[i], picLock[i]);
 					picState[i] = BUSY;
-					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PicClerk back from break.\n");
 					Release(picLock[i]);
 				}
 			}
@@ -1252,7 +1247,6 @@ void Manager(){
 				if(passState[i] == BREAK){
 					Signal(passCV[i], passLock[i]);
 					passState[i] = BUSY;
-					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a PassClerk back from break.\n");
 					Release(passLock[i]);
 				}
 			}
@@ -1261,12 +1255,10 @@ void Manager(){
 				if(cashState[i] == BREAK){
 					Signal(cashCV[i], cashLock[i]);
 					cashState[i] = BUSY;
-					ClerkTrace("Mgr", 0, 0x00, 0, "Calling a Cashier back from break.\n");
 					Release(cashLock[i]);
-					ClerkTrace("Mgr", 0, 0x00, 0, "Released CashLock.\n");
 				}
 			}
-			ClerkTrace("Mgr", 0, 0x00, 0, "All done. Shutting down.\n");
+			ClerkTrace("Mgr", 0, 0x00, 0, "Notified all clerks. Shutting down.\n");
 			Exit(0);
 			/*break;*/
 		}
