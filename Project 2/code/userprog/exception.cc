@@ -380,16 +380,16 @@ int DestroyLock_Syscall(int index) {
 		// print error msg
 		return 0;
 	}
+	if (locks[index].isToBeDeleted || locks[index].deleted) {
+		// Delete has already been called for this lock. don't do anything
+		printf("DestroyLock_Syscall: Delete has already been called for this lock.\n");
+		lock_condLock->Release();
+		return 0;
+	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		printf("DestroyLock_Syscall: Lock's address space is not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return 0;
-	}
-	if (locks[index].isToBeDeleted || locks[index].deleted) {
-		// Delete has already been called for this lock. don't do anything
-		printf("DestroyLock_Syscall: Delete has already been called for this lock.\n");
 		lock_condLock->Release();
 		return 0;
 	}
@@ -473,13 +473,6 @@ void Acquire_Syscall(int index){
 		// print error msg
 		return;
 	}
-	if (locks[index].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Acquire_Syscall: Lock's address space is not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
 	if(locks[index].deleted){
 		// Lock does not exist
 		printf("Acquire_Syscall: Lock does not exist.\n");
@@ -490,6 +483,13 @@ void Acquire_Syscall(int index){
 	if(locks[index].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
 		printf("Acquire_Syscall: Lock is going to be deleted. Ignored.\n");
+		lock_condLock->Release();
+		return;
+	}
+	if (locks[index].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Acquire_Syscall: Lock's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -514,16 +514,16 @@ void Release_Syscall(int index){
 		// print error msg
 		return;
 	}
+	if(locks[index].deleted){
+		// Lock does not exist
+		printf("Release_Syscall: Lock does not exist.\n");
+		lock_condLock->Release();
+		return;
+	}
 	if (locks[index].space != currentThread->space) {
 		// wrong address space, foo
 		// print error msg
 		printf("Release_Syscall: Lock's address space does not equal this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
-	if(locks[index].deleted){
-		// Lock does not exist
-		printf("Release_Syscall: Lock does not exist.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -565,20 +565,6 @@ void Signal_Syscall(int cIndex, int lIndex) {
 		// print error msg
 		return;
 	}
-	if (conditions[cIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Signal_Syscall: CV address space is wrong. Invalid.\n");
-		lock_condLock->Release();
-		return;
-	}
-	if (locks[lIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Signal_Syscall: CV's Lock index less than zero. Invalid.\n");
-		lock_condLock->Release();
-		return;
-	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
 		printf("Signal_Syscall: CV does not exist. Invalid.\n");
@@ -600,6 +586,20 @@ void Signal_Syscall(int cIndex, int lIndex) {
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
 		printf("Signal_Syscall: CV's Lock is going to be deleted. Ignored. \n");
+		lock_condLock->Release();
+		return;
+	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Signal_Syscall: CV address space is wrong. Invalid.\n");
+		lock_condLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Signal_Syscall: CV's Lock index less than zero. Invalid.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -636,20 +636,6 @@ void Broadcast_Syscall(int cIndex, int lIndex) {
 		// print error msg
 		return;
 	}
-	if (conditions[cIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Broadcast_Syscall: Condition's address space is not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
-	if (locks[lIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Broadcast_Syscall: Lock's address space is not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
 		printf("Broadcast_Syscall: Condition does not exist.\n");
@@ -671,6 +657,20 @@ void Broadcast_Syscall(int cIndex, int lIndex) {
 	if(locks[lIndex].isToBeDeleted){
 		// Lock is going to be deleted, no further action permitted
 		printf("Broadcast_Syscall: Lock is going to be deleted. Ignored.\n");
+		lock_condLock->Release();
+		return;
+	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Broadcast_Syscall: Condition's address space is not equal to this thread's address space.\n");
+		lock_condLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Broadcast_Syscall: Lock's address space is not equal to this thread's address space.\n");
 		lock_condLock->Release();
 		return;
 	}
@@ -707,20 +707,6 @@ void Wait_Syscall(int cIndex, int lIndex) {
 		// print error msg
 		return;
 	}
-	if (conditions[cIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Wait_Syscall: Condition's address space not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
-	if (locks[lIndex].space != currentThread->space) {
-		// wrong address space, foo
-		// print error msg
-		printf("Wait_Syscall: Lock's address space not equal to this thread's address space.\n");
-		lock_condLock->Release();
-		return;
-	}
 	if(conditions[cIndex].deleted){
 		// Condition does not exist
 		printf("Wait_Syscall: Condition does not exist.\n");
@@ -745,6 +731,21 @@ void Wait_Syscall(int cIndex, int lIndex) {
 		lock_condLock->Release();
 		return;
 	}
+	if (conditions[cIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Wait_Syscall: Condition's address space not equal to this thread's address space.\n");
+		lock_condLock->Release();
+		return;
+	}
+	if (locks[lIndex].space != currentThread->space) {
+		// wrong address space, foo
+		// print error msg
+		printf("Wait_Syscall: Lock's address space not equal to this thread's address space.\n");
+		lock_condLock->Release();
+		return;
+	}
+	
 	
 	locks[lIndex].beingAcquired = true;
 	conditions[cIndex].beingAcquired = true;
