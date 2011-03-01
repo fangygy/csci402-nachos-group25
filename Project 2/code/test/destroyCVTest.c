@@ -23,23 +23,18 @@ void Waiter1(){
 		sizeof("Waiter1: Acquired lockNew and waiting on cvOld.\n"), ConsoleOutput);
 	Wait(cvOld, lockOld);
 	
+	/* Waking up */
 	Write("Waiter1: Woke up from wait on a signal. Releasing lockOld, sched. for deletion.\n",
 		sizeof("Waiter1: Woke up from wait on a signal. Releasing lockOld, sched. for deletion.\n"), ConsoleOutput);
 	Release(lockOld);
 	
-	
+	Yield();
 	
 	Write("Waiter1: Acquiring lockOld, sched. for deletion.\n",
 		sizeof("Waiter1: Acquiring lockOld, sched. for deletion.\n"), ConsoleOutput);
 	Acquire(lockOld);
 	
-	/*Write("Waiter1: Waiting on a bad lock. \n", sizeof("Waiter1: Waiting on a bad lock. \n"), ConsoleOutput);
-	Wait(-1, -1);
-	Wait(-1, 0);
-	Wait(0,-1);
-	Wait(100, lockOld);
-	Wait(cvOld, 100);
-	Write("Waiter1: Finished.\n", sizeof("Waiter1: Finished.\n"), ConsoleOutput);*/
+	Write("Waiter1: Finished.\n", sizeof("Waiter1: Finished.\n"), ConsoleOutput);
 	Exit(0);
 }
 
@@ -53,20 +48,12 @@ void Waiter2(){
 		sizeof("Waiter2: Acquired lockNew and waiting on cvOld.\n"), ConsoleOutput);
 	Wait(cvOld, lockOld);
 	
+	/* Waking up */
 	Write("Waiter2: Woke up from wait on a signal. Releasing lockOld.\n",
 		sizeof("Waiter2: Woke up from wait on a signal. Releasing lockOld.\n"), ConsoleOutput);
 	Release(lockOld);
 	
-	/* LockNew section */
-	/*Write("Waiter2: Acquiring lockNew...\n", sizeof("Waiter2: Acquiring lockNew...\n"), ConsoleOutput);
-	Acquire(lockNew);
-	Write("Waiter2: Acquired lockNew and waiting on deleted cvNew.\n",
-		sizeof("Waiter2: Acquired lockNew and waiting on deleted cvNew.\n"), ConsoleOutput);
-	Wait(cvNew, lockNew);*/
-	
-	/*Write("Waiter2: Woke up from wait on a signal. Releasing lockNew.\n",
-		sizeof("Waiter2: Woke up from wait on a signal. Releasing lockNew.\n"), ConsoleOutput);*/
-	Release(lockNew);
+	Write("Waiter2: Finished.\n", sizeof("Waiter2: Finished.\n"), ConsoleOutput);
 	Exit(0);
 }
 
@@ -88,11 +75,14 @@ void Signaller(){
 		sizeof("Signaller: Acquired lockNew and waiting on cvNew.\n"), ConsoleOutput);
 	Wait(cvNew, lockNew);
 	
-	Write("Signaller: Acquiring lockNew... \n", sizeof("Signaller: Acquiring lockNew... \n"), ConsoleOutput);
-	Acquire(lockNew);
+	Write("Signaller: Waiting on cvNew again, sched. for deletion.\n",
+		sizeof("Signaller: Waiting on cvNew again, sched. for deletion.\n"), ConsoleOutput);
+	Release(lockNew);
+	
+	/*
 	Write("Signaller: Broadcasting cvNew with lockNew.\n",
 		sizeof("Signaller: Broadcasting cvNew with lockNew.\n"), ConsoleOutput);
-	Release(lockNew);
+	Release(lockNew);*/
 	
 	Write("Signaller: Finished.\n", sizeof("Signaller: Finished.\n"), ConsoleOutput);
 	Exit(0);
@@ -128,7 +118,7 @@ void Douche() {
 	
 	/* cvNew SABOTAGE!!! >:D */
 	Write("Douche: Acquiring lockNew... \n", sizeof("Douche: Acquiring lockNew... \n"), ConsoleOutput);
-	Acquire(lockOld);
+	Acquire(lockNew);
 	Broadcast(cvNew, lockNew);
 	Write("Douche: Destroying cvNew.\n",
 		sizeof("Douche: Destroying cvNew.\n"), ConsoleOutput);
@@ -147,6 +137,7 @@ int main() {
 	lockNew = CreateLock("lockNew", 20);
 	cvOld = CreateCondition("cvOld", 20);
 	cvNew = CreateCondition("cvNew", 20);
+	
 	
 	Fork(Waiter1);
 	Fork(Waiter2);

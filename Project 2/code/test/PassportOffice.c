@@ -5,9 +5,9 @@
  */
  
 #include "syscall.h"
-#define NUM_CLERKS 5
-#define NUM_CUSTOMERS 30
-#define NUM_SENATORS 5
+#define NUM_CLERKS 2
+#define NUM_CUSTOMERS 10
+#define NUM_SENATORS 2
 #define NV 0x9999
 
 /* enum for booleans */
