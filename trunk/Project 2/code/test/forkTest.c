@@ -10,7 +10,9 @@
 #include "syscall.h"
 
 int forkyforky(){
-	return 4;
+	Write("Forkyforky?\n", sizeof("Forkyforky?\n"), ConsoleOutput);
+	return 1;
+	Exit(0);
 }
 
 void testFunc(){
@@ -25,12 +27,14 @@ int main()
 	Fork(testFunc);
 
 	Write("Testing bad fork syscalls...\n", sizeof("Testing bad fork syscalls...\n"), ConsoleOutput);
-	Fork(0);
+	Fork(0); /* This is okay */
 	Trace("Forking vaddr of -1. Things may go downhill from there...\n", 0x9999);
-	/*Fork(-1);*/ /* HALP! */
-	/*Fork("sdfjks");*/
+	/* This stuff not okay...
+	* 
+	Fork(-1);  
+	Fork("sdfjks"); 
 	Fork(forkyforky);
-
+	*/
 	Exit(0);
 
 	/* not reached */
