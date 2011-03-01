@@ -107,6 +107,12 @@ V. Testing:
 		To run execDestroyCVTest or destroyCVTest, type:
 		nachos -x ../test/execDestroyCVTest
 		
+		To run randTest, type:
+		nachos -x ../test/randTest
+		
+		To run traceTest, type:
+		nachos -x ../test/traceTest
+		
 		To run passport tests, type:
 		nachos -x ../test/execPassportTests
 
