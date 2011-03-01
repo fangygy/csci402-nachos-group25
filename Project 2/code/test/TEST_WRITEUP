@@ -12,6 +12,7 @@ Test files:
 	CVTest
 	execCVTest
 	destroyCVTest
+	execDestroyTest
 	multiExectest
 	randTest
 	traceTest
@@ -78,11 +79,19 @@ Test Functionalities:
 		Afterwards, testFunc will attempt to wait on bad calls (nonexistant bad locks
 		and CVS), while the main thread acquires the lock and then destroys the condition.
 
-
 	execCVTest:
 		This test's sole purpose is to properly run the CVTest. On the side, it acts
 		as an alternate test of Exec. It will output that it runs, afterwhich it should
 		just run CVTest.
+	
+	destroyCVTest:
+		This tests the functionality of locks and CVs as they are scheduled for deletion by
+		one thread, yet still needed by other threads. Waiter1 will attempt to wait on a lock that
+		has been scheduled for deletion, and Signaller will similarly wait on a CV that no longer
+		exists. It also makes sure that a thread cannot pass the wrong Lock to a CV Wait system call.
+		
+	execDestroyTest:
+		This simply calls Exec to run the destroyCVTest process.
 
 
 Passport Office Tests:
