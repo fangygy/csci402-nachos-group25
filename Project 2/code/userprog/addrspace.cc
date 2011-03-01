@@ -139,7 +139,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 						// to leave room for the stack
     size = numPages * PageSize;
 
-	nonStackPageEnd = numPages - 8;
+	nonStackPageEnd = numPages - 8; // int created to store where exactly the stack starts (non-stack's ending page)
     ASSERT(numPages <= NumPhysPages);		// check we're not trying
 						// to run anything too big --
 						// at least until we have
@@ -158,7 +158,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
 		//pageTable[i].physicalPage = i;
 		mainmemLock->Acquire();
-		pageTable[i].physicalPage = bitMap.Find();
+		pageTable[i].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
 		//printf("New page number: %d\n", pageTable[i].physicalPage);
 		mainmemLock->Release();
 		pageTable[i].valid = TRUE;
@@ -173,6 +173,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 // and the stack segment
     // bzero(machine->mainMemory, size);
 	
+	// just want to zero out the space that we're using, not all of main memory
 	for (i = 0; i < numPages; i++) {
 		bzero(&(machine->mainMemory[pageTable[i].physicalPage * PageSize]), PageSize);
 	}
@@ -269,6 +270,13 @@ void AddrSpace::RestoreState()
     machine->pageTableSize = numPages;
 }
 
+//----------------------------------------------------------------------
+// AddrSpace::AllocateStack
+// 	Called by Fork_Syscall's kernel_thread function to allocate
+//	more pages for a new thread.
+//      
+//		Then the register writing so it can run that code
+//----------------------------------------------------------------------
 void AddrSpace::AllocateStack(unsigned int vaddr)
 {
 	TranslationEntry *newPageTable = new TranslationEntry[numPages+8];
@@ -315,6 +323,10 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 	
 }
 
+//----------------------------------------------------------------------
+// AddrSpace::DeallocateStack
+// 	Clears the physical pages that the current thread is using
+//----------------------------------------------------------------------
 void AddrSpace::DeallocateStack() {
 	int index = currentThread->firstPageTable;
 	int paddr;		// physical address of thread stack
@@ -329,6 +341,11 @@ void AddrSpace::DeallocateStack() {
 	printf("AddrSpace: Deallocated stack.\n");
 }
 
+//----------------------------------------------------------------------
+// AddrSpace::DeallocateStack
+// 	Clears the physical pages that the current thread is using
+//	AND the code/init data/uninit data pages
+//----------------------------------------------------------------------
 void AddrSpace::DeallocateProcess() {
 	DeallocateStack();
 	int paddr;
