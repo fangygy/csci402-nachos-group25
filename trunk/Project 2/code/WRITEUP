@@ -103,7 +103,10 @@ V. Testing:
 
 		To run execCVTest or CVTest, type:
 		nachos -x ../test/execCVTest
-
+		
+		To run execDestroyCVTest or destroyCVTest, type:
+		nachos -x ../test/execDestroyCVTest
+		
 		To run passport tests, type:
 		nachos -x ../test/execPassportTests
 
@@ -126,6 +129,12 @@ V. Testing:
 		The test cases utilize simple functions to test the order of execution using
 		the functions Wait, Signal, and Broadcast along with the usage of Acquire and Release. 
 		All tests output expected results without crashing Nachos unexpectedly.
+		- destroyCVTest tests the functionality of locks and CVs that have been destroyed and the threads that
+		still need those locks/CVs. 2 "Waiter" threads and one "Troll" threads are forked off, and they wait on a CV.
+		A "Signaller" thread broadcasts to awaken them and waits on a new CV. The Troll deletes a lock that
+		Waiter 1 will need, and deletes the CV that the Signaller needs to wake up; it then signals the Signaller's new CV.
+		Waiter 1 will simple exit after failing to acquire the lock it wanted, and the Signaller wakes up properly. It then
+		tries to wait on the same CV, but it cannot because it has been destroyed.
 
 		- All passport tests show that when there are no customers in the simulation (either never entered, or all have left
 		the office), then the program exits normally.
@@ -149,13 +158,12 @@ V. Testing:
 		customers in their line (as seen near the middle of the output block).
 
 VI. Discussion:
-	+ Experiment expectation
+		We expected that bulletproofing out syscalls wouldn't be too difficult through the use of locks and error handling.
+		Our safeguards are very thorough, however we ran into a problem with syscalls that take in virtual addresses. We were not
+		able to implement a way of checking that the input vitrual address was within valid bounds. Other than that, out syscall
+		implementation went about as smoothly as we expected.
 
-
-	+ Experiment result
-		// What do you think guys?
-
-	+ Explanation
-		// explain our experiment result
-
+		All of our syscalls, along with our passport office, run proplerly and synchronously (aside from the aforementioned problem
+		with bad input virtual addresses). We are able to run multiple passport offices, with and without random context switching.
+		
 VII. Miscellaneous:
