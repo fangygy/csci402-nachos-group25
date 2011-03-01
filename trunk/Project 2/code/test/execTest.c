@@ -16,8 +16,8 @@ void trace(char* buffer) {
 int main()
 {
 	/*trace("Thissss... is line 1.\nThis is line 2, followed by a newLine.\n");*/
-	Write("Executing a bad file...\n", sizeof("Executing a bad file...\n"), ConsoleOutput);
-	Exec("Blahblahfilefail");
+	/*Write("Executing a bad file...\n", sizeof("Executing a bad file...\n"), ConsoleOutput);
+	Exec("Blahblahfilefail");*/
 
 	Write("Executing forkTest...\n", sizeof("Executing forkTest...\n"), ConsoleOutput);
 	Exec("../test/forkTest");
