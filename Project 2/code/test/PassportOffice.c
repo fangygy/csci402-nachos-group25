@@ -2407,9 +2407,10 @@ void SenLineAppPicClerk(int myIndex) {
 		*	Go into regular line to save money because both are empty. */
 		if (regACLineLength == 0 && privACLineLength == 0 && visitedApp[myIndex] == false) {
 			
-			Write("A senator is getting into regular app line.\n",
+			/*Write("A senator is getting into regular app line.\n",
 				sizeof("A senator is getting into regular app line.\n"),
-				ConsoleOutput);
+				ConsoleOutput);*/
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular application line.\n");
 			regACLineLength++;
 			Wait(regACLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2422,6 +2423,7 @@ void SenLineAppPicClerk(int myIndex) {
 		/* Same as above except for pic clerk */
 		else if (regPCLineLength == 0 && privPCLineLength == 0 && visitedPic[myIndex] == false) {
 			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular picture line.\n");
 			regPCLineLength++;
 			Wait(regPCLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2434,6 +2436,7 @@ void SenLineAppPicClerk(int myIndex) {
 		/* Already been to picture clerk, so go to privileged application clerk line*/
 		else if (visitedPic[myIndex] == true) {
 			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged application line.\n");
 			privACLineLength++;
 			Wait(privACLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2447,6 +2450,7 @@ void SenLineAppPicClerk(int myIndex) {
 		/* If already been to application clerk then go to privileged picture clerk line */
 		else if (visitedApp[myIndex] == true) {
 			
+				CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged picture line.\n");
 				privPCLineLength++;
 				Wait(privPCLineCV, acpcLineLock);
 				Release(acpcLineLock);
@@ -2460,6 +2464,7 @@ void SenLineAppPicClerk(int myIndex) {
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (privACLineLength <= privPCLineLength) {
 			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged application line.\n");
 			privACLineLength++;
 			Wait(privACLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2473,6 +2478,7 @@ void SenLineAppPicClerk(int myIndex) {
 		}
 		/* Else picture's is shorter */
 		else {
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged picture line.\n");
 			privPCLineLength++;
 			Wait(privPCLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2488,6 +2494,7 @@ void SenLineAppPicClerk(int myIndex) {
 	else {
 		if (visitedPic[myIndex] == true) {
 			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering reuglar application line.\n");
 			regACLineLength++;
 			Wait(regACLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2500,18 +2507,20 @@ void SenLineAppPicClerk(int myIndex) {
 		/* If already been to application clerk then go to privileged picture clerk line */
 		else if (visitedApp[myIndex] == true) {
 			
-				regPCLineLength++;
-				Wait(regPCLineCV, acpcLineLock);
-				Release(acpcLineLock);
-				
-				Acquire(senatorLock);
-				numPicWait--;
-				Release(senatorLock);
-				TalkPicClerk(myIndex, false);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular picture line.\n");
+			regPCLineLength++;
+			Wait(regPCLineCV, acpcLineLock);
+			Release(acpcLineLock);
+			
+			Acquire(senatorLock);
+			numPicWait--;
+			Release(senatorLock);
+			TalkPicClerk(myIndex, false);
 		}
 		/* If application clerk's privileged line length is shorter than picture clerk's */
 		else if (regACLineLength <= regPCLineLength) {
 			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular application line.\n");
 			regACLineLength++;
 			Wait(regACLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2523,7 +2532,7 @@ void SenLineAppPicClerk(int myIndex) {
 		}
 		/* Else picture's is shorter */
 		else {
-			
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular picture line.\n");
 			regPCLineLength++;
 			Wait(regPCLineCV, acpcLineLock);
 			Release(acpcLineLock);
@@ -2546,6 +2555,7 @@ void SenLinePassClerk(int myIndex) {
 		/* If both lines for him are empty, just go into regular */
 		if (regPassLineLength == 0 && privPassLineLength == 0) {
 				
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular passport line.\n");
 			regPassLineLength++;
 			Wait(regPassLineCV, passLineLock);
 			Release(passLineLock);
@@ -2558,6 +2568,7 @@ void SenLinePassClerk(int myIndex) {
 		/* Else just go into privileged line */
 		else {
 		
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged passport line.\n");
 			privPassLineLength++;
 			Wait(privPassLineCV, passLineLock);
 			Release(passLineLock);
@@ -2572,7 +2583,7 @@ void SenLinePassClerk(int myIndex) {
 	}
 	/* Not enough money, regular line for me */
 	else {
-	
+		CustTrace("Sen", myIndex, 0x00, 0, "Entering regular passport line.\n");
 		regPassLineLength++;
 		Wait(regPassLineCV, passLineLock);
 		Release(passLineLock);
@@ -2588,10 +2599,12 @@ void SenLinePassClerk(int myIndex) {
 void SenLineTalkCashClerk(int myIndex) {
 	int myClerk;
 	int i;
+	int randYield;
 	
 	/* Just get in cashier's only line */
 	
 	Acquire(cashLineLock);
+	CustTrace("Sen", myIndex, 0x00, 0, "Entering Cashier line.\n");
 	cashLineLength++;
 	Wait(cashLineCV, cashLineLock);
 	Release(cashLineLock);
@@ -2625,7 +2638,7 @@ void SenLineTalkCashClerk(int myIndex) {
 	/* Success, proceed onwards and upwards. */	
 		Release(cashLock[myClerk]);
 		visitedCash[myIndex] = true;
-		Write("A senator gets valid certification from Cashier.\n",
+		/*Write("A senator gets valid certification from Cashier.\n",
 			sizeof("A senator gets valid certification from Cashier.\n"),
 			ConsoleOutput);
 		Write("A senator pays $100 to Cashier for their passport.\n",
@@ -2633,20 +2646,29 @@ void SenLineTalkCashClerk(int myIndex) {
 			ConsoleOutput);
 		Write("A senator's passport is now recorded by Cashier.\n",
 			sizeof("A senator's passport is now recorded by Cashier.\n"),
-			ConsoleOutput);
+			ConsoleOutput);*/
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Got valid certification.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Pays $100 for passport.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Passport is now recorded by Cashier.\n");
+		
 		myCustMoney[myIndex] -= 100;
 	}
 	else {
 		Release(cashLock[myClerk]);
-		Write("A senator is not certified by Cashier.\n",
+		/*Write("A senator is not certified by Cashier.\n",
 			sizeof("A senator is not certified by Cashier.\n"),
 			ConsoleOutput);
 		Write("A senator is punished to wait by Cashier.\n",
 			sizeof("A senator is punished to wait by Cashier.\n"),
 			ConsoleOutput);
+		*/
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Not certified by Cashier.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Punished to wait.\n");
 		
-		/* TODO: RANDOM AMOUNTS OF YIELDS BETWEEN 100 AND 1000 */
-		Yield();
+		randYield = Random(900) + 100;
+		for(i = 0; i < randYield; i++) {
+			Yield();
+		}
 	}
 }
 
@@ -2670,9 +2692,10 @@ void Senator() {
 	
 	/* Before entering, check for customers */
 	Acquire(senatorLock);
-	Write("A senator is entering the Passport Office.\n", 
+	/*Write("A senator is entering the Passport Office.\n", 
 		sizeof("A senator is entering the Passport Office.\n"),
-		ConsoleOutput);
+		ConsoleOutput);*/
+	CustTrace("Sen", myIndex, 0x00, 0, "Entering the Passport Office.\n");
 	officeSenator++;
 	Release(senatorLock);
 	
@@ -2682,9 +2705,13 @@ void Senator() {
 		Release(customerLock);
 		
 		Acquire(senWaitLock);
-		Write("A senator is waiting.\n", sizeof("A senator is waiting.\n"), ConsoleOutput);
+		/*Write("A senator is waiting.\n", sizeof("A senator is waiting.\n"), ConsoleOutput);
+		*/
+		CustTrace("Sen", myIndex, 0x00, 0, "Waiting for customers to leave.\n");
 		Wait(senWaitCV, senWaitLock);
-		Write("A senator has stopped waiting.\n", sizeof("A senator has stopped waiting.\n"), ConsoleOutput);
+		/*Write("A senator has stopped waiting.\n", sizeof("A senator has stopped waiting.\n"), ConsoleOutput);
+		*/
+		CustTrace("Sen", myIndex, 0x00, 0, "Woken up and now entering the office.\n");
 		Release(senWaitLock);
 	}
 	else {
@@ -2694,7 +2721,10 @@ void Senator() {
 	while (visitedApp[myIndex] != true || visitedPic[myIndex] != true || visitedPass[myIndex] != true || visitedCash[myIndex] != true) {
 		
 		/* Do we need to make a random chance to visit the passport clerk first? */
-		/* TODO: VISIT THE PASSPORT CLERK RANDOM CHANCE */
+		if (Random(5) == 1) {
+			CustTrace("Sen", myIndex, 0x00, 0, "Going directly to passport clerk like an idiot.\n");
+			SenLinePassClerk(myIndex);
+		}
 		
 		/* Visit application and picture clerks first */
 		while (visitedApp[myIndex] != true || visitedPic[myIndex] != true) {
@@ -2704,7 +2734,6 @@ void Senator() {
 		/* Next visit the passport clerk */
 		while (visitedPass[myIndex] != true) {
 			SenLinePassClerk(myIndex);
-			break;
 		}
 		
 		/* Finally, visit the cashier */
@@ -2717,7 +2746,9 @@ void Senator() {
 	Acquire(senatorLock);
 	officeSenator--;
 	Release(senatorLock);
-	Write("SENATOR HAS LEFT OFFICE!!!!\n", sizeof("SENATOR HAS LEFT OFFICE!!!!\n"), ConsoleOutput);
+	/*Write("SENATOR HAS LEFT OFFICE!!!!\n", sizeof("SENATOR HAS LEFT OFFICE!!!!\n"), ConsoleOutput);
+	*/
+	CustTrace("Sen", myIndex, 0x00, 0, "Finished with Passport Office, leaving.\n");
 	Exit(0);
 }
 	
