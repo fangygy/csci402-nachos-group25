@@ -46,7 +46,6 @@ struct KernelLock {
 	AddrSpace* space;
 	bool beingAcquired;
 	bool isToBeDeleted;
-	bool hasBeenDeleted;
 	bool deleted;
 	
 	KernelLock() {
