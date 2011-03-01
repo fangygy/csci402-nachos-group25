@@ -1,9 +1,10 @@
 /* destroyCVTest.c
  *	
- * Test program to test functionality of CVs
- * Create, Destroy, Wait, Signal, Broadcast
+ * Test program to test functionality of Locks
+ * and CVs that are being destroyed while they
+ * are still in use.
  * NOTE: DO NOT RUN THIS TEST PROGRAM DIRECTLY
- * TO RUN THIS TEST, RUN "execCVTest" INSTEAD
+ * TO RUN THIS TEST, RUN "execDestroyTest" INSTEAD
  *
  */
 
@@ -77,12 +78,7 @@ void Signaller(){
 	
 	Write("Signaller: Waiting on cvNew again, sched. for deletion.\n",
 		sizeof("Signaller: Waiting on cvNew again, sched. for deletion.\n"), ConsoleOutput);
-	Release(lockNew);
-	
-	/*
-	Write("Signaller: Broadcasting cvNew with lockNew.\n",
-		sizeof("Signaller: Broadcasting cvNew with lockNew.\n"), ConsoleOutput);
-	Release(lockNew);*/
+	Wait(cvNew, lockNew);
 	
 	Write("Signaller: Finished.\n", sizeof("Signaller: Finished.\n"), ConsoleOutput);
 	Exit(0);
@@ -137,7 +133,6 @@ int main() {
 	lockNew = CreateLock("lockNew", 20);
 	cvOld = CreateCondition("cvOld", 20);
 	cvNew = CreateCondition("cvNew", 20);
-	
 	
 	Fork(Waiter1);
 	Fork(Waiter2);
