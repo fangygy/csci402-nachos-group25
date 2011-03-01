@@ -92,6 +92,15 @@ Test Functionalities:
 		
 	execDestroyTest:
 		This simply calls Exec to run the destroyCVTest process.
+	
+	randTest:
+		This tests the functionality of the Random syscall. 10 Random numbers are printed out.
+	
+	traceTest:
+		This tests the Trace syscall. Trace takes in a string(char pointer) and an int value
+		to print at the end. If you don't want to print a value at the end, use the NV (No Value)
+		global number which is the value 0x9999 reserved for use in the Trace syscall.
+		
 
 
 Passport Office Tests:
