@@ -1,0 +1,139 @@
+Title: Test Documentation for Project 2 Syscalls, Spring 2011
+Date: 02/27/11
+Group Num 25:
+	Antonio Cade		antonioc@usc.edu		7162757897
+	Jasper Lee			jasperkl@usc.edu		3483925510
+	Yinlerthai Chan		yinlertc@usc.edu		4550945929
+
+Test files:
+	forkTest
+	execTest
+	lockTest
+	CVTest
+	execCVTest
+	destroyCVTest
+	execDestroyTest
+	multiExectest
+	randTest
+	traceTest
+	execDestroyTest
+	passportTest1
+	passportTest2
+	passportTest3
+	execPassportTests
+	execPassportTests2
+
+Test Functionalities:
+	forkTest:
+		Tests the fork syscall. Contains a test function called testFunc 
+		that simply writes out a string output when called. The main function
+		forks testFunc twice, thus testing the functionality of the Fork
+		syscall by seeing if output gets printed out twice.
+		Afterwards, forktest calls several "bad" Fork syscalls by using
+		improper parameters such as out of bound index, wrong types, and 
+		nonexistant functions.
+		Output consists of print statements in the test file that describes its current
+		actions (testing fork or testing bad forks), as well as the error
+		statements printed out from the exception handler whenever bad calls
+		are done. These won't crash Nachos.
+
+	execTest:
+		Tests both the functionality of the Exec syscall as well as properly
+		runs the forkTest. 
+		First attempts to execute a bad file.
+		Afterwards, Exec is called to run forkTest.
+
+	lockTest:
+		Comprehensive test file that tests Lock functionality. Includes testing
+		for CreateLock, Acquire, Release, and DestroyLock. 
+		First attempts to destroy nonexistant locks.
+		Then it creates a proper lock.
+		Then tries to release nonexistant or bad locks.
+		Then releases the proper lock.
+		Then tries to acquire nonexistant or bad locks.
+		Then acquires the proper lock twice, which shouldn't change the fact
+		it has acquired it, and should not crash Nachos.
+		After acquiring the lock, then it releases it again.
+		Finally, it destroys the proper lock.
+		This test tests for both the good and the bad calls for all the basic
+		lock-related functions. Output consists of clear print statements
+		written to the Console whenever it attempts to create, acquire, release,
+		or destroy a lock. When bad syscalls are called, the print statements
+		in the ExceptionHandler should output error messages. Nachos will not crash
+		when errors happen, but should continue onto the next call.
+
+	CVTest:
+		Comprehensive test program to test Condition Variable functionality.
+		Includes testing for CreateCondition, Wait, Signal, and DestroyCondition.
+		Also contains a testFunc function to properly test Wait and Signal
+		functionality across multiple threads.
+		First it attempts to destroy nonexistant or bad conditions.
+		Then it will create proper locks and CVs.
+		Afterward, it will fork to the testFunc function, and then immediately start
+		yielding to ensure the testFunc runs its code first.
+		The testFunc will start by acquiring the created lock. Afterwards it will
+		wait on the CV with the lock.
+		Once the main thread is done yielding, it will attempt to signal various bad combinations
+		of Signal calls, after which it will properly signal the CV on the lock,
+		which will wake up the testFunc thread and it will release its lock.
+		Afterwards, testFunc will attempt to wait on bad calls (nonexistant bad locks
+		and CVS), while the main thread acquires the lock and then destroys the condition.
+
+	execCVTest:
+		This test's sole purpose is to properly run the CVTest. On the side, it acts
+		as an alternate test of Exec. It will output that it runs, afterwhich it should
+		just run CVTest.
+	
+	destroyCVTest:
+		This tests the functionality of locks and CVs as they are scheduled for deletion by
+		one thread, yet still needed by other threads. Waiter1 will attempt to wait on a lock that
+		has been scheduled for deletion, and Signaller will similarly wait on a CV that no longer
+		exists. It also makes sure that a thread cannot pass the wrong Lock to a CV Wait system call.
+		
+	execDestroyTest:
+		This simply calls Exec to run the destroyCVTest process.
+	
+	randTest:
+		This tests the functionality of the Random syscall. 10 Random numbers are printed out.
+	
+	traceTest:
+		This tests the Trace syscall. Trace takes in a string(char pointer) and an int value
+		to print at the end. If you don't want to print a value at the end, use the NV (No Value)
+		global number which is the value 0x9999 reserved for use in the Trace syscall.
+		
+
+
+Passport Office Tests:
+	Note: All passport tests show that when there are no customers in the simulation (either never entered, or all have left
+	the office), then the program exits normally.
+
+	passportTest1:	
+		passportTest1 tests two Customers only, to make sure no two Customers get in the same line at the same time.
+		Customers get in line depending on the shortest line, but will always get in line one at a time
+		This test also shows how the regular and privileged lines are managed:
+		That customers are "smart" enough to go into regular lines if both regular and privileged lines are equal lengths,
+		whether they have enough money for it or not, and otherwise will always pick the shortest line if they have the
+		funds for it. If the customer has no funds, then the customer will compare regular lines only.
+
+	passportTest2:
+		passportTest2 tests the Manager and reading money from each Clerk. The Manager will read
+		one Clerk's money total at a time, and add that total to his calculated sum.
+		This test also tests that the Clerks all go on break when there are no customers,
+		as there are never any customers, thus no customers in thier lines.
+
+	passportTest3:
+		passport3 tests a regular passport runthrough with 5 customers and one of each clerk type. 
+		At the end, it is shown clearly that Customers do not leave the office until they receive thier passport from the cashier,
+		and the one cashier will not begin the next customer until the first one finishes leaving the office.
+		This test also shows that total sales never suffer from a race condition, as the funds correspond to
+		the amount of cash the customers give to the clerks. It can also count as another test to show that
+		the clerks all go on break when they are done with all the customers in thier line.
+		Additionally, this test also demonstrates that the Manager calls back Clerks from break when there are too many
+		customers in their line (as seen near the middle of the output block).
+
+	execPassportTests:
+		execPassportTests is the executable program that, when run, executes both
+		passportTest1 and passportTest2
+	execPassportTests2:
+		execPassportTests2 is the executable program that, when run, executes
+		passportTest3
