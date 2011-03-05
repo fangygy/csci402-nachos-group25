@@ -771,16 +771,16 @@ void Wait_Syscall(int cIndex, int lIndex) {
 
 
 void Exit_Syscall(int status) {
-	Process* process;
+	Process* process = currentThread->myProcess;
 	// find the current process
-	for(int i = 0; i < numProcesses; i++) {
+	/*for(int i = 0; i < numProcesses; i++) {
 		process = (Process*)processTable.Get(i);
 		if(process->space == currentThread->space) {
 			break;
 		}
 		else
 			process = NULL;
-	}
+	}*/
 	if(process == NULL) {
 		printf("Exit_Syscall: Main/initial thread.\n");
 		currentThread->space->DeallocateProcess();
@@ -798,6 +798,7 @@ void Exit_Syscall(int status) {
 			printf("Exit_Syscall: Last thread in process\n");
 			numProcesses--;
 			process->space->DeallocateProcess();
+			processTable.Remove(process->processId);
 			currentThread->Finish();
 			//What do we do here?
 			//How to deallocate memory from process?
@@ -860,6 +861,7 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//Update the process table and related data structures.
 		process->processId = processTable.Put(process);
 		numProcesses++;
+		t->myProcess = process;
 		//Write the space ID to the register 2.
 		machine->WriteRegister(2, process->processId);
 		//Fork the new thread. I call it exec_thread.
@@ -906,21 +908,22 @@ void Fork_Syscall(unsigned int vaddr) {
 			return;
 		}
 		
-		Process *tempProcess;
+		Process *tempProcess = currentThread->myProcess;
 		//printf("NumProcesses:%d", numProcesses);
 		//printf("\nFork_Syscall: Finding correct process...\n");
-		for(int i = 0; i < numProcesses; i++) {
+		/*for(int i = 0; i < numProcesses; i++) {
 			tempProcess = (Process*)processTable.Get(i);
 			if(tempProcess->space == currentThread->space) {
 				//printf("Found correct process.\n");
 				break;
 			}
-		}
+		}*/
 		//printf("Fork_Syscall: Making new thread\n");
 		Thread *t = new Thread("name");
 		//printf("Fork_Syscall: New thread created successfully!\n");
 		t->space = tempProcess->space;
 		//printf("1\n");
+		t->myProcess = tempProcess;
 		tempProcess->numThreads++;
 		//printf("2\n");
 		//printf("Number of threads: %d\n", tempProcess->numThreads);

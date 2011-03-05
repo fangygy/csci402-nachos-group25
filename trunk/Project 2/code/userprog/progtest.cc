@@ -40,14 +40,15 @@ StartProcess(char *filename)
 	
 	/* */
 	
-	//Process* process = new Process;
-	//process->space = space;
-	//process->name = filename;
+	Process* process = new Process;
+	process->space = space;
+	process->name = filename;
 	//Update the process table and related data structures.
-	//process->processId = processTable.Put(process);
-	//numProcesses++;
-	//process->numThreads = 1;
-	/*machine->WriteRegister(2, process->processId); Crowley said we don't need this...*/
+	process->processId = processTable.Put(process);
+	numProcesses++;
+	process->numThreads = 1;
+	currentThread->myProcess = process;
+	//machine->WriteRegister(2, process->processId); /*Crowley said we don't need this...*/
 	
 	/* */
 

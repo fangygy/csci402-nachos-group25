@@ -43,6 +43,7 @@
 #ifdef USER_PROGRAM
 #include "machine.h"
 #include "addrspace.h"
+#include "process.h"
 #endif
 
 // CPU register state to be saved on context switch.  
@@ -128,6 +129,8 @@ class Thread {
 
     AddrSpace *space;			// User code this thread is running.
 	int firstPageTable;			// index of first pageTableEntry in addrSpace
+	Process* myProcess;
+	
 #endif
 };
 
