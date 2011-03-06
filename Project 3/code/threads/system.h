@@ -37,6 +37,7 @@ extern Table processTable;
 extern int numProcesses;
 extern Lock* mainmemLock;
 extern BitMap bitMap;
+extern int currentTLB;		// for First In, First Out of TLB entries
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
