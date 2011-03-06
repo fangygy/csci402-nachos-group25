@@ -168,6 +168,8 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 					// a separate page, we could set its 
 					// pages to be read-only
     }
+	
+	
     
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
@@ -296,14 +298,22 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 	//printf("Adding more pages.\n");
 	for(int i = numPages; i < numPages + 8; i++) {
 		newPageTable[i].virtualPage = i;
-		mainmemLock->Acquire();
-		newPageTable[i].physicalPage = bitMap.Find();
-		//printf("%d vaddr: New page number: %d\n", vaddr, newPageTable[i].physicalPage);
-		mainmemLock->Release();
 		newPageTable[i].valid = TRUE;
 		newPageTable[i].use = FALSE;
 		newPageTable[i].dirty = FALSE;
 		newPageTable[i].readOnly = FALSE;
+		
+		mainmemLock->Acquire();
+		newPageTable[i].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
+		//printf("New page number: %d\n", pageTable[i].physicalPage);
+		ipt[newPageTable[i].physicalPage].physicalPage = newPageTable[i].physicalPage;
+		ipt[newPageTable[i].physicalPage].virtualPage = newPageTable[i].virtualPage;
+		ipt[newPageTable[i].physicalPage].valid = newPageTable[i].valid;
+		ipt[newPageTable[i].physicalPage].use = newPageTable[i].use;
+		ipt[newPageTable[i].physicalPage].dirty = newPageTable[i].dirty;
+		ipt[newPageTable[i].physicalPage].readOnly = newPageTable[i].readOnly;
+		ipt[newPageTable[i].physicalPage].processID = currentThread->myProcess->processId;
+		mainmemLock->Release();
 	}
 	printf("AddrSpace: Added more pages.\n");
 	
@@ -338,6 +348,7 @@ void AddrSpace::DeallocateStack() {
 		paddr = pageTable[i].physicalPage;
 		mainmemLock->Acquire();
 		//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
+		ipt[paddr].valid = false;
 		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
 		//pageTable[i].valid = FALSE;		// invalidate the page table entry
@@ -358,6 +369,7 @@ void AddrSpace::DeallocateProcess() {
 			paddr = pageTable[i].physicalPage;
 			//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 			mainmemLock->Acquire();
+			ipt[paddr].valid = false;
 			bitMap.Clear(paddr);
 			mainmemLock->Release();
 			//pageTable[i].valid = FALSE;
@@ -367,14 +379,50 @@ void AddrSpace::DeallocateProcess() {
 }
 
 
-void AddrSpace::PageToTLB() {
+void AddrSpace::PageToTLB(int id) {
 	int vpn = machine->ReadRegister(39) / PageSize;
 	currentTLB = (currentTLB + 1) % TLBSize;
-	
+	/*	Step 1
 	machine->tlb[currentTLB].virtualPage = pageTable[vpn].virtualPage;
 	machine->tlb[currentTLB].physicalPage = pageTable[vpn].physicalPage;
 	machine->tlb[currentTLB].valid = pageTable[vpn].valid;
 	machine->tlb[currentTLB].use = pageTable[vpn].use;
 	machine->tlb[currentTLB].dirty = pageTable[vpn].dirty;
 	machine->tlb[currentTLB].readOnly = pageTable[vpn].readOnly;
+	*/
+	//printf("Copying to TLB\n");
+	for (int i = 0; i < NumPhysPages; i++) {
+		mainmemLock->Acquire();
+		if (ipt[i].valid == true && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
+			mainmemLock->Release();
+			IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+			machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
+			machine->tlb[currentTLB].physicalPage = ipt[i].physicalPage;
+			machine->tlb[currentTLB].valid = ipt[i].valid;
+			machine->tlb[currentTLB].use = ipt[i].use;
+			machine->tlb[currentTLB].dirty = ipt[i].dirty;
+			machine->tlb[currentTLB].readOnly = ipt[i].readOnly;
+			(void) interrupt->SetLevel(oldLevel); 
+			return;
+		}
+		mainmemLock->Release();
+	}
+	
+	printf("Should not reach here atm\n");
+	
+}
+
+void AddrSpace::PageToIPT(int id) {
+	//printf("Copying to IPT\n");
+	for (int i = 0; i < numPages; i++) {
+		mainmemLock->Acquire();
+		ipt[pageTable[i].physicalPage].physicalPage = pageTable[i].physicalPage;
+		ipt[pageTable[i].physicalPage].virtualPage = pageTable[i].virtualPage;
+		ipt[pageTable[i].physicalPage].valid = pageTable[i].valid;
+		ipt[pageTable[i].physicalPage].use = pageTable[i].use;
+		ipt[pageTable[i].physicalPage].dirty = pageTable[i].dirty;
+		ipt[pageTable[i].physicalPage].readOnly = pageTable[i].readOnly;
+		ipt[pageTable[i].physicalPage].processID = id;
+		mainmemLock->Release();
+	}
 }

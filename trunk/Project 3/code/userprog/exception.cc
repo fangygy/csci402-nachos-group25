@@ -862,6 +862,7 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		process->processId = processTable.Put(process);
 		numProcesses++;
 		t->myProcess = process;
+		t->space->PageToIPT(t->myProcess->processId);
 		//Write the space ID to the register 2.
 		machine->WriteRegister(2, process->processId);
 		//Fork the new thread. I call it exec_thread.
@@ -1090,7 +1091,8 @@ void ExceptionHandler(ExceptionType which) {
 	machine->WriteRegister(NextPCReg,machine->ReadRegister(PCReg)+4);
 	return;
     } else if ( which == PageFaultException ) {
-		currentThread->space->PageToTLB();
+		currentThread->space->PageToTLB(currentThread->myProcess->processId);
+		return;
 	
 	} else {
       cout<<"Unexpected user mode exception - which:"<<which<<"  type:"<< type<<endl;

@@ -48,6 +48,7 @@ StartProcess(char *filename)
 	numProcesses++;
 	process->numThreads = 1;
 	currentThread->myProcess = process;
+	currentThread->space->PageToIPT(currentThread->myProcess->processId);
 	//machine->WriteRegister(2, process->processId); /*Crowley said we don't need this...*/
 	
 	/* */
