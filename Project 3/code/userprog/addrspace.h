@@ -36,7 +36,8 @@ class AddrSpace {
 					// before jumping to user code
 	
 	void AllocateStack(unsigned int vaddr);
-	void PageToTLB();
+	void PageToTLB(int id);
+	void PageToIPT(int id);
 	void DeallocateStack();
 	void DeallocateProcess();
 

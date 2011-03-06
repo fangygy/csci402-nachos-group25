@@ -1029,7 +1029,7 @@ void Manager(){
 
 				Yield();
 				Acquire(customerLock);
-				ClerkTrace("Mgr", 0, 0x00, 0, "Waking up customers loop.\n");
+				/*ClerkTrace("Mgr", 0, 0x00, 0, "Waking up customers loop.\n");*/
 			}
 			Release(customerLock);
 

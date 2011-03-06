@@ -34,6 +34,7 @@ int numProcesses;
 BitMap bitMap(NumPhysPages);
 Lock* mainmemLock;
 int currentTLB = -1;
+IPTEntry* ipt;
 #endif
 
 #ifdef NETWORK
@@ -155,6 +156,7 @@ Initialize(int argc, char **argv)
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
 	mainmemLock = new Lock("MainMemoryLock");
+	ipt = new IPTEntry[NumPhysPages];
 #endif
 
 #ifdef FILESYS

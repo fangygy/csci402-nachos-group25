@@ -15,6 +15,7 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
+#include "IPTEntry.h"
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -38,6 +39,7 @@ extern int numProcesses;
 extern Lock* mainmemLock;
 extern BitMap bitMap;
 extern int currentTLB;		// for First In, First Out of TLB entries
+extern IPTEntry* ipt;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
