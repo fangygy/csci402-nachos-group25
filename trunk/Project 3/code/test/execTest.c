@@ -13,6 +13,12 @@ void trace(char* buffer) {
 	/*Write( buffer, strlen(buffer), ConsoleOutput);*/
 }
 
+void execTestFunc(){
+	Write("BINGBONG: execTestFunc running\n", sizeof("BINGBONG: execTestFunc running\n"), ConsoleOutput);
+	Exit(0);
+
+}
+
 int main()
 {
 	/*trace("Thissss... is line 1.\nThis is line 2, followed by a newLine.\n");*/
@@ -21,6 +27,9 @@ int main()
 
 	Write("Executing forkTest...\n", sizeof("Executing forkTest...\n"), ConsoleOutput);
 	Exec("../test/forkTest");
+
+	Write("ExecTest forking execTestFunc...\n", sizeof("ExecTest forking...\n"), ConsoleOutput);
+	Fork(execTestFunc);
 	/* not reached */
 	Exit(0);
 }
