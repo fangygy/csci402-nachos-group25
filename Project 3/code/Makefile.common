@@ -50,7 +50,8 @@ THREAD_H =../threads/copyright.h\
 	../machine/stats.h\
 	../machine/timer.h\
 	../threads/officeMonitor.h\
-	../userprog/process.h
+	../userprog/process.h\
+	../vm/IPTEntry.h
 
 
 THREAD_C =../threads/main.cc\
@@ -69,14 +70,15 @@ THREAD_C =../threads/main.cc\
 	../threads/test_code.cc\
 	../threads/office.cc\
 	../threads/officeMonitor.cc\
-	../userprog/process.cc
+	../userprog/process.cc\
+	../vm/IPTEntry.cc
 
 
 THREAD_S = ../threads/switch.s
 
 THREAD_O =main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
 	utility.o threadtest.o interrupt.o stats.o sysdep.o timer.o test_code.o \
-	officeMonitor.o office.o process.o
+	officeMonitor.o office.o process.o IPTEntry.o
 
 USERPROG_H = ../userprog/addrspace.h\
 	../userprog/bitmap.h\
@@ -97,7 +99,7 @@ USERPROG_C = ../userprog/addrspace.cc\
 	../machine/translate.cc
 
 USERPROG_O = addrspace.o bitmap.o exception.o progtest.o console.o machine.o \
-	mipssim.o translate.o 
+	mipssim.o translate.o
 
 VM_H = 
 VM_C = 
