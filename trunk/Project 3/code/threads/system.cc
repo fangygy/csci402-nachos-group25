@@ -33,6 +33,7 @@ Table processTable(10);
 int numProcesses;
 BitMap bitMap(NumPhysPages);
 Lock* mainmemLock;
+int currentTLB = -1;
 #endif
 
 #ifdef NETWORK

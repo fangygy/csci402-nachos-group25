@@ -254,7 +254,11 @@ AddrSpace::InitRegisters()
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() 
-{}
+{
+	for (int i = 0; i < TLBSize; i++) {
+		machine->tlb[i].valid = false;
+	}
+}
 
 //----------------------------------------------------------------------
 // AddrSpace::RestoreState
@@ -266,7 +270,7 @@ void AddrSpace::SaveState()
 
 void AddrSpace::RestoreState() 
 {
-    machine->pageTable = pageTable;
+    //machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
 }
 
@@ -360,4 +364,17 @@ void AddrSpace::DeallocateProcess() {
 		}
 	}
 	printf("AddrSpace: Deallocated process.\n");
+}
+
+
+void AddrSpace::PageToTLB() {
+	int vpn = machine->ReadRegister(39) / PageSize;
+	currentTLB = (currentTLB + 1) % TLBSize;
+	
+	machine->tlb[currentTLB].virtualPage = pageTable[vpn].virtualPage;
+	machine->tlb[currentTLB].physicalPage = pageTable[vpn].physicalPage;
+	machine->tlb[currentTLB].valid = pageTable[vpn].valid;
+	machine->tlb[currentTLB].use = pageTable[vpn].use;
+	machine->tlb[currentTLB].dirty = pageTable[vpn].dirty;
+	machine->tlb[currentTLB].readOnly = pageTable[vpn].readOnly;
 }

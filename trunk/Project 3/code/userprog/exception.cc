@@ -1089,7 +1089,10 @@ void ExceptionHandler(ExceptionType which) {
 	machine->WriteRegister(PCReg,machine->ReadRegister(NextPCReg));
 	machine->WriteRegister(NextPCReg,machine->ReadRegister(PCReg)+4);
 	return;
-    } else {
+    } else if ( which == PageFaultException ) {
+		currentThread->space->PageToTLB();
+	
+	} else {
       cout<<"Unexpected user mode exception - which:"<<which<<"  type:"<< type<<endl;
       interrupt->Halt();
     }
