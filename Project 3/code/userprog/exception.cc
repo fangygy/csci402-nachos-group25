@@ -1092,6 +1092,7 @@ void ExceptionHandler(ExceptionType which) {
 	return;
     } else if ( which == PageFaultException ) {
 		currentThread->space->PageToTLB(currentThread->myProcess->processId);
+		//printf("Page fault exception\n");
 		return;
 	
 	} else {
