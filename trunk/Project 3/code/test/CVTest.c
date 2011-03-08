@@ -41,6 +41,7 @@ void testFunc2(){
 	Write("testFunc2: Woke up from waiting on condition2. Releasing lock.\n", sizeof("testFunc2: Woke up from waiting on condition2. Releasing lock.\n"), ConsoleOutput);
 	Release(lock);
 
+	Exit(0);
 }
 
 int main()
