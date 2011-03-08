@@ -18,8 +18,9 @@
 #ifndef IPTENTRY_H
 #define IPTENTRY_H
 
-//#include "copyright.h"
-//#include "utility.h"
+#include "copyright.h"
+#include "utility.h"
+#include "../userprog/syscall.h"
 
 // The following class defines an entry in a translation table -- either
 // in a page table or a TLB.  Each entry defines a mapping from one 
@@ -32,7 +33,7 @@ class IPTEntry {
     int virtualPage;  	// The page number in virtual memory.
     int physicalPage;  	// The page number in real memory (relative to the
 			//  start of "mainMemory"
-	int processID;		// Proccess ID, what else?
+	SpaceId processID;		// Proccess ID, what else?
     bool valid;         // If this bit is set, the translation is ignored.
 			// (In other words, the entry hasn't been initialized.)
     bool readOnly;	// If this bit is set, the user program is not allowed

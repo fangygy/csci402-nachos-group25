@@ -157,6 +157,15 @@ Initialize(int argc, char **argv)
     machine = new Machine(debugUserProg);	// this must come first
 	mainmemLock = new Lock("MainMemoryLock");
 	ipt = new IPTEntry[NumPhysPages];
+	for (int i = 0; i < NumPhysPages; i++) {
+		ipt[i].physicalPage = -1;
+		ipt[i].virtualPage = -1;
+		ipt[i].processID = -1;
+		ipt[i].valid = false;
+		ipt[i].readOnly = false;
+		ipt[i].use = false; 
+		ipt[i].dirty = false; 
+	}
 #endif
 
 #ifdef FILESYS

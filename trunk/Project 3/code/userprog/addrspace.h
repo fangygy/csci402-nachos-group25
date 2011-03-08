@@ -16,6 +16,7 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "table.h"
+#include "syscall.h"
 
 #include <ctime>		// For seeding random
 #include <cstdlib>	// For generating random
@@ -36,8 +37,8 @@ class AddrSpace {
 					// before jumping to user code
 	
 	void AllocateStack(unsigned int vaddr);
-	void PageToTLB(int id);
-	void PageToIPT(int id);
+	void PageToTLB(SpaceId id);
+	void PageToIPT(SpaceId id);
 	void DeallocateStack();
 	void DeallocateProcess();
 

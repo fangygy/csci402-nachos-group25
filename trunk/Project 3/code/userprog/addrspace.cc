@@ -258,7 +258,7 @@ AddrSpace::InitRegisters()
 void AddrSpace::SaveState() 
 {
 	for (int i = 0; i < TLBSize; i++) {
-		machine->tlb[i].valid = false;
+		machine->tlb[i].valid = FALSE;
 	}
 }
 
@@ -348,7 +348,7 @@ void AddrSpace::DeallocateStack() {
 		paddr = pageTable[i].physicalPage;
 		mainmemLock->Acquire();
 		//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
-		ipt[paddr].valid = false;
+		ipt[paddr].valid = FALSE;
 		bitMap.Clear(paddr);		// clear physical page
 		mainmemLock->Release();
 		//pageTable[i].valid = FALSE;		// invalidate the page table entry
@@ -369,7 +369,7 @@ void AddrSpace::DeallocateProcess() {
 			paddr = pageTable[i].physicalPage;
 			//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 			mainmemLock->Acquire();
-			ipt[paddr].valid = false;
+			ipt[paddr].valid = FALSE;
 			bitMap.Clear(paddr);
 			mainmemLock->Release();
 			//pageTable[i].valid = FALSE;
@@ -379,7 +379,7 @@ void AddrSpace::DeallocateProcess() {
 }
 
 
-void AddrSpace::PageToTLB(int id) {
+void AddrSpace::PageToTLB(SpaceId id) {
 	int vpn = machine->ReadRegister(39) / PageSize;
 	currentTLB = (currentTLB + 1) % TLBSize;
 	/*	Step 1
@@ -393,7 +393,7 @@ void AddrSpace::PageToTLB(int id) {
 	//printf("Copying to TLB\n");
 	for (int i = 0; i < NumPhysPages; i++) {
 		mainmemLock->Acquire();
-		if (ipt[i].valid == true && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
+		if (ipt[i].valid == TRUE && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
 			mainmemLock->Release();
 			IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
 			machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
@@ -412,7 +412,7 @@ void AddrSpace::PageToTLB(int id) {
 	
 }
 
-void AddrSpace::PageToIPT(int id) {
+void AddrSpace::PageToIPT(SpaceId id) {
 	//printf("Copying to IPT\n");
 	for (int i = 0; i < numPages; i++) {
 		mainmemLock->Acquire();
