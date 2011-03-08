@@ -41,5 +41,6 @@ int main()
 	Write("Destroying lock already released...\n", sizeof("Destroying lock already released...\n"), ConsoleOutput);
 	DestroyLock(lockIndex);
 
+	Exit(0);
 	/* not reached */
 }

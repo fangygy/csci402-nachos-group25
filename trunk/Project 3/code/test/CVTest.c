@@ -92,7 +92,7 @@ int main()
 	Broadcast(condition2, lock);
 	Yield();
 	
-	
+	Exit(0);
 
 	/* not reached */
 }
