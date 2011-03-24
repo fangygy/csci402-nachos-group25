@@ -155,7 +155,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 
 	srand(time(NULL));		//Initializing random number generator for seeding random values
 	
-	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+//	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	// Set up the page table
 	
     pageTable = new TranslationEntry[numPages];
@@ -192,7 +192,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 			PageSize, noffH.code.inFileAddr + pageTable[i].virtualPage * PageSize);
 	}
 	mainmemLock->Release();
-	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+//	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
     /*if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr, noffH.code.size);
@@ -359,7 +359,7 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 // 	Clears the physical pages that the current thread is using
 //----------------------------------------------------------------------
 void AddrSpace::DeallocateStack() {
-	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+//	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	mainmemLock->Acquire();
 	int index = currentThread->firstPageTable;
 	int paddr;		// physical address of thread stack
@@ -374,7 +374,7 @@ void AddrSpace::DeallocateStack() {
 	}
 	printf("AddrSpace: Deallocated stack.\n");
 	mainmemLock->Release();
-	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+//	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 //----------------------------------------------------------------------
@@ -385,7 +385,7 @@ void AddrSpace::DeallocateStack() {
 void AddrSpace::DeallocateProcess() {
 	// Might get switched between DeallocateStack and mainmemLock->Aquire,
 	// so make [DeallocateStack and mainmemLock-> Aquire] section atomic
-	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+//	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	DeallocateStack();
 	mainmemLock->Acquire();
 	
@@ -403,12 +403,12 @@ void AddrSpace::DeallocateProcess() {
 	}
 	printf("AddrSpace: Deallocated process.\n");
 	mainmemLock->Release();
-	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+//	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 
 void AddrSpace::PageToTLB(SpaceId id) {
-	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+//	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	mainmemLock->Acquire();
 	int vpn = machine->ReadRegister(39) / PageSize;
 	currentTLB = (currentTLB + 1) % TLBSize;
@@ -426,7 +426,7 @@ void AddrSpace::PageToTLB(SpaceId id) {
 		//mainmemLock->Acquire();
 		if (ipt[i].valid == TRUE && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
 			//mainmemLock->Release();
-			//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+			IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
 			machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
 			machine->tlb[currentTLB].physicalPage = ipt[i].physicalPage;
 			machine->tlb[currentTLB].valid = ipt[i].valid;
@@ -435,19 +435,19 @@ void AddrSpace::PageToTLB(SpaceId id) {
 			machine->tlb[currentTLB].readOnly = ipt[i].readOnly;
 			mainmemLock->Release();
 			//printf("AddrSpace::Done copying to TLB\n");
-			//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+			(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 			return;
 		}
 		//mainmemLock->Release();
 	}
 	mainmemLock->Release();
-	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+//	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 	printf("Should not reach here atm\n");
 	
 }
 
 void AddrSpace::PageToIPT(SpaceId id) {
-	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+//	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	//printf("AddrSpace::Copying to IPT\n");
 	mainmemLock->Acquire();
 	for (int i = 0; i < numPages; i++) {
@@ -460,6 +460,6 @@ void AddrSpace::PageToIPT(SpaceId id) {
 		ipt[pageTable[i].physicalPage].processID = id;
 	}
 	mainmemLock->Release();
-	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+//	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 	//printf("AddrSpace::Done copying to IPT\n");
 }
