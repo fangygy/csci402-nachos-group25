@@ -814,13 +814,15 @@ void Exit_Syscall(int status) {
 }
 
 void exec_thread() {
-	//printf("exec_thread running.\n");
+	//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	printf("Exec_thread:: Calling InitRegisters.\n");
 	memoryLock->Acquire();
 	//printf("Calling InitRegisters.\n");
 	currentThread->space->InitRegisters();
 	//printf("Calling RestoreState.\n");
 	currentThread->space->RestoreState();
 	memoryLock->Release();
+	//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 	machine->Run();
 }
 
@@ -845,6 +847,7 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
     f = fileSystem->Open(fileName);
 	
 	if(f != NULL) {
+		//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 		memoryLock->Acquire();
 		//Create new addrespace for this executable file.
 		//Create a new thread.
@@ -872,6 +875,7 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 		//t->space->AllocateStack();
 		
 		memoryLock->Release();
+		//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 		printf("Exec_Syscall: Forking exec thread.\n");
 		t->Fork((VoidFunctionPtr)exec_thread, NULL);		// exec_thread NOT RUNNING!
 		//printf("Exec_Syscall: Forked thread.\n");
@@ -885,13 +889,15 @@ SpaceId Exec_Syscall (unsigned int vaddr) {
 
 void kernel_thread(unsigned int vaddr) {
 	if (vaddr > 0) {
-		//printf("kernel_thread: Starting allocation.\n");
+		//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+		printf("kernel_thread: Starting allocation.\n");
 		memoryLock->Acquire();
 		
 		currentThread->space->AllocateStack(vaddr);
 
 		memoryLock->Release();
-		//printf("About to run\n");
+		//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+		printf("kernel_thread: About to run\n");
 		machine->Run();
 	} else {
 		printf("kernel_thread: Bad virtual address.\n");
@@ -902,6 +908,7 @@ void kernel_thread(unsigned int vaddr) {
 void Fork_Syscall(unsigned int vaddr) {
 	printf("\nFork_Syscall\n");
 	if (vaddr > 0) {
+		//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 		memoryLock->Acquire();
 		if (numProcesses == 0) {
 			printf("Fork_Syscall: There is no process for this thread to Fork to.\n");
@@ -927,9 +934,10 @@ void Fork_Syscall(unsigned int vaddr) {
 		t->myProcess = tempProcess;
 		tempProcess->numThreads++;
 		//printf("2\n");
-		//printf("Number of threads: %d\n", tempProcess->numThreads);
+		//printf("Fork_Syscall:Number of threads: %d\n", tempProcess->numThreads);
 		memoryLock->Release();
-		//printf("Calling t->Fork()\n");
+		//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+		//printf("Fork_Syscall:Calling t->Fork()\n");
 		t->Fork((VoidFunctionPtr)kernel_thread, vaddr);
 		return;
 	}

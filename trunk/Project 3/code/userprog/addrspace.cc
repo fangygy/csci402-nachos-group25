@@ -132,7 +132,9 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
     	SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
-
+	
+	mainmemLock->Acquire();
+	
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size ;
     numPages = divRoundUp(size, PageSize) + divRoundUp(UserStackSize,PageSize);
                                                 // we need to increase the size
@@ -153,14 +155,17 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 
 	srand(time(NULL));		//Initializing random number generator for seeding random values
 	
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	// Set up the page table
+	
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		//pageTable[i].physicalPage = i;
-		mainmemLock->Acquire();
+		pageTable[i].virtualPage = i;
+		//pageTable[i].physicalPage = i;	// for Project 2, virtual page # = phys page #
+		//mainmemLock->Acquire();
 		pageTable[i].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
 		//printf("New page number: %d\n", pageTable[i].physicalPage);
-		mainmemLock->Release();
+		//mainmemLock->Release();
 		pageTable[i].valid = TRUE;
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
@@ -186,6 +191,8 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 		executable->ReadAt(&(machine->mainMemory[pageTable[i].physicalPage * PageSize]),
 			PageSize, noffH.code.inFileAddr + pageTable[i].virtualPage * PageSize);
 	}
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
     /*if (noffH.code.size > 0) {
         DEBUG('a', "Initializing code segment, at 0x%x, size %d\n", 
 			noffH.code.virtualAddr, noffH.code.size);
@@ -285,6 +292,9 @@ void AddrSpace::RestoreState()
 //----------------------------------------------------------------------
 void AddrSpace::AllocateStack(unsigned int vaddr)
 {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+	// Make a copy of the old pageTable
+	mainmemLock->Acquire();
 	TranslationEntry *newPageTable = new TranslationEntry[numPages+8];
 	for(int i = 0; i < numPages; i++) {
 		newPageTable[i].virtualPage = pageTable[i].virtualPage;
@@ -295,15 +305,18 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 		newPageTable[i].readOnly = pageTable[i].readOnly;
 	}
 	
-	//printf("Adding more pages.\n");
+	// Add more pages
+	//mainmemLock->Acquire();
+	
 	for(int i = numPages; i < numPages + 8; i++) {
+		
 		newPageTable[i].virtualPage = i;
 		newPageTable[i].valid = TRUE;
 		newPageTable[i].use = FALSE;
 		newPageTable[i].dirty = FALSE;
 		newPageTable[i].readOnly = FALSE;
 		
-		mainmemLock->Acquire();
+		//mainmemLock->Acquire();
 		newPageTable[i].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
 		//printf("New page number: %d\n", pageTable[i].physicalPage);
 		ipt[newPageTable[i].physicalPage].physicalPage = newPageTable[i].physicalPage;
@@ -313,8 +326,10 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 		ipt[newPageTable[i].physicalPage].dirty = newPageTable[i].dirty;
 		ipt[newPageTable[i].physicalPage].readOnly = newPageTable[i].readOnly;
 		ipt[newPageTable[i].physicalPage].processID = currentThread->myProcess->processId;
-		mainmemLock->Release();
+		//mainmemLock->Release();
 	}
+	//mainmemLock->Release();
+	
 	printf("AddrSpace: Added more pages.\n");
 	
 	currentThread->firstPageTable = numPages;
@@ -333,8 +348,10 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 	RestoreState();
 	//printf("Writing last register\n");
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
-	//printf("After last write.\n");
 	
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+	printf("AddrSpace: After last write.\n");
 }
 
 //----------------------------------------------------------------------
@@ -342,18 +359,22 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 // 	Clears the physical pages that the current thread is using
 //----------------------------------------------------------------------
 void AddrSpace::DeallocateStack() {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	mainmemLock->Acquire();
 	int index = currentThread->firstPageTable;
 	int paddr;		// physical address of thread stack
 	for(int i = index; i < (index + 8); i++) {
 		paddr = pageTable[i].physicalPage;
-		mainmemLock->Acquire();
+		//mainmemLock->Acquire();
 		//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
 		ipt[paddr].valid = FALSE;
 		bitMap.Clear(paddr);		// clear physical page
-		mainmemLock->Release();
+		//mainmemLock->Release();
 		//pageTable[i].valid = FALSE;		// invalidate the page table entry
 	}
 	printf("AddrSpace: Deallocated stack.\n");
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 //----------------------------------------------------------------------
@@ -362,24 +383,33 @@ void AddrSpace::DeallocateStack() {
 //	AND the code/init data/uninit data pages
 //----------------------------------------------------------------------
 void AddrSpace::DeallocateProcess() {
+	// Might get switched between DeallocateStack and mainmemLock->Aquire,
+	// so make [DeallocateStack and mainmemLock-> Aquire] section atomic
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	DeallocateStack();
+	mainmemLock->Acquire();
+	
 	int paddr;
 	for(int i = 0; i < nonStackPageEnd; i++) {
 		if(pageTable[i].valid == TRUE) {
 			paddr = pageTable[i].physicalPage;
 			//printf("Deallocating page number: %d\n", pageTable[i].physicalPage);
-			mainmemLock->Acquire();
+			//mainmemLock->Acquire();
 			ipt[paddr].valid = FALSE;
 			bitMap.Clear(paddr);
-			mainmemLock->Release();
+			//mainmemLock->Release();
 			//pageTable[i].valid = FALSE;
 		}
 	}
 	printf("AddrSpace: Deallocated process.\n");
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 
 void AddrSpace::PageToTLB(SpaceId id) {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	mainmemLock->Acquire();
 	int vpn = machine->ReadRegister(39) / PageSize;
 	currentTLB = (currentTLB + 1) % TLBSize;
 	/*	Step 1
@@ -390,32 +420,37 @@ void AddrSpace::PageToTLB(SpaceId id) {
 	machine->tlb[currentTLB].dirty = pageTable[vpn].dirty;
 	machine->tlb[currentTLB].readOnly = pageTable[vpn].readOnly;
 	*/
-	//printf("Copying to TLB\n");
+	//printf("AddrSpace::Copying to TLB\n");
+	
 	for (int i = 0; i < NumPhysPages; i++) {
-		mainmemLock->Acquire();
+		//mainmemLock->Acquire();
 		if (ipt[i].valid == TRUE && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
-			mainmemLock->Release();
-			IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+			//mainmemLock->Release();
+			//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
 			machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
 			machine->tlb[currentTLB].physicalPage = ipt[i].physicalPage;
 			machine->tlb[currentTLB].valid = ipt[i].valid;
 			machine->tlb[currentTLB].use = ipt[i].use;
 			machine->tlb[currentTLB].dirty = ipt[i].dirty;
 			machine->tlb[currentTLB].readOnly = ipt[i].readOnly;
-			(void) interrupt->SetLevel(oldLevel); 
+			mainmemLock->Release();
+			//printf("AddrSpace::Done copying to TLB\n");
+			//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 			return;
 		}
-		mainmemLock->Release();
+		//mainmemLock->Release();
 	}
-	
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 	printf("Should not reach here atm\n");
 	
 }
 
 void AddrSpace::PageToIPT(SpaceId id) {
-	//printf("Copying to IPT\n");
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	//printf("AddrSpace::Copying to IPT\n");
+	mainmemLock->Acquire();
 	for (int i = 0; i < numPages; i++) {
-		mainmemLock->Acquire();
 		ipt[pageTable[i].physicalPage].physicalPage = pageTable[i].physicalPage;
 		ipt[pageTable[i].physicalPage].virtualPage = pageTable[i].virtualPage;
 		ipt[pageTable[i].physicalPage].valid = pageTable[i].valid;
@@ -423,6 +458,8 @@ void AddrSpace::PageToIPT(SpaceId id) {
 		ipt[pageTable[i].physicalPage].dirty = pageTable[i].dirty;
 		ipt[pageTable[i].physicalPage].readOnly = pageTable[i].readOnly;
 		ipt[pageTable[i].physicalPage].processID = id;
-		mainmemLock->Release();
 	}
+	mainmemLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+	//printf("AddrSpace::Done copying to IPT\n");
 }
