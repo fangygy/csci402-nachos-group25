@@ -134,7 +134,12 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
     	SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
-
+	
+	pageLock = new Lock("pageLock");
+	
+	//mainmemLock->Acquire();
+	//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size ;
     numPages = divRoundUp(size, PageSize) + divRoundUp(UserStackSize,PageSize);
                                                 // we need to increase the size
@@ -183,7 +188,7 @@ AddrSpace::AddrSpace(OpenFile *executable) : fileTable(MaxOpenFiles) {
 		}
     }
 	
-	
+	//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
     
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
@@ -300,6 +305,10 @@ void AddrSpace::RestoreState()
 //----------------------------------------------------------------------
 void AddrSpace::AllocateStack(unsigned int vaddr)
 {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	pageLock->Acquire();
+	//mainmemLock->Acquire();
+	
 	EnhancedTranslationEntry *newPageTable = new EnhancedTranslationEntry[numPages+8];
 	for(int i = 0; i < numPages; i++) {
 		newPageTable[i].virtualPage = pageTable[i].virtualPage;
@@ -358,6 +367,10 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
     machine->WriteRegister(StackReg, numPages * PageSize - 16);
 	//printf("After last write.\n");
 	
+	//mainmemLock->Release();
+	
+	pageLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 //----------------------------------------------------------------------
@@ -365,6 +378,9 @@ void AddrSpace::AllocateStack(unsigned int vaddr)
 // 	Clears the physical pages that the current thread is using
 //----------------------------------------------------------------------
 void AddrSpace::DeallocateStack() {
+	pageLock->Acquire();
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	
 	int index = currentThread->firstPageTable;
 	int paddr;		// physical address of thread stack
 	for(int i = index; i < (index + 8); i++) {
@@ -382,6 +398,8 @@ void AddrSpace::DeallocateStack() {
 		}
 	}
 	printf("AddrSpace: Deallocated stack.\n");
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
+	pageLock->Release();
 }
 
 //----------------------------------------------------------------------
@@ -390,6 +408,8 @@ void AddrSpace::DeallocateStack() {
 //	AND the code/init data/uninit data pages
 //----------------------------------------------------------------------
 void AddrSpace::DeallocateProcess() {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
+	
 	DeallocateStack();
 	int paddr;
 	for(int i = 0; i < nonStackPageEnd; i++) {
@@ -409,72 +429,96 @@ void AddrSpace::DeallocateProcess() {
 		}
 	}
 	printf("AddrSpace: Deallocated process.\n");
+	//pageLock->Release();
+	(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
 
 
 void AddrSpace::PageToTLB(SpaceId id) {
-	while(true) {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	int vpn = machine->ReadRegister(39) / PageSize;
-	//currentTLB = (currentTLB + 1) % TLBSize;
-	/*	Step 1
-	machine->tlb[currentTLB].virtualPage = pageTable[vpn].virtualPage;
-	machine->tlb[currentTLB].physicalPage = pageTable[vpn].physicalPage;
-	machine->tlb[currentTLB].valid = pageTable[vpn].valid;
-	machine->tlb[currentTLB].use = pageTable[vpn].use;
-	machine->tlb[currentTLB].dirty = pageTable[vpn].dirty;
-	machine->tlb[currentTLB].readOnly = pageTable[vpn].readOnly;
-	*/
-	//printf("Copying to TLB\n");
-	iptLock->Acquire();
-	for (int i = 0; i < NumPhysPages; i++) {
-		if (ipt[i].valid == TRUE && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
-			IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
-			machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
-			machine->tlb[currentTLB].physicalPage = ipt[i].physicalPage;
-			if (i != ipt[i].physicalPage) {
-				printf("What?\n");
+	//while(true) {
+		//currentTLB = (currentTLB + 1) % TLBSize;
+		/*	Step 1
+		machine->tlb[currentTLB].virtualPage = pageTable[vpn].virtualPage;
+		machine->tlb[currentTLB].physicalPage = pageTable[vpn].physicalPage;
+		machine->tlb[currentTLB].valid = pageTable[vpn].valid;
+		machine->tlb[currentTLB].use = pageTable[vpn].use;
+		machine->tlb[currentTLB].dirty = pageTable[vpn].dirty;
+		machine->tlb[currentTLB].readOnly = pageTable[vpn].readOnly;
+		*/
+		//printf("Copying to TLB\n");
+		iptLock->Acquire();
+		for (int i = 0; i < NumPhysPages; i++) {
+			if (ipt[i].valid == TRUE && ipt[i].virtualPage == vpn && ipt[i].processID == id) {
+				//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+				machine->tlb[currentTLB].virtualPage = ipt[i].virtualPage;
+				machine->tlb[currentTLB].physicalPage = ipt[i].physicalPage;
+				if (i != ipt[i].physicalPage) {
+					printf("What?\n");
+				}
+				machine->tlb[currentTLB].valid = TRUE;
+				machine->tlb[currentTLB].use = ipt[i].use;
+				machine->tlb[currentTLB].dirty = ipt[i].dirty;
+				machine->tlb[currentTLB].readOnly = ipt[i].readOnly;
+				currentTLB = (currentTLB + 1) % TLBSize;
+				
+				//printf("AddrSpace:: Found in IPT %d\n", vpn);
+				
+				iptLock->Release();
+				(void) interrupt->SetLevel(oldLevel); 	// Enable interrupts
+				return;
 			}
-			machine->tlb[currentTLB].valid = TRUE;
-			machine->tlb[currentTLB].use = ipt[i].use;
-			machine->tlb[currentTLB].dirty = ipt[i].dirty;
-			machine->tlb[currentTLB].readOnly = ipt[i].readOnly;
-			currentTLB = (currentTLB + 1) % TLBSize;
-			iptLock->Release();
-			(void) interrupt->SetLevel(oldLevel); 
-			return;
 		}
-	}
-	iptLock->Release();
-	
-	//If it didn't return, it's an IPT miss, so run the following code.
-	
-	mainmemLock->Acquire();
-	pageTable[vpn].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
-	bzero(&(machine->mainMemory[pageTable[vpn].physicalPage * PageSize]), PageSize);
-	mainmemLock->Release();
-	
-	pageTable[vpn].valid = TRUE;
-	
-	iptLock->Acquire();
-	ipt[pageTable[vpn].physicalPage].physicalPage = pageTable[vpn].physicalPage;
-	ipt[pageTable[vpn].physicalPage].virtualPage = pageTable[vpn].virtualPage;
-	ipt[pageTable[vpn].physicalPage].valid = pageTable[vpn].valid;
-	ipt[pageTable[vpn].physicalPage].use = pageTable[vpn].use;
-	ipt[pageTable[vpn].physicalPage].dirty = pageTable[vpn].dirty;
-	ipt[pageTable[vpn].physicalPage].readOnly = pageTable[vpn].readOnly;
-	ipt[pageTable[vpn].physicalPage].processID = id;
-	
-	if (pageTable[vpn].diskLocation == EnhancedTranslationEntry::EXECUTABLE) {
-		exec->ReadAt(&(machine->mainMemory[pageTable[vpn].physicalPage * PageSize]),
-			PageSize, pageTable[vpn].byteOffset);
-	}
-	iptLock->Release();
-	
-	}
+		//iptLock->Release();
+		//printf("AddrSpace:: Not IPT %d\n", vpn);
+		//If it didn't return, it's an IPT miss, so run the following code.
+		
+		mainmemLock->Acquire();
+		pageTable[vpn].physicalPage = bitMap.Find();	// Find a free physical page, lock down while doing so
+		bzero(&(machine->mainMemory[pageTable[vpn].physicalPage * PageSize]), PageSize);
+		mainmemLock->Release();
+		
+		pageTable[vpn].valid = TRUE;
+		
+		//iptLock->Acquire();
+		pageLock->Acquire();
+		
+		ipt[pageTable[vpn].physicalPage].physicalPage = pageTable[vpn].physicalPage;
+		ipt[pageTable[vpn].physicalPage].virtualPage = pageTable[vpn].virtualPage;
+		ipt[pageTable[vpn].physicalPage].valid = pageTable[vpn].valid;
+		ipt[pageTable[vpn].physicalPage].use = pageTable[vpn].use;
+		ipt[pageTable[vpn].physicalPage].dirty = pageTable[vpn].dirty;
+		ipt[pageTable[vpn].physicalPage].readOnly = pageTable[vpn].readOnly;
+		ipt[pageTable[vpn].physicalPage].processID = id;
+		
+		if (pageTable[vpn].diskLocation == EnhancedTranslationEntry::EXECUTABLE) {
+			exec->ReadAt(&(machine->mainMemory[pageTable[vpn].physicalPage * PageSize]),
+				PageSize, pageTable[vpn].byteOffset);
+		}
+		
+		//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// TURN OFF INTERRUPTS FOR TLB ACCESS
+		machine->tlb[currentTLB].virtualPage = ipt[pageTable[vpn].physicalPage].virtualPage;
+		machine->tlb[currentTLB].physicalPage = ipt[pageTable[vpn].physicalPage].physicalPage;
+		
+		machine->tlb[currentTLB].valid = TRUE;
+		machine->tlb[currentTLB].use = ipt[pageTable[vpn].physicalPage].use;
+		machine->tlb[currentTLB].dirty = ipt[pageTable[vpn].physicalPage].dirty;
+		machine->tlb[currentTLB].readOnly = ipt[pageTable[vpn].physicalPage].readOnly;
+		currentTLB = (currentTLB + 1) % TLBSize;
+		
+		pageLock->Release();
+		
+		iptLock->Release();
+		(void) interrupt->SetLevel(oldLevel); 	// Enable interrupts
+
+		//iptLock->Release();
+	//}
 }
 
 void AddrSpace::PageToIPT(SpaceId id) {
 	//printf("Copying to IPT\n");
+	//IntStatus oldLevel = interrupt->SetLevel(IntOff);	// Disable interrupts
 	for (int i = 0; i < numPages; i++) {
 		mainmemLock->Acquire();
 		ipt[pageTable[i].physicalPage].physicalPage = pageTable[i].physicalPage;
@@ -486,4 +530,5 @@ void AddrSpace::PageToIPT(SpaceId id) {
 		ipt[pageTable[i].physicalPage].processID = id;
 		mainmemLock->Release();
 	}
+	//(void) interrupt->SetLevel(oldLevel);		// Enable interrupts
 }
