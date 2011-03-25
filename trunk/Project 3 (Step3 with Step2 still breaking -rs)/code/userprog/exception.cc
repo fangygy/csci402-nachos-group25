@@ -771,7 +771,7 @@ void Wait_Syscall(int cIndex, int lIndex) {
 
 
 void Exit_Syscall(int status) {
-	currentThread->Finish();
+	printf("Exit_Syscall: %d\n", status);
 	Process* process = currentThread->myProcess;
 	// find the current process
 	/*for(int i = 0; i < numProcesses; i++) {
