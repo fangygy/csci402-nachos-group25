@@ -36,7 +36,7 @@ extern Timer *timer;				// the hardware alarm clock
 extern Machine* machine;	// user program memory and registers
 extern Table processTable;
 extern int numProcesses;
-extern Lock* mainmemLock;
+extern Lock* bitMapLock;
 extern Lock* iptLock;
 extern BitMap bitMap;
 extern int currentTLB;		// for First In, First Out of TLB entries

@@ -32,7 +32,7 @@ Machine *machine;	// user program memory and registers
 Table processTable(10);
 int numProcesses;
 BitMap bitMap(NumPhysPages);
-Lock* mainmemLock;
+Lock* bitMapLock;
 Lock* iptLock;
 int currentTLB = 0;
 IPTEntry* ipt;
@@ -156,7 +156,7 @@ Initialize(int argc, char **argv)
     
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
-	mainmemLock = new Lock("MainMemoryLock");
+	bitMapLock = new Lock("MainMemoryLock");
 	iptLock = new Lock("IPT Lock");
 	ipt = new IPTEntry[NumPhysPages];
 	for (int i = 0; i < NumPhysPages; i++) {
