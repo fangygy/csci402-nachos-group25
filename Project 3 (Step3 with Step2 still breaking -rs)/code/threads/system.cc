@@ -36,6 +36,10 @@ Lock* bitMapLock;
 Lock* iptLock;
 int currentTLB = 0;
 IPTEntry* ipt;
+
+OpenFile* swapFile;
+BitMap swapBitMap(2048);
+Lock* swapLock;
 #endif
 
 #ifdef NETWORK
@@ -168,6 +172,10 @@ Initialize(int argc, char **argv)
 		ipt[i].use = false; 
 		ipt[i].dirty = false; 
 	}
+	
+	fileSystem->Create("SwapFile", 0);
+	swapFile = fileSystem->Open("SwapFile");
+	swapLock = new Lock("SwapLock");
 #endif
 
 #ifdef FILESYS
