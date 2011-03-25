@@ -41,6 +41,10 @@ extern Lock* iptLock;
 extern BitMap bitMap;
 extern int currentTLB;		// for First In, First Out of TLB entries
 extern IPTEntry* ipt;
+
+extern OpenFile* swapFile;
+extern BitMap swapBitMap;
+extern Lock* swapLock;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
