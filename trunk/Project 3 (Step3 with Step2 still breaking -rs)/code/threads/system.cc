@@ -177,7 +177,7 @@ Initialize(int argc, char **argv)
 		ipt[i].inUse = false;
 	}
 	
-	fileSystem->Create("SwapFile", 2048 * PageSize);
+	fileSystem->Create("SwapFile", 0);
 	swapFile = fileSystem->Open("SwapFile");
 	swapLock = new Lock("SwapLock");
 #endif
