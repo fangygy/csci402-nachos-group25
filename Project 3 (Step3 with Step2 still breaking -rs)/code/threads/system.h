@@ -47,6 +47,7 @@ extern BitMap swapBitMap;
 extern Lock* swapLock;
 
 extern int evictPage;
+extern bool EvictFIFO;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

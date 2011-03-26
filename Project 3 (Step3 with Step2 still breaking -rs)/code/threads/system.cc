@@ -42,6 +42,7 @@ BitMap swapBitMap(2048);
 Lock* swapLock;
 
 int evictPage = 0;
+bool EvictFIFO = true;
 #endif
 
 #ifdef NETWORK
