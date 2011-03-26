@@ -42,6 +42,8 @@ class IPTEntry {
 			// page is referenced or modified.
     bool dirty;         // This bit is set by the hardware every time the
 			// page is modified.
+			
+	bool inUse;
 };
 
 #endif

@@ -40,6 +40,7 @@ int numConditions = 0;
 
 Lock* lock_condLock = new Lock("lock_condLock");
 Lock* memoryLock = new Lock("memoryLock");
+Lock* traceLock = new Lock("traceLock");
 
 struct KernelLock {
 	Lock* lock;
@@ -945,18 +946,20 @@ int Random_Syscall(int max) {
 }
 
 void Trace_Syscall(unsigned int vaddr, int val) {
-    
+    traceLock->Acquire();
     char *buf;		// Kernel buffer for output
     OpenFile *f;	// Open file for output
 	int len = 128;	// buffer size
     
     if ( !(buf = new char[len]) ) {
 		printf("%s","Error allocating kernel buffer for write!\n");
+		traceLock->Release();
 		return;
     } else {
         if ( copyin(vaddr,len,buf) == -1 ) {
 			printf("%s","Bad pointer passed to to write: data not written\n");
 			delete[] buf;
+			traceLock->Release();
 			return;
 		}
     }
@@ -972,6 +975,7 @@ void Trace_Syscall(unsigned int vaddr, int val) {
 		printf("%c", buf[ii]);
 	}
 
+	traceLock->Release();
     delete[] buf;
 }
 

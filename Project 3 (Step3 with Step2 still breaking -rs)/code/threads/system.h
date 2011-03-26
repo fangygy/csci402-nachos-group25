@@ -45,6 +45,8 @@ extern IPTEntry* ipt;
 extern OpenFile* swapFile;
 extern BitMap swapBitMap;
 extern Lock* swapLock;
+
+extern int evictPage;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
