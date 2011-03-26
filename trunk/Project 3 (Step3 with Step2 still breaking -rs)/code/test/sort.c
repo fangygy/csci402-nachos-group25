@@ -26,7 +26,7 @@ void SortA() {
 
 	/* then sort! */
 	for (ai = 0; ai < size; ai++) {
-		for (aj = 0; aj < size; aj++) {
+		for (aj = 0; aj < size - 1; aj++) {
 			if (A[aj] > A[aj + 1]) {	/* out of order -> need to swap ! */
 				atmp = A[aj];
 				A[aj] = A[aj + 1];
@@ -53,7 +53,7 @@ void SortB() {
 
 	/* then sort! */
 	for (bi = 0; bi < size; bi++) {
-		for (bj = 0; bj < size; bj++) {
+		for (bj = 0; bj < size - 1; bj++) {
 			if (B[bj] > B[bj + 1]) {	/* out of order -> need to swap ! */
 				btmp = B[bj];
 				B[bj] = B[bj + 1];
@@ -80,7 +80,7 @@ void SortC() {
 
 	/* then sort! */
 	for (ci = 0; ci < size; ci++) {
-		for (cj = 0; cj < size; cj++) {
+		for (cj = 0; cj < size - 1; cj++) {
 			if (C[cj] > C[cj + 1]) {	/* out of order -> need to swap ! */
 				ctmp = C[cj];
 				C[cj] = C[cj + 1];
@@ -107,7 +107,7 @@ void SortD() {
 
 	/* then sort! */
 	for (di = 0; di < size; di++) {
-		for (dj = 0; dj < size; dj++) {
+		for (dj = 0; dj < size  - 1; dj++) {
 			if (D[dj] > D[dj + 1]) {	/* out of order -> need to swap ! */
 				dtmp = D[dj];
 				D[dj] = D[dj + 1];
