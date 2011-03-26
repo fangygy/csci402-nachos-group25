@@ -40,6 +40,8 @@ IPTEntry* ipt;
 OpenFile* swapFile;
 BitMap swapBitMap(2048);
 Lock* swapLock;
+
+int evictPage = 0;
 #endif
 
 #ifdef NETWORK
@@ -171,9 +173,10 @@ Initialize(int argc, char **argv)
 		ipt[i].readOnly = false;
 		ipt[i].use = false; 
 		ipt[i].dirty = false; 
+		ipt[i].inUse = false;
 	}
 	
-	fileSystem->Create("SwapFile", 0);
+	fileSystem->Create("SwapFile", 2048 * PageSize);
 	swapFile = fileSystem->Open("SwapFile");
 	swapLock = new Lock("SwapLock");
 #endif
