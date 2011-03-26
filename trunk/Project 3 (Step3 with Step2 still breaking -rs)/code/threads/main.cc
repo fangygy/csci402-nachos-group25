@@ -128,6 +128,17 @@ main(int argc, char **argv)
 					// for console input
 	}
 #endif // USER_PROGRAM
+
+	if (!strcmp(*argv, "-PRAND")) {
+		ASSERT(argc > 1);
+		EvictFIFO = false;
+		printf("Eviction policy set to RANDOM\n");
+	}
+	else if (!strcmp(*argv, "-PFIFO")) {
+		ASSERT(argc > 1);
+		EvictFIFO = true;
+		printf("Eviction policy set to FIFO\n");
+	}
 #ifdef FILESYS
 	if (!strcmp(*argv, "-cp")) { 		// copy from UNIX to Nachos
 	    ASSERT(argc > 2);

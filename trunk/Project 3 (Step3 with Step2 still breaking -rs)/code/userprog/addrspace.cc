@@ -492,9 +492,17 @@ void AddrSpace::PageToTLB(SpaceId id) {
 	int paddr = bitMap.Find();
 	if (paddr == -1) {
 		//iptLock->Acquire();
-		evictPage = (evictPage + 1) % NumPhysPages;
-		while (ipt[evictPage].inUse) {
+		if (EvictFIFO) {
 			evictPage = (evictPage + 1) % NumPhysPages;
+			while (ipt[evictPage].inUse) {
+				evictPage = (evictPage + 1) % NumPhysPages;
+			}
+		}
+		else {
+			evictPage = rand() % NumPhysPages;
+			while (ipt[evictPage].inUse) {
+				evictPage = rand() % NumPhysPages;
+			}
 		}
 		ipt[evictPage].inUse = TRUE;
 		for (int i = 0; i < TLBSize; i++) {
