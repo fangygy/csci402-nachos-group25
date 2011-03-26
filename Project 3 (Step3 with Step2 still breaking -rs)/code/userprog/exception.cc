@@ -855,6 +855,15 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
+void CreateLock_RPC() {
+}
+
+void AcquireLock_RPC() {
+}
+
+void ReleaseLock_RPC() {
+}
+
 
 void Exit_Syscall(int status) {
 	printf("Exit_Syscall: %d\n", status);

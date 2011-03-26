@@ -177,6 +177,7 @@ static void WriteDone(int arg)
 
 PostOffice::PostOffice(NetworkAddress addr, double reliability, int nBoxes)
 {
+// addr = netname from ../threads/system.cc
 // First, initialize the synchronization with the interrupt handlers
     messageAvailable = new Semaphore("message available", 0);
     messageSent = new Semaphore("message sent", 0);
