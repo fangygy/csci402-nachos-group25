@@ -241,6 +241,63 @@ SetMV:
    syscall
    j     $31
    .end SetMV
+
+   .globl Release_RPC
+   .ent  Release_RPC
+Release_RPC:
+   addiu $2,$0,SC_Release_RPC
+   syscall
+   j     $31
+   .end Release_RPC
+
+   .globl Acquire_RPC
+   .ent  Acquire_RPC
+Acquire_RPC:
+   addiu $2,$0,SC_Acquire_RPC
+   syscall
+   j     $31
+   .end Acquire_RPC
+
+   .globl CreateLock_RPC
+   .ent  CreateLock_RPC
+CreateLock_RPC:
+   addiu $2,$0,SC_CreateLock_RPC
+   syscall
+   j     $31
+   .end CreateLock_RPC
+
+   .globl CreateCV_RPC
+   .ent  CreateCV_RPC
+CreateCV_RPC:
+   addiu $2,$0,SC_CreateCV_RPC
+   syscall
+   j     $31
+   .end CreateCV_RPC
+
+   .globl Wait_RPC
+   .ent  Wait_RPC
+Wait_RPC:
+   addiu $2,$0,SC_Wait_RPC
+   syscall
+   j     $31
+   .end Wait_RPC
+
+   .globl Signal_RPC
+   .ent  Signal_RPC
+Signal_RPC:
+   addiu $2,$0,SC_Signal_RPC
+   syscall
+   j     $31
+   .end Signal_RPC
+
+   .globl Broadcast_RPC
+   .ent  Broadcast_RPC
+Broadcast_RPC:
+   addiu $2,$0,SC_Broadcast_RPC
+   syscall
+   j     $31
+   .end Broadcast_RPC
+
    
 /* dummy function to keep gcc happy */
         .globl  __main
