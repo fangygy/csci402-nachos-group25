@@ -35,10 +35,14 @@ using namespace std;
 
 #define MAX_LOCKS 512
 #define MAX_CONDITIONS 512
+#define MAX_MVS 512
+
 int numLocks = 0;
 int numConditions = 0;
+int numMVs = 0;
 
 Lock* lock_condLock = new Lock("lock_condLock");
+Lock* mvLock = new Lock("mvLock");
 Lock* memoryLock = new Lock("memoryLock");
 Lock* traceLock = new Lock("traceLock");
 
@@ -76,6 +80,7 @@ struct KernelCondition {
 
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
+int monitorVars[MAX_MVS];
 
 int copyin(unsigned int vaddr, int len, char *buf) {
     // Copy len bytes from the current thread's virtual address vaddr.
@@ -364,6 +369,86 @@ int CreateCondition_Syscall(unsigned int vaddr, int length) {
 	
 	lock_condLock-> Release();
 	return (index);
+}
+
+int CreateMV_Syscall(int val) {
+	mvLock->Acquire();
+	if (numMVs >= MAX_MVS) {
+		// print error msg?
+		printf("CreateMV_Syscall: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
+		mvLock->Release();
+		return -1;
+	}
+	if (val == 0x9999) {
+		// print error msg
+		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+		mvLock->Release();
+		return -1;
+	}
+	
+	int index = -1;
+	for (int i = 0; i < MAX_MVS; i++) {
+	// find 1st vacancy in the list
+		if (monitorVars[i] == 0x9999) {
+			index = i;
+			break;
+		}
+	}
+	
+	monitorVars[index] = val;
+	
+	mvLock->Release();
+	return index;
+}
+
+int GetMV_Syscall(int index) {
+	mvLock->Acquire();
+	
+	if (index < 0) {
+		// print error msg
+		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
+		mvLock->Release();
+		return -1;
+	}
+	if (index >= MAX_CONDITIONS) {
+		// print error msg
+		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
+		mvLock->Release();
+		return -1;
+	}
+	
+	int val = monitorVars[index];
+	mvLock->Release();
+	
+	return (val);
+}
+
+void SetMV_Syscall(int index, int val) {
+	mvLock->Acquire();
+	
+	if (index < 0) {
+		// print error msg
+		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
+		mvLock->Release();
+		return;
+	}
+	if (index >= MAX_CONDITIONS) {
+		// print error msg
+		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
+		mvLock->Release();
+		return;
+	}
+	if (val == 0x9999) {
+		// print error msg
+		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+		mvLock->Release();
+		return;
+	}
+	
+	monitorVars[index] = val;
+	mvLock->Release();
+	
+	return;
 }
 
 int DestroyLock_Syscall(int index) {
@@ -1085,6 +1170,19 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Trace syscall.\n");
 		Trace_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
+		break;
+		
+		case SC_CreateMV:
+		DEBUG('a', "Create MV syscall.\n");
+			rv = CreateMV_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_GetMV:
+		DEBUG('a', "Get MV syscall.\n");
+			rv = GetMV_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_SetMV:
+		DEBUG('a', "Set MV syscall.\n");
+		SetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 	}
 
