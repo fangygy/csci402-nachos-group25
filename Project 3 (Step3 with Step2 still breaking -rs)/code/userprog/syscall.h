@@ -29,6 +29,7 @@
 #define SC_Close			8
 #define SC_Fork				9
 #define SC_Yield			10
+
 #define SC_Acquire			11
 #define SC_Release			12
 #define SC_Wait				13
@@ -40,6 +41,10 @@
 #define SC_DestroyCondition	19
 #define SC_Random			20
 #define SC_Trace			21
+
+#define SC_CreateMV			22
+#define SC_GetMV			23
+#define SC_SetMV			24
 
 #define MAXFILENAME 256
 
