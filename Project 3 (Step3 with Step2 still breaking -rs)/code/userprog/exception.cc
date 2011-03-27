@@ -53,6 +53,14 @@ struct ServerLock {
 	List *queue;
 	int numClients;
 
+	ServerLock(){
+		free = true;
+		name = "";
+		holder = -1;
+		queue = new List;
+		numClients = 0;
+	}
+
 	ServerLock(char* n){
 		free = true;
 		name = n;
@@ -883,25 +891,25 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
-void CreateLock_RPC_Syscall() {
+void ServerCreateLock_Syscall() {
 }
 
-void Acquire_RPC_Syscall() {
+void ServerAcquire_Syscall() {
 }
 
-void Release_RPC_Syscall() {
+void ServerRelease_Syscall() {
 }
 
-void CreateCV_RPC_Syscall(){
+void ServerCreateCV_Syscall(){
 }
 
-void Wait_RPC_Syscall(){
+void ServerWait_Syscall(){
 }
 
-void Signal_RPC_Syscall(){
+void ServerSignal_Syscall(){
 }
 
-void Broadcast_RPC_Syscall(){
+void ServerBroadcast_Syscall(){
 }
 
 
@@ -1233,33 +1241,33 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Set MV syscall.\n");
 		SetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
-		case SC_CreateLock_RPC:
-		DEBUG('a', "Create Lock RPC syscall.\n");
-			CreateLock_RPC_Syscall();
+		case SC_ServerCreateLock:
+		DEBUG('a', "Server Create Lock syscall.\n");
+			ServerCreateLock_Syscall();
 		break;
-		case SC_Acquire_RPC:
-		DEBUG('a', "Acquire RPC syscall.\n");
-			Acquire_RPC_Syscall();
+		case SC_ServerAcquire:
+		DEBUG('a', "Server Acquire syscall.\n");
+			ServerAcquire_Syscall();
 		break;
-		case SC_Release_RPC:
-		DEBUG('a', "Release RPC syscall.\n");
-			Release_RPC_Syscall();
+		case SC_ServerRelease:
+		DEBUG('a', "Server Release syscall.\n");
+			ServerRelease_Syscall();
 		break;
-		case SC_CreateCV_RPC:
-		DEBUG('a', "Create CV RPC syscall.\n");
-			CreateCV_RPC_Syscall();
+		case SC_ServerCreateCV:
+		DEBUG('a', "Server Create CV syscall.\n");
+			ServerCreateCV_Syscall();
 		break;
-		case SC_Wait_RPC:
-		DEBUG('a', "Wait RPC syscall.\n");
-		Wait_RPC_Syscall();
+		case SC_ServerWait:
+		DEBUG('a', "Server Wait syscall.\n");
+		ServerWait_Syscall();
 		break;
-		case SC_Signal_RPC:
-		DEBUG('a', "Signal RPC syscall.\n");
-		Signal_RPC_Syscall();
+		case SC_ServerSignal:
+		DEBUG('a', "Server Signal syscall.\n");
+		ServerSignal_Syscall();
 		break;
-		case SC_Broadcast_RPC:
-		DEBUG('a', "Broadcast RPC syscall.\n");
-		Broadcast_RPC_Syscall();
+		case SC_ServerBroadcast:
+		DEBUG('a', "Server Broadcast syscall.\n");
+		ServerBroadcast_Syscall();
 		break;
 	}
 

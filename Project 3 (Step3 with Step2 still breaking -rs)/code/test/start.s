@@ -242,61 +242,61 @@ SetMV:
    j     $31
    .end SetMV
 
-   .globl Release_RPC
-   .ent  Release_RPC
-Release_RPC:
-   addiu $2,$0,SC_Release_RPC
+   .globl ServerRelease
+   .ent  ServerRelease
+ServerRelease:
+   addiu $2,$0,SC_ServerRelease
    syscall
    j     $31
-   .end Release_RPC
+   .end ServerRelease
 
-   .globl Acquire_RPC
-   .ent  Acquire_RPC
-Acquire_RPC:
-   addiu $2,$0,SC_Acquire_RPC
+   .globl ServerAcquire
+   .ent  ServerAcquire
+ServerAcquire:
+   addiu $2,$0,SC_ServerAcquire
    syscall
    j     $31
-   .end Acquire_RPC
+   .end ServerAcquire
 
-   .globl CreateLock_RPC
-   .ent  CreateLock_RPC
-CreateLock_RPC:
-   addiu $2,$0,SC_CreateLock_RPC
+   .globl ServerCreateLock
+   .ent  ServerCreateLock
+ServerCreateLock:
+   addiu $2,$0,SC_ServerCreateLock
    syscall
    j     $31
-   .end CreateLock_RPC
+   .end ServerCreateLock
 
-   .globl CreateCV_RPC
-   .ent  CreateCV_RPC
-CreateCV_RPC:
-   addiu $2,$0,SC_CreateCV_RPC
+   .globl ServerCreateCV
+   .ent  ServerCreateCV
+ServerCreateCV:
+   addiu $2,$0,SC_ServerCreateCV
    syscall
    j     $31
-   .end CreateCV_RPC
+   .end ServerCreateCV
 
-   .globl Wait_RPC
-   .ent  Wait_RPC
-Wait_RPC:
-   addiu $2,$0,SC_Wait_RPC
+   .globl ServerWait
+   .ent  ServerWait
+ServerWait:
+   addiu $2,$0,SC_ServerWait
    syscall
    j     $31
-   .end Wait_RPC
+   .end ServerWait
 
-   .globl Signal_RPC
-   .ent  Signal_RPC
-Signal_RPC:
-   addiu $2,$0,SC_Signal_RPC
+   .globl ServerSignal
+   .ent  ServerSignal
+ServerSignal:
+   addiu $2,$0,SC_ServerSignal
    syscall
    j     $31
-   .end Signal_RPC
+   .end ServerSignal
 
-   .globl Broadcast_RPC
-   .ent  Broadcast_RPC
-Broadcast_RPC:
-   addiu $2,$0,SC_Broadcast_RPC
+   .globl ServerBroadcast
+   .ent  ServerBroadcast
+ServerBroadcast:
+   addiu $2,$0,SC_ServerBroadcast
    syscall
    j     $31
-   .end Broadcast_RPC
+   .end ServerBroadcast
 
    
 /* dummy function to keep gcc happy */
