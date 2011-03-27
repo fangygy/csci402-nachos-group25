@@ -53,6 +53,9 @@
 #define SC_ServerWait		29
 #define SC_ServerSignal		30
 #define SC_ServerBroadcast	31
+#define SC_ServerDestroyLock	32
+#define SC_ServerDestroyCV		33
+
 
 
 #define MAXFILENAME 256
@@ -239,7 +242,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length);
 
 /* Waits on a condition variable for networking 
 */
-void ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex);
+int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex);
 
 /* Signals a condition variable for networking 
 */
@@ -249,8 +252,13 @@ int ServerSignal_Syscall(int machineID, int conditionIndex, int lockIndex);
 */
 void ServerBroadcast_Syscall(int machineID, int conditionIndex, int lockIndex);
 
+/* Destroys a lock for networking 
+*/
+void ServerDestroyLock_Syscall(int machineID);
 
-
+/* Destroys a Condition Variable for networking 
+*/
+void ServerDestroyCV_Syscall(int machineID);
 
 
 
