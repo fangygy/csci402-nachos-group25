@@ -1247,6 +1247,95 @@ int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex){
 }
 
 int ServerSignal_Syscall(int machineID, int conditionIndex, int lockIndex){
+// ERROR Checking
+	/*
+	- locks and conditions exists
+	- This client is a client of lock and index
+	- conditions' waiting lock == lock index
+	- this client is holder of lock
+	- CVs queue is not empty
+	--------------
+	//////
+	remove from condition queue (the front)
+	acquire the lock at waitinglock in condition
+	for the removed index
+	*/
+
+	//If this lock doesn't exist, return -1
+	if (!serverLocks[lockIndex].exists) {
+		printf("ServerSignalSyscall: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//If condition doesn't exist, return -1
+	if (!serverCVs[conditionIndex].exists) {
+		printf("ServerSignalSyscall: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
+		return -1;
+	}
+
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerSignalSyscall: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		return -1;
+	}
+
+	//Same for condition, make sure is client
+	isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerSignalSyscall: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+		return -1;
+	}	
+	
+	// If waitingLock is -1, set it to the passed in lock
+	// Else if lock is wrong, return -1
+	if (serverCVs[conditionIndex].waitingLock == -1) {
+		serverCVs[conditionIndex].waitingLock = lockIndex;
+	}
+	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
+		printf("ServerSignalSyscall: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+		return -1;
+	}
+	
+	//Needs to be the holder for the lock
+	if (serverLocks[lockIndex].holder != machineID) {
+		printf("ServerSignalSyscall: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+
+	// Queue must not be empty
+	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+		printf("ServerSignalSyscall: Condition queue is empty. Nothing waiting.\n");
+		return 0;
+	}
+
+	int nextWaiting = (int)serverCVs[conditionIndex].queue->Remove();
+
+	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+		printf("ServerSignalSyscall: Condition queue is now empty. Nothing waiting.\n");
+		serverCVs[conditionIndex].waitingLock = -1;	
+	}
+	
+	if (serverLocks[lockIndex].holder == -1) {
+		serverLocks[lockIndex].holder = nextWaiting;
+		return nextWaiting;
+	}
+	else {
+		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
+		return 0;
+	}		
 }
 
 void ServerBroadcast_Syscall(int machineID, int conditionIndex, int lockIndex){
