@@ -891,10 +891,10 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
-int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
+int ServerCreateLock_Syscall(unsigned int vaddr, int length, int machineID) {
 }
 
-void ServerDestroyLock_Syscall(int machineID){
+int ServerDestroyLock_Syscall(int machineID){
 }
 
 int ServerAcquire_Syscall(int machineID, int lockIndex) {
@@ -903,10 +903,10 @@ int ServerAcquire_Syscall(int machineID, int lockIndex) {
 int ServerRelease_Syscall(int machineID, int lockIndex) {
 }
 
-int ServerCreateCV_Syscall(unsigned int vaddr, int length){
+int ServerCreateCV_Syscall(unsigned int vaddr, int length, int machineID){
 }
 
-void ServerDestroyCV_Syscall(int machineID){
+int ServerDestroyCV_Syscall(int machineID){
 }
 
 int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex){
@@ -1249,11 +1249,11 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerCreateLock:
 		DEBUG('a', "Server Create Lock syscall.\n");
-			rv = ServerCreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = ServerCreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerDestroyLock:
 		DEBUG('a', "Server Destroy Lock syscall.\n");
-			ServerDestroyLock_Syscall(machine->ReadRegister(4));
+			rv = ServerDestroyLock_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_ServerAcquire:
 		DEBUG('a', "Server Acquire syscall.\n");
@@ -1265,19 +1265,19 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerCreateCV:
 		DEBUG('a', "Server Create CV syscall.\n");
-			rv = ServerCreateCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = ServerCreateCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerDestroyCV:
 		DEBUG('a', "Server Destroy CV syscall.\n");
-			ServerDestroyLock_Syscall(machine->ReadRegister(4));
+			rv = ServerDestroyLock_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_ServerWait:
 		DEBUG('a', "Server Wait syscall.\n");
-		ServerWait_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5), machine->ReadRegister(6));
+			rv = ServerWait_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerSignal:
 		DEBUG('a', "Server Signal syscall.\n");
-		rv = ServerSignal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
+			rv = ServerSignal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerBroadcast:
 		DEBUG('a', "Server Broadcast syscall.\n");
