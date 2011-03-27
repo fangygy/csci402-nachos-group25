@@ -214,51 +214,51 @@ void Trace(int vaddr, int val);
 ///////////////////////////////////////// Networking stuff
 /* Creates a monitor variable for networking 
 */
-int CreateMV_Syscall(int val);
+int CreateMV(int val);
 
 /* Gets a monitor variable for networking 
 */
-int GetMV_Syscall(int index);
+int GetMV(int index);
 
 /* Sets a monitor variable for networking 
 */
-void SetMV_Syscall(int index, int val);
+void SetMV(int index, int val);
 
 /* Creates a lock for networking 
 */
-int ServerCreateLock_Syscall(unsigned int vaddr, int length, int machineID);
+int ServerCreateLock(int machineID, char* name, int length);
 
 /* Acquires a lock for networking 
 */
-int ServerAcquire_Syscall(int machineID, int lockIndex);
+int ServerAcquire(int machineID, int lockIndex);
 
 /* Releases a lock for networking 
 */
-int ServerRelease_Syscall(int machineID, int lockIndex);
+int ServerRelease(int machineID, int lockIndex);
 
 /* Creates a Condition Variable for networking 
 */
-int ServerCreateCV_Syscall(unsigned int vaddr, int length, int machineID);
+int ServerCreateCV(int machineID, unsigned int vaddr, int length);
 
 /* Waits on a condition variable for networking 
 */
-int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex);
+int ServerWait(int machineID, int conditionIndex, int lockIndex);
 
 /* Signals a condition variable for networking 
 */
-int ServerSignal_Syscall(int machineID, int conditionIndex, int lockIndex);
+int ServerSignal(int machineID, int conditionIndex, int lockIndex);
 
 /* Broadcasts all waiting condition variables for networking 
 */
-void ServerBroadcast_Syscall(int machineID, int conditionIndex, int lockIndex);
+void ServerBroadcast(int machineID, int conditionIndex, int lockIndex);
 
 /* Destroys a lock for networking 
 */
-int ServerDestroyLock_Syscall(int machineID, int lockIndex);
+int ServerDestroyLock(int machineID, int lockIndex);
 
 /* Destroys a Condition Variable for networking 
 */
-int ServerDestroyCV_Syscall(int machineID);
+int ServerDestroyCV(int machineID);
 
 
 

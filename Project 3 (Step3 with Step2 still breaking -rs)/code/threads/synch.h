@@ -81,8 +81,7 @@ class Lock {
     char* name;				// for debugging
     bool  free; 
     Thread* holder;			// holder of this lock
-    List *queue; 
-
+    List *queue;
 };
 
 // The following class defines a "condition variable".  A condition
