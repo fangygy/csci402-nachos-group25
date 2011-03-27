@@ -254,7 +254,7 @@ void ServerBroadcast_Syscall(int machineID, int conditionIndex, int lockIndex);
 
 /* Destroys a lock for networking 
 */
-int ServerDestroyLock_Syscall(int machineID);
+int ServerDestroyLock_Syscall(int machineID, int lockIndex);
 
 /* Destroys a Condition Variable for networking 
 */

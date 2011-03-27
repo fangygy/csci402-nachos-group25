@@ -979,7 +979,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int machineID) {
 	return -2;
 }
 
-int ServerDestroyLock_Syscall(int machineID){
+int ServerDestroyLock_Syscall(int machineID, int lockIndex){
 	//If this lock doesn't exist, return
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerDestroyLockSyscall: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
@@ -1017,14 +1017,14 @@ int ServerDestroyLock_Syscall(int machineID){
 	
 	//If this client is current owner, release it
 	if (serverLocks[lockIndex].holder == machineID) {
-		if (serverLocks[lockIndex].queue->isEmpty()) {
+		if (serverLocks[lockIndex].queue->IsEmpty()) {
 			serverLocks[lockIndex].holder = -1;
 			return -1;
 		}
 		
 		int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
 	
-		serverLocks[lockIndex].holder = nextToAcquire();
+		serverLocks[lockIndex].holder = nextToAcquire;
 		
 		return serverLocks[lockIndex].holder;
 	}
@@ -1092,14 +1092,14 @@ int ServerRelease_Syscall(int machineID, int lockIndex) {
 		return -1;
 	}
 	
-	if (serverLocks[lockIndex].queue->isEmpty()) {
+	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
 		return -1;
 	}
 	
 	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
 	
-	serverLocks[lockIndex].holder = nextToAcquire();
+	serverLocks[lockIndex].holder = nextToAcquire;
 	
 	return serverLocks[lockIndex].holder;
 }
@@ -1224,18 +1224,25 @@ int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex){
 	
 	//Needs to be the holder for the lock
 	if (serverLocks[lockIndex].holder != machineID) {
-		//printf("ServerWaitSyscall: Machine%d 
+		printf("ServerWaitSyscall: Machine%d is not the holder of ServerLock%d\n", machineID, lockIndex);
+		return -1;
 	}
 	
-	if (serverLocks[lockIndex].queue->isEmpty()) {
+	//Actually wait now
+	serverCVs[conditionIndex].queue->Append((void*)machineID);
+	
+	//Return 0 if no locks are going to acquire the lock
+	// after this one releases it
+	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
 		return 0;
 	}
 	
 	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
 	
-	serverLocks[lockIndex].holder = nextToAcquire();
+	serverLocks[lockIndex].holder = nextToAcquire;
 	
+	//Otherwise return the new lock holder
 	return serverLocks[lockIndex].holder;
 }
 
@@ -1580,7 +1587,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerDestroyLock:
 		DEBUG('a', "Server Destroy Lock syscall.\n");
-			rv = ServerDestroyLock_Syscall(machine->ReadRegister(4));
+			rv = ServerDestroyLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerAcquire:
 		DEBUG('a', "Server Acquire syscall.\n");
@@ -1596,7 +1603,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerDestroyCV:
 		DEBUG('a', "Server Destroy CV syscall.\n");
-			rv = ServerDestroyLock_Syscall(machine->ReadRegister(4));
+			rv = ServerDestroyCV_Syscall(machine->ReadRegister(4));
 		break;
 		case SC_ServerWait:
 		DEBUG('a', "Server Wait syscall.\n");
