@@ -30,6 +30,400 @@
 //	4. wait for an acknowledgement from the other machine to our 
 //	    original message
 
+int CreateLock_RPC(char* name) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	int lockIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    
+	//Do data parsing here with lockIndex and buffer
+	//lockIndex = buffer?
+	
+    fflush(stdout);
+	
+	return lockIndex;
+}
+
+void Acquire_RPC(int index) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    printf("Successfully acquired Lock: %d\n", index);
+	
+    fflush(stdout);
+	
+}
+
+void Release_RPC(int index) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    printf("Successfully released Lock: %d\n", index);
+	
+    fflush(stdout);
+}
+
+void DestroyLock_RPC(int index) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    printf("Successfully sent a Destroy Request on Lock: %d\n", index);
+	
+    fflush(stdout);
+}
+
+int CreateCV_RPC(char* name) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	int condIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	//Parse buffer into a condIndex
+	
+    fflush(stdout);
+	
+	return condIndex;
+}
+
+void Wait_RPC(int cIndex, int lIndex) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	printf("Waiting on Condition: %d with Lock: %d\n", cIndex, lIndex);
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	printf("Woken on Condition: %d with Lock: %d\n", cIndex, lIndex);
+	
+    fflush(stdout);
+}
+
+void Signal_RPC(int cIndex, int lIndex) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+	printf("Signalling Condition: %d with Lock: %d\n", cIndex, lIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+    fflush(stdout);
+}
+
+void Broadcast_RPC(int cIndex, int lIndex) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+	printf("Broadcasting Condition: %d with Lock: %d\n", cIndex, lIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+    fflush(stdout);
+}
+
+void DestroyCV_RPC(int cIndex) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	printf("Successfully called Destroy on Condition: %d\n", cIndex);
+	
+    fflush(stdout);
+}
+
+int CreateMV_RPC(char* name) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	int mvIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	//Parse buffer to get the mvIndex
+	
+    fflush(stdout);
+	
+	return mvIndex;
+}
+
+int GetMV_RPC(int index) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	int mvValue;
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	//Parse buffer to get mvValue
+	
+    fflush(stdout);
+	
+	return mvValue;
+}
+
+void SetMV_RPC(int index, int value) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char* data;
+	char* ack;
+	
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 1;
+    outMailHdr.length = strlen(data) + 1;
+
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	printf("Successfully set MV at Index: %d to Value: %d", index, value);
+	
+    fflush(stdout);
+}
+
 void MailTest(int farAddr) {
 	//netAddr?
     PacketHeader outPktHdr, inPktHdr;
