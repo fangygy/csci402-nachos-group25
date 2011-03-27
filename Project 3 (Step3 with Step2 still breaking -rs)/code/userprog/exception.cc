@@ -46,6 +46,32 @@ Lock* mvLock = new Lock("mvLock");
 Lock* memoryLock = new Lock("memoryLock");
 Lock* traceLock = new Lock("traceLock");
 
+struct ServerLock {
+	bool free;
+	char* name;
+	int holder;		// machineID of the lock holder
+	List *queue;
+
+	ServerLock(char* n){
+		free = true;
+		name = n;
+		holder = -1;
+		queue = new List;
+	}
+};
+
+struct ServerCV {
+	char* name;
+	ServerLock waitingLock;
+	List* queue;
+
+	ServerCV(char* n){
+		name = n;
+		waitingLock = NULL;
+		queue = new List;
+	}
+};
+
 struct KernelLock {
 	Lock* lock;
 	AddrSpace* space;
