@@ -1028,6 +1028,8 @@ int ServerDestroyLock_Syscall(int machineID, int lockIndex){
 		
 		return serverLocks[lockIndex].holder;
 	}
+	
+	return 0;
 }
 
 int ServerAcquire_Syscall(int machineID, int lockIndex) {
@@ -1170,7 +1172,42 @@ int ServerCreateCV_Syscall(int machineID, unsigned int vaddr, int length){
 	}
 }
 
-int ServerDestroyCV_Syscall(int machineID){
+int ServerDestroyCV_Syscall(int machineID, int conditionIndex){
+	//If this CV doesn't exist, return
+	if (!serverCVs[conditionIndex].exists) {
+		printf("ServerDestroyCVSyscall: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
+		return -1;
+	}
+	
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerDestroyCVSyscall: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, conditionIndex);
+		return -1;
+	}
+	
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+			serverCVs[conditionIndex].clientID[i] = 0;
+			break;
+		}
+	}
+	serverCVs[conditionIndex].numClients--;
+	
+	//If no more clients, delete lock
+	if (serverCVs[conditionIndex].numClients == 0) {
+		serverCVs[conditionIndex].exists = false;
+		serverCVs[conditionIndex].name = "";
+		numServerCVs--;
+		return 0;
+	}
+	
 }
 
 int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex){
@@ -1692,7 +1729,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerDestroyCV:
 		DEBUG('a', "Server Destroy CV syscall.\n");
-			rv = ServerDestroyCV_Syscall(machine->ReadRegister(4));
+			rv = ServerDestroyCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerWait:
 		DEBUG('a', "Server Wait syscall.\n");

@@ -258,7 +258,7 @@ int ServerDestroyLock(int machineID, int lockIndex);
 
 /* Destroys a Condition Variable for networking 
 */
-int ServerDestroyCV(int machineID);
+int ServerDestroyCV(int machineID, int conditionIndex);
 
 
 
