@@ -894,7 +894,7 @@ void Wait_Syscall(int cIndex, int lIndex) {
 int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 }
 
-void ServerAcquire_Syscall(int machineID, int lockIndex) {
+int ServerAcquire_Syscall(int machineID, int lockIndex) {
 }
 
 int ServerRelease_Syscall(int machineID, int lockIndex) {
@@ -1247,7 +1247,7 @@ void ExceptionHandler(ExceptionType which) {
 		break;
 		case SC_ServerAcquire:
 		DEBUG('a', "Server Acquire syscall.\n");
-			ServerAcquire_Syscall(machine->ReadRegister(4),machine->ReadRegister(5));
+			rv = ServerAcquire_Syscall(machine->ReadRegister(4),machine->ReadRegister(5));
 		break;
 		case SC_ServerRelease:
 		DEBUG('a', "Server Release syscall.\n");
