@@ -227,7 +227,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length);
 
 /* Acquires a lock for networking 
 */
-void ServerAcquire_Syscall(int machineID, int lockIndex);
+int ServerAcquire_Syscall(int machineID, int lockIndex);
 
 /* Releases a lock for networking 
 */
