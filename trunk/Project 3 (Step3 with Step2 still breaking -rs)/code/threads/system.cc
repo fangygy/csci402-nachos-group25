@@ -19,6 +19,8 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+#define BAD_REQUEST 0x9000
+
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif

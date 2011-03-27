@@ -910,7 +910,7 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
-int ServerCreateLock_Syscall(unsigned int vaddr, int length, int machineID) {
+int ServerCreateLock_Syscall(int machineID, unsigned int vaddr, int length) {
 	//If reached max lock capacity, return -1
 	if (numServerLocks >= MAX_LOCKS) {
 		printf("ServerCreateLock_Syscall: Max server lock limit reached, cannot create.\n");
@@ -1104,7 +1104,7 @@ int ServerRelease_Syscall(int machineID, int lockIndex) {
 	return serverLocks[lockIndex].holder;
 }
 
-int ServerCreateCV_Syscall(unsigned int vaddr, int length, int machineID){
+int ServerCreateCV_Syscall(int machineID, unsigned int vaddr, int length){
 	//If reached max cv capacity, return -1
 	if (numServerCVs >= MAX_CONDITIONS) {
 		printf("ServerCreateCV_Syscall: Max server cv limit reached, cannot create.\n");
