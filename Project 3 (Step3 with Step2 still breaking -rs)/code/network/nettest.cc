@@ -185,3 +185,7 @@ void LockTest (int farAddr) {
 	}
 	Server(farAddr);
 }
+
+void parseServerFunction(){
+	//put parsing here for server
+}
