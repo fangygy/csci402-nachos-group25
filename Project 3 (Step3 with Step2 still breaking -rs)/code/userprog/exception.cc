@@ -36,9 +36,12 @@ using namespace std;
 #define MAX_LOCKS 512
 #define MAX_CONDITIONS 512
 #define MAX_MVS 512
+#define MAX_CLIENTS 512
 
 int numLocks = 0;
+int numServerLocks = 0;
 int numConditions = 0;
+int numServerCVs = 0;
 int numMVs = 0;
 
 Lock* lock_condLock = new Lock("lock_condLock");
@@ -47,14 +50,15 @@ Lock* memoryLock = new Lock("memoryLock");
 Lock* traceLock = new Lock("traceLock");
 
 struct ServerLock {
-	bool free;
+	bool exists;
 	char* name;
 	int holder;		// machineID of the lock holder
 	List *queue;
 	int numClients;
+	int clientID[MAX_CLIENTS];
 
 	ServerLock(){
-		free = true;
+		exists = false;
 		name = "";
 		holder = -1;
 		queue = new List;
@@ -62,7 +66,7 @@ struct ServerLock {
 	}
 
 	ServerLock(char* n){
-		free = true;
+		exists = true;
 		name = n;
 		holder = -1;
 		queue = new List;
@@ -72,13 +76,26 @@ struct ServerLock {
 
 struct ServerCV {
 	char* name;
-	ServerLock waitingLock;
+	bool exists;
+	int waitingLock;
 	List* queue;
+	int numClients;
+	int clientID[MAX_CLIENTS];
 
-	ServerCV(char* n){
-		name = n;
-		waitingLock = NULL;
+	ServerCV() {
+		exists = false;
+		name = "";
+		waitingLock = -1;
 		queue = new List;
+		numClients = 0;
+	}
+	
+	ServerCV(char* n){
+		exists = false;
+		name = n;
+		waitingLock = -1;
+		queue = new List;
+		numClients = 0;
 	}
 };
 
@@ -114,6 +131,8 @@ struct KernelCondition {
 	}
 };
 
+ServerLock serverLocks[MAX_LOCKS];
+ServerCV serverCVs[MAX_CONDITIONS];
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
 int monitorVars[MAX_MVS];
@@ -892,24 +911,332 @@ void Wait_Syscall(int cIndex, int lIndex) {
 }
 
 int ServerCreateLock_Syscall(unsigned int vaddr, int length, int machineID) {
+	//If reached max lock capacity, return -1
+	if (numServerLocks >= MAX_LOCKS) {
+		printf("ServerCreateLock_Syscall: Max server lock limit reached, cannot create.\n");
+		return -1;
+	}
+	
+	char* name;
+	
+	//Read char* from the vaddr
+	if ( !(name = new char[length]) ) {
+		printf("%s","Error allocating kernel buffer for server lock creation!\n");
+		return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+			printf("%s","Bad pointer passed to server lock creation\n");
+			delete[] name;
+			return -1;
+		}
+    }
+	
+	for (int i = 0; i < MAX_LOCKS; i++) {
+		//Check if lock already exists
+		if ( (strcmp(name, serverLocks[i].name)) == 0 &&
+			 serverLocks[i].exists) {
+			
+			//If it does, check to see if this machine has already created it
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverLocks[i].clientID[j] == machineID) {
+					printf("ServerCreateLock_Syscall: Machine%d has already created this lock.\n", machineID);
+					return i;
+				}
+			}
+			
+			//If this machine hasn't created it, add the ID to the lock's list
+			// and increment number of clients, then return the lock index
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverLocks[i].clientID[j] == 0) {
+					serverLocks[i].clientID[j] = machineID;
+					serverLocks[i].numClients++;
+					return i;
+				}
+			}
+		}
+	}
+	
+	//If lock doesn't exist, create it and set the name
+	// Find an open space in the lock's client list, add this machine
+	// and return the lock index
+	for (int i = 0; i < MAX_LOCKS; i++) {
+		if (!serverLocks[i].exists) {
+			numServerLocks++;
+			serverLocks[i].exists = true;
+			serverLocks[i].name = name;
+			
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverLocks[i].clientID[j] == 0) {
+					serverLocks[i].clientID[j] = machineID;
+					serverLocks[i].numClients++;
+					return i;
+				}
+			}
+		}	 
+	}
+	
+	//Should never reach here
+	return -2;
 }
 
 int ServerDestroyLock_Syscall(int machineID){
+	//If this lock doesn't exist, return
+	if (!serverLocks[lockIndex].exists) {
+		printf("ServerDestroyLockSyscall: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerDestroyLockSyscall: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			serverLocks[lockIndex].clientID[i] = 0;
+			break;
+		}
+	}
+	serverLocks[lockIndex].numClients--;
+	
+	//If no more clients, delete lock
+	if (serverLocks[lockIndex].numClients == 0) {
+		serverLocks[lockIndex].exists = false;
+		serverLocks[lockIndex].name = "";
+		numServerLocks--;
+		return -1;
+	}
+	
+	//If this client is current owner, release it
+	if (serverLocks[lockIndex].holder == machineID) {
+		if (serverLocks[lockIndex].queue->isEmpty()) {
+			serverLocks[lockIndex].holder = -1;
+			return -1;
+		}
+		
+		int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
+	
+		serverLocks[lockIndex].holder = nextToAcquire();
+		
+		return serverLocks[lockIndex].holder;
+	}
 }
 
 int ServerAcquire_Syscall(int machineID, int lockIndex) {
+	//If this lock doesn't exist, return -1
+	if (!serverLocks[lockIndex].exists) {
+		printf("ServerAcquireSyscall: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerAcquireSyscall: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//If already owner, return 0
+	if (serverLocks[lockIndex].holder == machineID) {
+		printf("ServerAcquireSyscall: Machine%d is already the owner of ServerLock%d\n", machineID, lockIndex);
+		return 0;
+	}
+	
+	if (serverLocks[lockIndex].holder == -1) {
+		serverLocks[lockIndex].holder = machineID;
+		return 0;
+	}
+	else {
+		serverLocks[lockIndex].queue->Append((void*)machineID);
+		return -1;
+	}		
 }
 
 int ServerRelease_Syscall(int machineID, int lockIndex) {
+	//If this lock doesn't exist, return -1
+	if (!serverLocks[lockIndex].exists) {
+		printf("ServerReleaseSyscall: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerReleaseSyscall: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//If not owner, return -1
+	if (serverLocks[lockIndex].holder != machineID) {
+		printf("ServerReleaseSyscall: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	if (serverLocks[lockIndex].queue->isEmpty()) {
+		serverLocks[lockIndex].holder = -1;
+		return -1;
+	}
+	
+	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
+	
+	serverLocks[lockIndex].holder = nextToAcquire();
+	
+	return serverLocks[lockIndex].holder;
 }
 
 int ServerCreateCV_Syscall(unsigned int vaddr, int length, int machineID){
+	//If reached max cv capacity, return -1
+	if (numServerCVs >= MAX_CONDITIONS) {
+		printf("ServerCreateCV_Syscall: Max server cv limit reached, cannot create.\n");
+		return -1;
+	}
+	
+	char* name;
+	
+	//Read char* from the vaddr
+	if ( !(name = new char[length]) ) {
+		printf("%s","Error allocating kernel buffer for server lock creation!\n");
+		return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+			printf("%s","Bad pointer passed to server lock creation\n");
+			delete[] name;
+			return -1;
+		}
+    }
+	
+	for (int i = 0; i < MAX_CONDITIONS; i++) {
+		//Check if condition already exists
+		if ( (strcmp(name, serverCVs[i].name)) == 0 &&
+			 serverCVs[i].exists) {
+			
+			//If it does, check to see if this machine has already created it
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverCVs[i].clientID[j] == machineID) {
+					printf("ServerCreateCV_Syscall: Machine%d has already created this cv.\n", machineID);
+					return i;
+				}
+			}
+			
+			//If this machine hasn't created it, add the ID to the lock's list
+			// and increment number of clients, then return the lock index
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverCVs[i].clientID[j] == 0) {
+					serverCVs[i].clientID[j] = machineID;
+					serverCVs[i].numClients++;
+					return i;
+				}
+			}
+		}
+	}
+	
+	//If lock doesn't exist, create it and set the name
+	// Find an open space in the lock's client list, add this machine
+	// and return the lock index
+	for (int i = 0; i < MAX_CONDITIONS; i++) {
+		if (!serverCVs[i].exists) {
+			numServerCVs++;
+			serverCVs[i].exists = true;
+			serverCVs[i].name = name;
+			
+			for (int j = 0; j < MAX_CLIENTS; j++) {
+				if (serverCVs[i].clientID[j] == 0) {
+					serverCVs[i].clientID[j] = machineID;
+					serverCVs[i].numClients++;
+					return i;
+				}
+			}
+		}	 
+	}
 }
 
 int ServerDestroyCV_Syscall(int machineID){
 }
 
 int ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex){
+	//If this lock doesn't exist, return -1
+	if (!serverLocks[lockIndex].exists) {
+		printf("ServerWaitSyscall: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//If condition doesn't exist, return -1
+	if (!serverCVs[conditionIndex].exists) {
+		printf("ServerWaitSyscall: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, conditionIndex);
+		return -1;
+	}
+	
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerWaitSyscall: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		return -1;
+	}
+	
+	//Same for condition, make sure is client
+	isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("ServerWaitSyscall: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+		return -1;
+	}	
+	
+	//If waitingLock is -1, set it to the passed in lock
+	// Else if lock is wrong, return -1
+	if (serverCVs[conditionIndex].waitingLock == -1) {
+		serverCVs[conditionIndex].waitingLock = lockIndex;
+	}
+	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
+		printf("ServerWaitSyscall: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+		return -1;
+	}
+	
+	//Needs to be the holder for the lock
+	if (serverLocks[lockIndex].holder != machineID) {
+		//printf("ServerWaitSyscall: Machine%d 
+	}
+	
+	if (serverLocks[lockIndex].queue->isEmpty()) {
+		serverLocks[lockIndex].holder = -1;
+		return 0;
+	}
+	
+	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
+	
+	serverLocks[lockIndex].holder = nextToAcquire();
+	
+	return serverLocks[lockIndex].holder;
 }
 
 int ServerSignal_Syscall(int machineID, int conditionIndex, int lockIndex){
