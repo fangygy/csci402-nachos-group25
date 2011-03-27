@@ -46,13 +46,13 @@
 #define SC_GetMV			23
 #define SC_SetMV			24
 
-#define SC_CreateLock_RPC	25
-#define SC_Acquire_RPC		26
-#define SC_Release_RPC		27
-#define SC_CreateCV_RPC		28
-#define SC_Wait_RPC			29
-#define SC_Signal_RPC		30
-#define SC_Broadcast_RPC	31
+#define SC_ServerCreateLock	25
+#define SC_ServerAcquire	26
+#define SC_ServerRelease	27
+#define SC_ServerCreateCV	28
+#define SC_ServerWait		29
+#define SC_ServerSignal		30
+#define SC_ServerBroadcast	31
 
 
 #define MAXFILENAME 256
