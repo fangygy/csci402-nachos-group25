@@ -51,12 +51,14 @@ struct ServerLock {
 	char* name;
 	int holder;		// machineID of the lock holder
 	List *queue;
+	int numClients;
 
 	ServerLock(char* n){
 		free = true;
 		name = n;
 		holder = -1;
 		queue = new List;
+		numClients = 0;
 	}
 };
 
