@@ -1064,7 +1064,7 @@ int ServerAcquire_Syscall(int machineID, int lockIndex) {
 	}
 	else {
 		serverLocks[lockIndex].queue->Append((void*)machineID);
-		return -1;
+		return 1;
 	}		
 }
 
@@ -1096,7 +1096,7 @@ int ServerRelease_Syscall(int machineID, int lockIndex) {
 	
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
-		return -1;
+		return 0;
 	}
 	
 	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
