@@ -298,6 +298,22 @@ ServerBroadcast:
    j     $31
    .end ServerBroadcast
 
+   .globl ServerDestroyLock
+   .ent  ServerDestroyLock
+ServerDestroyLock:
+   addiu $2,$0,SC_ServerDestroyLock
+   syscall
+   j     $31
+   .end ServerDestroyLock
+
+   .globl ServerDestroyCV
+   .ent  ServerDestroyCV
+ServerDestroyCV:
+   addiu $2,$0,SC_ServerDestroyCV
+   syscall
+   j     $31
+   .end ServerDestroyCV
+
    
 /* dummy function to keep gcc happy */
         .globl  __main
