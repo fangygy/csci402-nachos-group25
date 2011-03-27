@@ -208,6 +208,51 @@ int Random(int max);
 */
 void Trace(int vaddr, int val);
 
+///////////////////////////////////////// Networking stuff
+/* Creates a monitor variable for networking 
+*/
+int CreateMV_Syscall(int val);
+
+/* Gets a monitor variable for networking 
+*/
+int GetMV_Syscall(int index);
+
+/* Sets a monitor variable for networking 
+*/
+void SetMV_Syscall(int index, int val);
+
+/* Creates a lock for networking 
+*/
+int ServerCreateLock_Syscall(unsigned int vaddr, int length);
+
+/* Acquires a lock for networking 
+*/
+void ServerAcquire_Syscall(int machineID, int lockIndex);
+
+/* Releases a lock for networking 
+*/
+int ServerRelease_Syscall(int machineID, int lockIndex);
+
+/* Creates a Condition Variable for networking 
+*/
+int ServerCreateCV_Syscall(unsigned int vaddr, int length);
+
+/* Waits on a condition variable for networking 
+*/
+void ServerWait_Syscall(int machineID, int conditionIndex, int lockIndex);
+
+/* Signals a condition variable for networking 
+*/
+int ServerSignal_Syscall(int machineID, int conditionIndex, int lockIndex);
+
+/* Broadcasts all waiting condition variables for networking 
+*/
+void ServerBroadcast_Syscall(int machineID, int conditionIndex, int lockIndex);
+
+
+
+
+
 
 #endif /* IN_ASM */
 
