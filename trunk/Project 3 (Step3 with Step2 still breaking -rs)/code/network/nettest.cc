@@ -23,6 +23,7 @@
 #include "post.h"
 #include "interrupt.h"
 #include "syscall.h"
+#include "list.h"
 
 // Test out message delivery, by doing the following:
 //	1. send a message to the machine with ID "farAddr", at mail box #0
@@ -31,26 +32,84 @@
 //	4. wait for an acknowledgement from the other machine to our 
 //	    original message
 
-int CreateLock_RPC(char* name) {
-	//If reached max lock capacity, return -1
-	if (numServerLocks >= MAX_LOCKS) {
-		printf("ServerCreateLock_Syscall: Max server lock limit reached, cannot create.\n");
-		return -1;
+#define MAX_LOCKS 512
+#define MAX_CONDITIONS 512
+#define MAX_MVS 512
+#define MAX_CLIENTS 512
+
+int numServerLocks = 0;
+int numServerCVs = 0;
+int numMVs = 0;
+
+
+struct ServerLock {
+	bool exists;
+	char* name;
+	int holder;		// machineID of the lock holder
+	List *queue;
+	int numClients;
+	int clientID[MAX_CLIENTS];
+
+	ServerLock(){
+		exists = false;
+		name = "";
+		holder = -1;
+		queue = new List;
+		numClients = 0;
+	}
+
+	ServerLock(char* n){
+		exists = true;
+		name = n;
+		holder = -1;
+		queue = new List;
+		numClients = 0;
+	}
+};
+
+struct ServerCV {
+	char* name;
+	bool exists;
+	int waitingLock;
+	List* queue;
+	int numClients;
+	int clientID[MAX_CLIENTS];
+
+	ServerCV() {
+		exists = false;
+		name = "";
+		waitingLock = -1;
+		queue = new List;
+		numClients = 0;
 	}
 	
+	ServerCV(char* n){
+		exists = false;
+		name = n;
+		waitingLock = -1;
+		queue = new List;
+		numClients = 0;
+	}
+};
+
+struct ServerMV {
 	char* name;
-	
-	//Read char* from the vaddr
-	if ( !(name = new char[length]) ) {
-		printf("%s","Error allocating kernel buffer for server lock creation!\n");
-		return -1;
-    } else {
-        if ( copyin(vaddr,length,name) == -1 ) {
-			printf("%s","Bad pointer passed to server lock creation\n");
-			delete[] name;
-			return -1;
-		}
-    }
+	int value;
+}
+
+ServerLock serverLocks[MAX_LOCKS];
+ServerCV serverCVs[MAX_CONDITIONS];
+ServerMV serverMVs[MAX_MVS];
+
+void CreateLock_RPC(char* name, int machineID) {
+	//If reached max lock capacity, return -1
+	if (numServerLocks >= MAX_LOCKS) {
+		printf("Server - CreateLock_RPC: Max server lock limit reached, cannot create.\n");
+		
+		//SEND ERROR MESSAGE BACK
+		
+		return;
+	}
 	
 	for (int i = 0; i < MAX_LOCKS; i++) {
 		//Check if lock already exists
@@ -60,8 +119,11 @@ int CreateLock_RPC(char* name) {
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverLocks[i].clientID[j] == machineID) {
-					printf("ServerCreateLock_Syscall: Machine%d has already created this lock.\n", machineID);
-					return i;
+					printf("Server - CreateLock_RPC: Machine%d has already created this lock.\n", machineID);
+					
+					//SEND INDEX i IN MESSAGE BACK
+					
+					return;
 				}
 			}
 			
@@ -71,7 +133,10 @@ int CreateLock_RPC(char* name) {
 				if (serverLocks[i].clientID[j] == 0) {
 					serverLocks[i].clientID[j] = machineID;
 					serverLocks[i].numClients++;
-					return i;
+					
+					//SEND INDEX i IN MESSAGE BACK
+					
+					return;
 				}
 			}
 		}
@@ -90,57 +155,27 @@ int CreateLock_RPC(char* name) {
 				if (serverLocks[i].clientID[j] == 0) {
 					serverLocks[i].clientID[j] = machineID;
 					serverLocks[i].numClients++;
-					return i;
+					
+					//SEND INDEX i IN MESSAGE
+					
+					return;
 				}
 			}
 		}	 
 	}
 	
 	//Should never reach here
-	return -2;
-
-	
-	/*	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	int lockIndex;
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    
-	//Do data parsing here with lockIndex and buffer
-	//lockIndex = buffer?
-	
-    fflush(stdout);
-	
-	return lockIndex;
-*/
+	return;
 }
 
-void Acquire_RPC(int index) {
+void Acquire_RPC(int lockIndex, int machineID) {
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
-		printf("ServerAcquireSyscall: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
-		//return -1;
+		printf("Server - Acquire_RPC: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
+		
+		// SEND ERROR MESSAGE BACK
+		
+		return;
 	}
 	
 	//Make sure this machine is a client of the lock
@@ -152,61 +187,46 @@ void Acquire_RPC(int index) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerAcquireSyscall: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
-		//return -1;
+		printf("Server - Acquire_RPC: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK HERE
+		
+		return;
 	}
 	
 	//If already owner, return 0
 	if (serverLocks[lockIndex].holder == machineID) {
-		printf("ServerAcquireSyscall: Machine%d is already the owner of ServerLock%d\n", machineID, lockIndex);
-		//return 0;
+		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d\n", machineID, lockIndex);
+		
+		//SEND MESSAGE BACK
+		
+		return;
 	}
 	
 	if (serverLocks[lockIndex].holder == -1) {
 		serverLocks[lockIndex].holder = machineID;
-		//return 0;
+		
+		//SEND MESSAGE BACK
+		
+		return;
 	}
 	else {
 		serverLocks[lockIndex].queue->Append((void*)machineID);
-		//return 1;
+		
+		//DONT SEND MESSAGE
+		
+		return;
 	}
-/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully acquired Lock: %d\n", index);
-	
-    fflush(stdout);
-*/
 }
 
-void Release_RPC(int index) {
+void Release_RPC(int lockIndex, int machineID) {
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
-		printf("ServerReleaseSyscall: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Release_RPC: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK HERE
+		
+		return;
 	}
 	
 	//Make sure this machine is a client of the lock
@@ -218,63 +238,45 @@ void Release_RPC(int index) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerReleaseSyscall: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Release_RPC: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK HERE
+		
+		return;
 	}
 	
 	//If not owner, return -1
 	if (serverLocks[lockIndex].holder != machineID) {
-		printf("ServerReleaseSyscall: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK HERE
+		
+		return;
 	}
+	
+	//SEND ACTUAL MESSAGE BACK TO machineID
 	
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
-	//	return 0;
+		return;
 	}
 	
 	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
 	
 	serverLocks[lockIndex].holder = nextToAcquire;
 	
-	return serverLocks[lockIndex].holder;
-/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully released Lock: %d\n", index);
-	
-    fflush(stdout);
-	*/
+	//SEND MESSAGE TO nextToAcquire
+	return;
 }
 
-void DestroyLock_RPC(int index) {
+void DestroyLock_RPC(int lockIndex, int machineID) {
 	//If this lock doesn't exist, return
 	if (!serverLocks[lockIndex].exists) {
-		printf("ServerDestroyLockSyscall: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
-		return -1;
+		printf("Server - DestroyLock_RPC: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK
+		
+		return;
 	}
 	
 	//Make sure this machine is a client of the lock
@@ -286,8 +288,11 @@ void DestroyLock_RPC(int index) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerDestroyLockSyscall: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
-		return -1;
+		printf("Server - DestroyLock_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		
+		//SEND ERROR MESSAGE BACK
+		
+		return;
 	}
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -298,58 +303,32 @@ void DestroyLock_RPC(int index) {
 	}
 	serverLocks[lockIndex].numClients--;
 	
+	//SEND MESSAGE BACK TO machineID
+	
 	//If no more clients, delete lock
 	if (serverLocks[lockIndex].numClients == 0) {
 		serverLocks[lockIndex].exists = false;
 		serverLocks[lockIndex].name = "";
 		numServerLocks--;
-		return -1;
+		return;
 	}
 	
 	//If this client is current owner, release it
 	if (serverLocks[lockIndex].holder == machineID) {
 		if (serverLocks[lockIndex].queue->IsEmpty()) {
 			serverLocks[lockIndex].holder = -1;
-			return -1;
+			return;
 		}
 		
 		int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
 	
 		serverLocks[lockIndex].holder = nextToAcquire;
 		
-		return serverLocks[lockIndex].holder;
+		//SEND MESSAGE TO nextToAcquire
+		return;
 	}
 	
-	return 0;
-/*	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully sent a Destroy Request on Lock: %d\n", index);
-	
-    fflush(stdout);
-	*/
+	return;
 }
 
 int CreateCV_RPC(char* name) {
@@ -768,107 +747,76 @@ void DestroyCV_RPC(int cIndex) {
 	*/
 }
 
-int CreateMV_RPC(char* name) {
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
+int CreateMV_RPC(char* name, int value) {
+	if (numMVs >= MAX_MVS) {
+		// print error msg?
+		printf("CreateMV_Syscall: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
+		mvLock->Release();
+		return -1;
+	}
+	if (val == 0x9999) {
+		// print error msg
+		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+		mvLock->Release();
+		return -1;
+	}
 	
-	char* data;
-	char* ack;
+	int index = -1;
+	for (int i = 0; i < MAX_MVS; i++) {
+	// find 1st vacancy in the list
+		if (monitorVars[i] == 0x9999) {
+			index = i;
+			break;
+		}
+	}
 	
-	char buffer[MaxMailSize];
+	monitorVars[index] = val;
 	
-	int mvIndex;
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	
-	//Parse buffer to get the mvIndex
-	
-    fflush(stdout);
-	
-	return mvIndex;
+	return index;
 }
 
 int GetMV_RPC(int index) {
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
-	char* ack;
+	if (index < 0) {
+		// print error msg
+		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
+		mvLock->Release();
+		return -1;
+	}
+	if (index >= MAX_CONDITIONS) {
+		// print error msg
+		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
+		mvLock->Release();
+		return -1;
+	}
 	
-	char buffer[MaxMailSize];
+	int val = monitorVars[index];
 	
-	int mvValue;
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	
-	//Parse buffer to get mvValue
-	
-    fflush(stdout);
-	
-	return mvValue;
+	return (val);
 }
 
 void SetMV_RPC(int index, int value) {
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
+	if (index < 0) {
+		// print error msg
+		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
+		mvLock->Release();
+		return;
+	}
+	if (index >= MAX_CONDITIONS) {
+		// print error msg
+		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
+		mvLock->Release();
+		return;
+	}
+	if (val == 0x9999) {
+		// print error msg
+		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+		mvLock->Release();
+		return;
+	}
 	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Successfully set MV at Index: %d to Value: %d", index, value);
-	
-    fflush(stdout);
+	monitorVars[index] = val;
+	return;
 }
 
 void MailTest(int farAddr) {

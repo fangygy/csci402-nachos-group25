@@ -214,7 +214,7 @@ void Trace(int vaddr, int val);
 ///////////////////////////////////////// Networking stuff
 /* Creates a monitor variable for networking 
 */
-int CreateMV(int val);
+int CreateMV(char* name, int length, int value);
 
 /* Gets a monitor variable for networking 
 */
@@ -254,11 +254,11 @@ void ServerBroadcast(int conditionIndex, int lockIndex);
 
 /* Destroys a lock for networking 
 */
-int ServerDestroyLock(int lockIndex);
+void ServerDestroyLock(int lockIndex);
 
 /* Destroys a Condition Variable for networking 
 */
-int ServerDestroyCV(int conditionIndex);
+void ServerDestroyCV(int conditionIndex);
 
 
 
