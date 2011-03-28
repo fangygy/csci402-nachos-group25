@@ -19,8 +19,6 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
-#define BAD_REQUEST 0x9000
-
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -48,6 +46,13 @@ bool EvictFIFO = true;
 #endif
 
 #ifdef NETWORK
+
+int BAD_FORMAT;
+int BAD_INDEX;
+int NO_SPACE;
+int NOT_CREATED;
+int DELETED;
+
 PostOffice *postOffice;
 #endif
 
@@ -106,6 +111,15 @@ Initialize(int argc, char **argv)
 #ifdef NETWORK
     double rely = 1;		// network reliability
     int netname = 0;		// UNIX socket name
+	
+	// RPC Error Codes
+	
+	BAD_FORMAT = 9990;
+	BAD_INDEX = 9991;
+	NO_SPACE = 9992;
+	NOT_CREATED = 9993;
+	DELETED = 9994;
+
 #endif
     
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {

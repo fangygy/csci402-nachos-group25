@@ -48,6 +48,7 @@ extern Lock* swapLock;
 
 extern int evictPage;
 extern bool EvictFIFO;
+
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
@@ -62,6 +63,13 @@ extern SynchDisk   *synchDisk;
 
 #ifdef NETWORK
 #include "post.h"
+
+extern int BAD_FORMAT;
+extern int BAD_INDEX;
+extern int NO_SPACE;
+extern int NOT_CREATED;
+extern int DELETED;
+
 extern PostOffice* postOffice;
 #endif
 
