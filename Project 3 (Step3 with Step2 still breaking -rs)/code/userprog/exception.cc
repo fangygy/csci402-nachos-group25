@@ -881,7 +881,7 @@ void SetMV_Syscall(int index, int val) {
     }
 	
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Successfully set MV at Index: %d to Value: %d", index, value);
+	printf("Successfully set MV at Index: %d to Value: %d", index, val);
 	
     fflush(stdout);
 }
@@ -960,7 +960,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
     }
 	
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully sent a Destroy Request on Lock: %d\n", index);
+    printf("Successfully sent a Destroy Request on Lock: %d\n", lockIndex);
 	
     fflush(stdout);
 }
@@ -990,7 +990,7 @@ void ServerAcquire_Syscall(int lockIndex) {
     }
 	
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully acquired Lock: %d\n", index);
+    printf("Successfully acquired Lock: %d\n", lockIndex);
 	
     fflush(stdout);
 }
@@ -1020,7 +1020,7 @@ void ServerRelease_Syscall(int lockIndex) {
     }
 	
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Successfully released Lock: %d\n", index);
+    printf("Successfully released Lock: %d\n", lockIndex);
 	
     fflush(stdout);
 }
@@ -1099,7 +1099,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
     }
 	
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Successfully called Destroy on Condition: %d\n", cIndex);
+	printf("Successfully called Destroy on Condition: %d\n", conditionIndex);
 	
     fflush(stdout);
 	
@@ -1129,9 +1129,9 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
       interrupt->Halt();
     }
 	
-	printf("Waiting on Condition: %d with Lock: %d\n", cIndex, lIndex);
+	printf("Waiting on Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Woken on Condition: %d with Lock: %d\n", cIndex, lIndex);
+	printf("Woken on Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
 	
     fflush(stdout);
 }
@@ -1153,7 +1153,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
     outMailHdr.length = strlen(data) + 1;
 
     // Send the first message
-	printf("Signalling Condition: %d with Lock: %d\n", cIndex, lIndex);
+	printf("Signalling Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -1182,7 +1182,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
     outMailHdr.length = strlen(data) + 1;
 
     // Send the first message
-	printf("Broadcasting Condition: %d with Lock: %d\n", cIndex, lIndex);
+	printf("Broadcasting Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
