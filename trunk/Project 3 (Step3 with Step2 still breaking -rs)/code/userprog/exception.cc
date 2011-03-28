@@ -26,6 +26,8 @@
 #include "syscall.h"
 #include "synch.h"
 #include "process.h"
+#include "../machine/network.h"
+#include "../network/post.h"
 #include <stdio.h>
 #include <iostream>
 #include <ctime>		// For seeding random
@@ -804,6 +806,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -818,7 +821,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	//mvIndex = buffer?
 	
     fflush(stdout);
-	
+	#endif
 	return mvIndex;
 }
 
@@ -840,6 +843,7 @@ int GetMV_Syscall(int index) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -853,7 +857,7 @@ int GetMV_Syscall(int index) {
 	//Parse buffer to get mvValue
 	
     fflush(stdout);
-	
+	#endif
 	return mvValue;
 }
 
@@ -872,6 +876,7 @@ void SetMV_Syscall(int index, int val) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -884,6 +889,7 @@ void SetMV_Syscall(int index, int val) {
 	printf("Successfully set MV at Index: %d to Value: %d", index, val);
 	
     fflush(stdout);
+	#endif
 }
 
 int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
@@ -917,6 +923,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -932,6 +939,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 	
     fflush(stdout);
 	
+	#endif
 	return lockIndex;
 }
 
@@ -951,6 +959,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -963,6 +972,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
     printf("Successfully sent a Destroy Request on Lock: %d\n", lockIndex);
 	
     fflush(stdout);
+	#endif
 }
 
 void ServerAcquire_Syscall(int lockIndex) {
@@ -981,6 +991,7 @@ void ServerAcquire_Syscall(int lockIndex) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -993,6 +1004,7 @@ void ServerAcquire_Syscall(int lockIndex) {
     printf("Successfully acquired Lock: %d\n", lockIndex);
 	
     fflush(stdout);
+	#endif
 }
 
 void ServerRelease_Syscall(int lockIndex) {
@@ -1011,6 +1023,7 @@ void ServerRelease_Syscall(int lockIndex) {
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1023,6 +1036,7 @@ void ServerRelease_Syscall(int lockIndex) {
     printf("Successfully released Lock: %d\n", lockIndex);
 	
     fflush(stdout);
+	#endif
 }
 
 int ServerCreateCV_Syscall(unsigned int vaddr, int length){
@@ -1057,6 +1071,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1070,7 +1085,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
 	//Parse buffer into a condIndex
 	
     fflush(stdout);
-	
+	#endif
 	return condIndex;
 }
 
@@ -1090,6 +1105,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1102,7 +1118,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 	printf("Successfully called Destroy on Condition: %d\n", conditionIndex);
 	
     fflush(stdout);
-	
+	#endif
 }
 
 void ServerWait_Syscall(int conditionIndex, int lockIndex){
@@ -1121,6 +1137,7 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1134,6 +1151,7 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	printf("Woken on Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
 	
     fflush(stdout);
+	#endif
 }
 
 void ServerSignal_Syscall(int conditionIndex, int lockIndex){
@@ -1152,6 +1170,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
 	printf("Signalling Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1164,6 +1183,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
 	
     fflush(stdout);
+	#endif
 }
 
 void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
@@ -1181,6 +1201,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
 
+	#ifdef NETWORK
     // Send the first message
 	printf("Broadcasting Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1193,6 +1214,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
 	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
 	
     fflush(stdout);
+	#endif
 }
 
 
