@@ -911,7 +911,7 @@ void Wait_Syscall(int cIndex, int lIndex) {
 }
 
 int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
-	//If reached max lock capacity, return -1
+/*	//If reached max lock capacity, return -1
 	if (numServerLocks >= MAX_LOCKS) {
 		printf("ServerCreateLock_Syscall: Max server lock limit reached, cannot create.\n");
 		return -1;
@@ -977,10 +977,11 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 	
 	//Should never reach here
 	return -2;
+	*/
 }
 
 int ServerDestroyLock_Syscall(int lockIndex){
-	//If this lock doesn't exist, return
+/*	//If this lock doesn't exist, return
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerDestroyLockSyscall: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
 		return -1;
@@ -1030,9 +1031,11 @@ int ServerDestroyLock_Syscall(int lockIndex){
 	}
 	
 	return 0;
+	*/
 }
 
 void ServerAcquire_Syscall(int lockIndex) {
+	/*
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerAcquireSyscall: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
@@ -1066,9 +1069,11 @@ void ServerAcquire_Syscall(int lockIndex) {
 		serverLocks[lockIndex].queue->Append((void*)machineID);
 		//return 1;
 	}		
+	*/
 }
 
 void ServerRelease_Syscall(int lockIndex) {
+	/*
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerReleaseSyscall: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
@@ -1104,9 +1109,11 @@ void ServerRelease_Syscall(int lockIndex) {
 	serverLocks[lockIndex].holder = nextToAcquire;
 	
 	return serverLocks[lockIndex].holder;
+	*/
 }
 
 int ServerCreateCV_Syscall(unsigned int vaddr, int length){
+	/*
 	//If reached max cv capacity, return -1
 	if (numServerCVs >= MAX_CONDITIONS) {
 		printf("ServerCreateCV_Syscall: Max server cv limit reached, cannot create.\n");
@@ -1170,9 +1177,11 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
 			}
 		}	 
 	}
+	*/
 }
 
 int ServerDestroyCV_Syscall(int conditionIndex){
+	/*
 	//If this CV doesn't exist, return
 	if (!serverCVs[conditionIndex].exists) {
 		printf("ServerDestroyCVSyscall: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
@@ -1207,10 +1216,11 @@ int ServerDestroyCV_Syscall(int conditionIndex){
 		numServerCVs--;
 		return 0;
 	}
-	
+	*/
 }
 
 void ServerWait_Syscall(int conditionIndex, int lockIndex){
+	/*
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerWaitSyscall: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
@@ -1281,9 +1291,11 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	
 	//Otherwise return the new lock holder
 	//return serverLocks[lockIndex].holder;
+	*/
 }
 
 void ServerSignal_Syscall(int conditionIndex, int lockIndex){
+	/*
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("ServerSignalSyscall: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
@@ -1359,6 +1371,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
 	//	return 0;
 	}		
+	*/
 }
 
 void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
