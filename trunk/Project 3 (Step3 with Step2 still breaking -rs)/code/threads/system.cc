@@ -52,6 +52,7 @@ int BAD_INDEX;
 int NO_SPACE;
 int NOT_CREATED;
 int DELETED;
+int NOT_OWNER;
 
 PostOffice *postOffice;
 #endif
@@ -119,6 +120,7 @@ Initialize(int argc, char **argv)
 	NO_SPACE = 9992;
 	NOT_CREATED = 9993;
 	DELETED = 9994;
+	NOT_OWNER = 9995;
 
 #endif
     
