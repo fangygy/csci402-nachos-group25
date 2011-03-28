@@ -41,7 +41,6 @@ int numServerLocks = 0;
 int numServerCVs = 0;
 int numMVs = 0;
 
-
 struct ServerLock {
 	bool exists;
 	char* name;
@@ -95,7 +94,12 @@ struct ServerCV {
 struct ServerMV {
 	char* name;
 	int value;
-}
+	
+	ServerMV() {
+		name = NULL;
+		value = 0;
+	}
+};
 
 ServerLock serverLocks[MAX_LOCKS];
 ServerCV serverCVs[MAX_CONDITIONS];
@@ -581,47 +585,116 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	if (serverLocks[lockIndex].holder == -1) {
 		serverLocks[lockIndex].holder = nextWaiting;
 
-		// SEND nextWaiting BACK IN MESSAGE
+		// SEND MESSAGE TO nextWaiting
 
-		return;
 	}
 	else {
 		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
-		return;
 	}		
+	
+	// SEND MESSAGE TO machineID
 }
 
 void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
-	/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
+	//If this lock doesn't exist, return -1
+	if (!serverLocks[lockIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
 
-    // Send the first message
-	printf("Broadcasting Condition: %d with Lock: %d\n", cIndex, lIndex);
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+		// SEND BACK ERROR MESSAGE
 
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
+		return;
+	}
 	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	//If condition doesn't exist, return -1
+	if (!serverCVs[conditionIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+
+	//Make sure this machine is a client of the lock
+	bool isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverLocks[lockIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+
+	//Same for condition, make sure is client
+	isClient = false;
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+			isClient = true;
+			break;
+		}
+	}
+	if (!isClient) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}	
 	
-    fflush(stdout);
-	*/
+	// If waitingLock is -1, set it to the passed in lock
+	// Else if lock is wrong, return -1
+	if (serverCVs[conditionIndex].waitingLock == -1) {
+		serverCVs[conditionIndex].waitingLock = lockIndex;
+	}
+	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+	
+	//Needs to be the holder for the lock
+	if (serverLocks[lockIndex].holder != machineID) {
+		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+
+	// Queue must not be empty
+	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+	
+	while (!serverCVs[conditionIndex].queue->IsEmpty()) {
+	
+		int nextWaiting = (int)serverCVs[conditionIndex].queue->Remove();
+		
+		if (serverLocks[lockIndex].holder == -1) {
+			serverLocks[lockIndex].holder = nextWaiting;
+
+			// SEND MESSAGE TO nextWaiting
+
+		}
+		else {
+			serverLocks[lockIndex].queue->Append((void*)nextWaiting);
+		}		
+	}
+
+	// SEND MESSAGE BACK TO machineID
+	printf("Server - Signal_RPC: Condition queue is now empty. Nothing waiting.\n");
+	serverCVs[conditionIndex].waitingLock = -1;	
 }
 
 void DestroyCV_RPC(int conditionIndex, int machineID) {
@@ -738,7 +811,7 @@ void GetMV_RPC(int index, int machineID) {
 		return;
 	}
 	
-	int val = serverMVs[index];
+	int val = serverMVs[index].value;
 	
 	// SEND BACK val IN MESSAGE
 }
@@ -766,7 +839,7 @@ void SetMV_RPC(int index, int val, int machineID) {
 		return;
 	}
 	
-	serverMVs[index] = val;
+	serverMVs[index].value = val;
 
 	// SEND BACK MESSAGE
 
