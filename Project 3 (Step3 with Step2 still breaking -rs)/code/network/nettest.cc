@@ -105,13 +105,57 @@ ServerLock serverLocks[MAX_LOCKS];
 ServerCV serverCVs[MAX_CONDITIONS];
 ServerMV serverMVs[MAX_MVS];
 
+void ServerReply(int clientID, int rv) {
+	PacketHeader outPktHdr;
+    MailHeader outMailHdr;
+	char reply[10];
+	
+	int neg = 0;
+	if (rv < 0) {
+		neg = 1;
+	}
+	
+	int thousands = abs((rv % 10000)/1000);
+	int hundreds = abs((rv % 1000)/100);
+	int tens = abs((rv % 100)/10);
+	int ones = abs((rv % 10));
+	
+	printf("Server: neg: %d, thousands: %d, hundreds: %d, tens: %d, ones: %d\n", neg, thousands, hundreds, tens, ones);
+	
+	sprintf(reply, "%d%d%d%d%d", neg, thousands, hundreds, tens, ones);
+	
+	printf("Server: reply array: %s\n", reply);
+	
+	// construct packet, mail header for original message
+	// To: destination machine, mailbox clientID
+	// From: our machine, reply to: mailbox 0
+	
+	outPktHdr.to = clientID;
+	outPktHdr.from = 0;
+	outMailHdr.to = 0;
+	outMailHdr.from = 0;
+	outMailHdr.length = strlen(reply) + 1;
+	
+	printf("Server: sending reply.\n");
+	
+	// Send reply to client
+	bool success = postOffice->Send(outPktHdr, outMailHdr, reply); 
+	
+	printf("Server: sent reply.\n");
+	
+	if ( !success ) {
+		printf("Server: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+		interrupt->Halt();
+	}
+}
+
 void CreateLock_RPC(char* name, int machineID) {
 	//If reached max lock capacity, return -1
 	if (numServerLocks >= MAX_LOCKS) {
 		printf("Server - CreateLock_RPC: Max server lock limit reached, cannot create.\n");
 		
 		//SEND ERROR MESSAGE BACK
-		
+		ServerReply(NO_SPACE, machineID);
 		return;
 	}
 	
@@ -126,7 +170,7 @@ void CreateLock_RPC(char* name, int machineID) {
 					printf("Server - CreateLock_RPC: Machine%d has already created this lock.\n", machineID);
 					
 					//SEND INDEX i IN MESSAGE BACK
-					
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -139,7 +183,7 @@ void CreateLock_RPC(char* name, int machineID) {
 					serverLocks[i].numClients++;
 					
 					//SEND INDEX i IN MESSAGE BACK
-					
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -161,7 +205,7 @@ void CreateLock_RPC(char* name, int machineID) {
 					serverLocks[i].numClients++;
 					
 					//SEND INDEX i IN MESSAGE
-					
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -178,7 +222,7 @@ void Acquire_RPC(int lockIndex, int machineID) {
 		printf("Server - Acquire_RPC: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
 		
 		// SEND ERROR MESSAGE BACK
-		
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -194,7 +238,7 @@ void Acquire_RPC(int lockIndex, int machineID) {
 		printf("Server - Acquire_RPC: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
-		
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 	
@@ -203,7 +247,7 @@ void Acquire_RPC(int lockIndex, int machineID) {
 		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d\n", machineID, lockIndex);
 		
 		//SEND MESSAGE BACK
-		
+		ServerReply(0, machineID);
 		return;
 	}
 	
@@ -211,7 +255,7 @@ void Acquire_RPC(int lockIndex, int machineID) {
 		serverLocks[lockIndex].holder = machineID;
 		
 		//SEND MESSAGE BACK
-		
+		ServerReply(0, machineID);
 		return;
 	}
 	else {
@@ -229,7 +273,7 @@ void Release_RPC(int lockIndex, int machineID) {
 		printf("Server - Release_RPC: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
-		
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -245,7 +289,7 @@ void Release_RPC(int lockIndex, int machineID) {
 		printf("Server - Release_RPC: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
-		
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 	
@@ -254,7 +298,7 @@ void Release_RPC(int lockIndex, int machineID) {
 		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
-		
+		ServerReply(-1, machineID);
 		return;
 	}
 	
@@ -262,6 +306,7 @@ void Release_RPC(int lockIndex, int machineID) {
 	
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
+		ServerReply(0, machineID);
 		return;
 	}
 	
@@ -270,6 +315,7 @@ void Release_RPC(int lockIndex, int machineID) {
 	serverLocks[lockIndex].holder = nextToAcquire;
 	
 	//SEND MESSAGE TO nextToAcquire
+	ServerReply(0, nextToAcquire);
 	return;
 }
 
@@ -279,7 +325,7 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		printf("Server - DestroyLock_RPC: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK
-		
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -295,7 +341,7 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		printf("Server - DestroyLock_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK
-		
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 	
@@ -314,6 +360,7 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		serverLocks[lockIndex].exists = false;
 		serverLocks[lockIndex].name = "";
 		numServerLocks--;
+		ServerReply(0, machineID);
 		return;
 	}
 	
@@ -321,6 +368,7 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	if (serverLocks[lockIndex].holder == machineID) {
 		if (serverLocks[lockIndex].queue->IsEmpty()) {
 			serverLocks[lockIndex].holder = -1;
+			ServerReply(0, machineID);
 			return;
 		}
 		
@@ -329,6 +377,7 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		serverLocks[lockIndex].holder = nextToAcquire;
 		
 		//SEND MESSAGE TO nextToAcquire
+		ServerReply(0, nextToAcquire);
 		return;
 	}
 	
@@ -340,8 +389,8 @@ void CreateCV_RPC(char* name, int machineID) {
 	if (numServerCVs >= MAX_CONDITIONS) {
 		printf("Server - CreateCV_RPC: Max server cv limit reached, cannot create.\n");
 
-		// SEND BACK ERROR MESSAGE 
-
+		// SEND BACK ERROR MESSAGE
+		ServerReply(NO_SPACE, machineID);
 		return;
 	}
 		
@@ -356,7 +405,7 @@ void CreateCV_RPC(char* name, int machineID) {
 					printf("Server - CreateCV_RPC: Machine%d has already created this cv.\n", machineID);
 					
 					// SEND BACK MESSAGE
-
+					ServerReply(0, machineID);
 					return;
 				}
 			}
@@ -929,15 +978,7 @@ void Server() {
 		
 		clientID = inPktHdr.from;
 		
-		// PARSE MESSAGE
-		// Message Format:
-		// "ObjActParams"
-		// "Obj" = Object
-		// "Act" = Actions to apply to object
-		// "Params" = parameters needed by the appropriate syscall
-		
 		char* data;
-		
 		data = strtok(buffer, " "); // Splits spaces between words in buffer
 		obj = data;
 		
@@ -951,31 +992,31 @@ void Server() {
 				length = strlen(param1);
 				
 				printf("Server: Lock Create, machine = %d, name = %s\n", clientID, param1);
-				//rv = ServerCreateLock(param1, length);
+				CreateLock_RPC(param1, clientID);
 			} else if (strcmp(data, "acq") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
+				lockIndex = atoi(param1);
 				
 				printf("Server: Lock Acquire, machine = %d, index = %s\n", clientID, param1);
-				//rv = ServerAcquire(clientID, param1);
+				Acquire_RPC(lockIndex, clientID);
 			} else if (strcmp(data, "rel") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
-				
 				lockIndex = atoi(param1);
 				
 				printf("Server: Lock Release, machine = %d, index = %s\n", clientID, param1);
-				//rv = ServerRelease(clientID, lockIndex);
+				Release_RPC(lockIndex, clientID);
 			} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
-				
 				lockIndex = atoi(param1);
 				
 				printf("Server: Lock Destroy, machine = %d, index = %s\n", clientID, param1);
-				//rv = ServerDestroyLock(clientID, lockIndex);
+				DestroyLock_RPC(lockIndex, clientID);
 			} else {
 				printf("Server: Bad request.\n");
+				ServerReply(clientID, BAD_FORMAT);
 			}
 		} else if (strcmp(data, "con") == 0) {
 			data = strtok (NULL, " ,.-");
@@ -983,11 +1024,10 @@ void Server() {
 			if (strcmp(data, "cre") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
-				
 				length = strlen(param1);
 				
 				printf("Server: Condition Create, machine = %d, name = %s\n", clientID, param1);
-				//rv = ServerCreateCV(param1, length);
+				CreateCV_RPC(param1, clientID);
 			} else if (strcmp(data, "wai") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -998,7 +1038,7 @@ void Server() {
 				lockIndex = atoi(param2);
 				
 				printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				//rv = ServerWait(clientID, cvIndex, lockIndex);
+				Wait_RPC(cvIndex, lockIndex, clientID);
 			} else if (strcmp(data, "sig") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1009,7 +1049,7 @@ void Server() {
 				lockIndex = atoi(param2);
 				
 				printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				//rv = ServerSignal(clientID, cvIndex, lockIndex);
+				Signal_RPC(cvIndex, lockIndex, clientID);
 			} else if (strcmp(data, "bro") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1020,17 +1060,17 @@ void Server() {
 				lockIndex = atoi(param2);
 				
 				printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				//rv = ServerBroadcast(clientID, cvIndex, lockIndex);
-				// Loop through all of CV's waiting Machines and call Signal syscall
+				Broadcast_RPC(cvIndex, lockIndex, clientID);
 			} else if (strcmp(data, "del") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				cvIndex = atoi(param1);
 				
 				printf("Server: Condition Delete, machine = %d, cv = %s", clientID, param1);
-				//rv = ServerDestroyCV(clientID, cvIndex);
+				DestroyCV_RPC(cvIndex, clientID);
 			} else {
 				printf("Server: Bad request.\n");
+				ServerReply(clientID, BAD_FORMAT);
 			}
 		} else if (strcmp(data, "mon") == 0) {
 			data = strtok (NULL, " ,.-");
@@ -1038,99 +1078,53 @@ void Server() {
 			if (strcmp(data, "cre") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
-				length = strlen(param1);
-				
-				printf("Server: MV Create, machine = %d, name = %s\n", clientID, param1);
-				//rv = ServerCreateMV(param1, length);
-			} else if (strcmp(data, "get") == 0) {
-				data = strtok (NULL, " ,.-");
-				param1 = data;
-				length = strlen(param1);
-				
-				printf("Server: MV Get, machine = %d, name = %s\n", clientID, param1);
-				//rv = ServerGetMV(clientID, mvIndex);
-			} else if (strcmp(data, "set") == 0) {
-				data = strtok (NULL, " ,.-");
-				param1 = data;
 				
 				data = strtok (NULL, " ,.-");
 				param2 = data;
 				value = atoi(param2);
 				
-				printf("Server: MV Set, machine = %d, index = %s, value = %s\n", clientID, param1, param2);
-				//rv = ServerSetMV(clientID, param1, value);
-			} else if (strcmp(data, "des") == 0) {
+				printf("Server: MV Create, machine = %d, name = %s, val = %d\n", clientID, param1, value);
+				CreateMV_RPC(param1, value, clientID);
+			} else if (strcmp(data, "get") == 0) {
+				data = strtok (NULL, " ,.-");
+				param1 = data;
+				mvIndex = atoi(param1);
+				
+				printf("Server: MV Get, machine = %d, name = %s\n", clientID, param1);
+				GetMV_RPC(mvIndex, clientID);
+			} else if (strcmp(data, "set") == 0) {
+				data = strtok (NULL, " ,.-");
+				param1 = data;
+				mvIndex = atoi(param1);
+				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				value = atoi(param2);
+				
+				printf("Server: MV Set, machine = %d, index = %s, value = %s\n", clientID, mvIndex, value);
+				SetMV_RPC(mvIndex, value, clientID);
+			/*} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				// length too?
 				
 				printf("Server: MV Destroy, machine = %d, name = %s\n", clientID, param1);
-				//rv = ServerDestroyMV(clientID, param1);
+				//rv = ServerDestroyMV(clientID, param1);*/
 			} else {
 				printf("Server: Bad request.\n");
+				ServerReply(clientID, BAD_FORMAT);
 			}
 		} else {
 			printf("Server: Bad request.\n");
-			rv = 0x9000;//BAD_REQUEST;
+			ServerReply(clientID, BAD_FORMAT);
 		}
-		
-		printf("Server: forming reply.\n");
-		
-		// Create reply for client
-		// Try using Sprintf
-		
-		rv = -583;
-		
-		int neg = 0;
-		if (rv < 0) {
-			neg = 1;
-		}
-		
-		int thousands = abs((rv % 10000)/1000);
-		int hundreds = abs((rv % 1000)/100);
-		int tens = abs((rv % 100)/10);
-		int ones = abs((rv % 10));
-		
-		printf("Server: neg: %d, thousands: %d, hundreds: %d, tens: %d, ones: %d\n", neg, thousands, hundreds, tens, ones);
-		char reply[10];// = (char)rv;		// need null char
-		reply[0] = (char)((int)'0' + neg);
-		reply[1] = (char)((int)'0' + thousands);
-		reply[2] = (char)((int)'0' + hundreds);
-		reply[3] = (char)((int)'0' + tens);
-		reply[4] = (char)((int)'0' + ones);
-		reply[5] = '\0';
-		
-		printf("Server: reply array: %s\n", reply);
-		
-		// construct packet, mail header for original message
-		// To: destination machine, mailbox clientID
-		// From: our machine, reply to: mailbox 0
-		
-		outPktHdr.to = clientID;
-		outPktHdr.from = 0;
-		outMailHdr.to = 0;
-		outMailHdr.from = 0;
-		outMailHdr.length = strlen(reply) + 1;
-		
-		printf("Server: sending reply.\n");
-		
-		// Send reply to client
-		bool success = postOffice->Send(outPktHdr, outMailHdr, reply); 
-		
-		printf("Server: sent reply.\n");
-		
-		if ( !success ) {
-			printf("Server: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-			interrupt->Halt();
-		}
-		//interrupt->Halt();
 	}
 }
 
 void Client(int farAddr) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
-    char *data = "loc acq 3 8";
+    char *data = "lac acq 3 8";
     char *ack = "Client: Got it!";
     char buffer[MaxMailSize];
 
