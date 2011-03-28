@@ -331,27 +331,16 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	return;
 }
 
-int CreateCV_RPC(char* name) {
+void CreateCV_RPC(char* name, int machineID) {
 	//If reached max cv capacity, return -1
 	if (numServerCVs >= MAX_CONDITIONS) {
-		printf("ServerCreateCV_Syscall: Max server cv limit reached, cannot create.\n");
-		return -1;
+		printf("Server - CreateCV_RPC: Max server cv limit reached, cannot create.\n");
+
+		// SEND BACK ERROR MESSAGE 
+
+		return;
 	}
-	
-	char* name;
-	
-	//Read char* from the vaddr
-	if ( !(name = new char[length]) ) {
-		printf("%s","Error allocating kernel buffer for server lock creation!\n");
-		return -1;
-    } else {
-        if ( copyin(vaddr,length,name) == -1 ) {
-			printf("%s","Bad pointer passed to server lock creation\n");
-			delete[] name;
-			return -1;
-		}
-    }
-	
+		
 	for (int i = 0; i < MAX_CONDITIONS; i++) {
 		//Check if condition already exists
 		if ( (strcmp(name, serverCVs[i].name)) == 0 &&
@@ -360,26 +349,31 @@ int CreateCV_RPC(char* name) {
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverCVs[i].clientID[j] == machineID) {
-					printf("ServerCreateCV_Syscall: Machine%d has already created this cv.\n", machineID);
-					return i;
+					printf("Server - CreateCV_RPC: Machine%d has already created this cv.\n", machineID);
+					
+					// SEND BACK MESSAGE
+
+					return;
 				}
 			}
-			
-			//If this machine hasn't created it, add the ID to the lock's list
-			// and increment number of clients, then return the lock index
+			// If this machine hasn't created it, add the ID to the CV's list
+			// and increment number of clients, then return the CV index
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverCVs[i].clientID[j] == 0) {
 					serverCVs[i].clientID[j] = machineID;
 					serverCVs[i].numClients++;
-					return i;
+
+					// SEND i IN MESSAGE BACK
+
+					return;
 				}
 			}
 		}
 	}
 	
-	//If lock doesn't exist, create it and set the name
-	// Find an open space in the lock's client list, add this machine
-	// and return the lock index
+	// If CV doesn't exist, create it and set the name
+	// Find an open space in the CV's client list, add this machine
+	// and return the CV index
 	for (int i = 0; i < MAX_CONDITIONS; i++) {
 		if (!serverCVs[i].exists) {
 			numServerCVs++;
@@ -390,60 +384,33 @@ int CreateCV_RPC(char* name) {
 				if (serverCVs[i].clientID[j] == 0) {
 					serverCVs[i].clientID[j] = machineID;
 					serverCVs[i].numClients++;
-					return i;
+
+					// SEND i IN MESSAGE BACK
+
+					return;
 				}
 			}
 		}	 
 	}
-
-	/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	int condIndex;
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	
-	//Parse buffer into a condIndex
-	
-    fflush(stdout);
-	
-	return condIndex;
-	*/
 }
 
-void Wait_RPC(int cIndex, int lIndex) {
+void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
-		printf("ServerWaitSyscall: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//If condition doesn't exist, return -1
 	if (!serverCVs[conditionIndex].exists) {
-		printf("ServerWaitSyscall: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, conditionIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//Make sure this machine is a client of the lock
@@ -455,8 +422,11 @@ void Wait_RPC(int cIndex, int lIndex) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerWaitSyscall: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//Same for condition, make sure is client
@@ -468,34 +438,43 @@ void Wait_RPC(int cIndex, int lIndex) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerWaitSyscall: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}	
 	
-	//If waitingLock is -1, set it to the passed in lock
+	// If waitingLock is -1, set it to the passed in lock
 	// Else if lock is wrong, return -1
 	if (serverCVs[conditionIndex].waitingLock == -1) {
 		serverCVs[conditionIndex].waitingLock = lockIndex;
 	}
 	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
-		printf("ServerWaitSyscall: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+	
+		return;
 	}
 	
 	//Needs to be the holder for the lock
 	if (serverLocks[lockIndex].holder != machineID) {
-		printf("ServerWaitSyscall: Machine%d is not the holder of ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Wait_RPC: Machine%d is not the holder of ServerLock%d\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
-	//Actually wait now
+	// Actually wait now
 	serverCVs[conditionIndex].queue->Append((void*)machineID);
 	
-	//Return 0 if no locks are going to acquire the lock
+	// Return 0 if no locks are going to acquire the lock
 	// after this one releases it
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
-		serverLocks[lockIndex].holder = -1;
-	//	return 0;
+		serverLocks[lockIndex].holder = -1;		
+		return;
 	}
 	
 	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
@@ -505,50 +484,28 @@ void Wait_RPC(int cIndex, int lIndex) {
 	//Otherwise return the new lock holder
 	//return serverLocks[lockIndex].holder;
 
-	/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
+	// SEND MESSAGE TO nextToAcquire
 
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	printf("Waiting on Condition: %d with Lock: %d\n", cIndex, lIndex);
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Woken on Condition: %d with Lock: %d\n", cIndex, lIndex);
-	
-    fflush(stdout);
-	*/
+	return;
 }
 
-void Signal_RPC(int cIndex, int lIndex) {
+void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
-		printf("ServerSignalSyscall: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//If condition doesn't exist, return -1
 	if (!serverCVs[conditionIndex].exists) {
-		printf("ServerSignalSyscall: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 
 	//Make sure this machine is a client of the lock
@@ -560,8 +517,11 @@ void Signal_RPC(int cIndex, int lIndex) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerSignalSyscall: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 
 	//Same for condition, make sure is client
@@ -573,8 +533,11 @@ void Signal_RPC(int cIndex, int lIndex) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerSignalSyscall: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}	
 	
 	// If waitingLock is -1, set it to the passed in lock
@@ -583,71 +546,52 @@ void Signal_RPC(int cIndex, int lIndex) {
 		serverCVs[conditionIndex].waitingLock = lockIndex;
 	}
 	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
-		printf("ServerSignalSyscall: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//Needs to be the holder for the lock
 	if (serverLocks[lockIndex].holder != machineID) {
-		printf("ServerSignalSyscall: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
-	//	return -1;
+		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 
 	// Queue must not be empty
 	if (serverCVs[conditionIndex].queue->IsEmpty()) {
-		printf("ServerSignalSyscall: Condition queue is empty. Nothing waiting.\n");
-	//	return 0;
+		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 
 	int nextWaiting = (int)serverCVs[conditionIndex].queue->Remove();
 
 	if (serverCVs[conditionIndex].queue->IsEmpty()) {
-		printf("ServerSignalSyscall: Condition queue is now empty. Nothing waiting.\n");
+		printf("Server - Signal_RPC: Condition queue is now empty. Nothing waiting.\n");
 		serverCVs[conditionIndex].waitingLock = -1;	
 	}
 	
 	if (serverLocks[lockIndex].holder == -1) {
 		serverLocks[lockIndex].holder = nextWaiting;
-	//	return nextWaiting;
+
+		// SEND nextWaiting BACK IN MESSAGE
+
+		return;
 	}
 	else {
 		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
-	//	return 0;
+		return;
 	}		
-
-	/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-	printf("Signalling Condition: %d with Lock: %d\n", cIndex, lIndex);
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	
-    fflush(stdout);
-	*/
 }
 
-void Broadcast_RPC(int cIndex, int lIndex) {
+void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	/*
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -680,11 +624,14 @@ void Broadcast_RPC(int cIndex, int lIndex) {
 	*/
 }
 
-void DestroyCV_RPC(int cIndex) {
+void DestroyCV_RPC(int conditionIndex, int machineID) {
 	//If this CV doesn't exist, return
 	if (!serverCVs[conditionIndex].exists) {
-		printf("ServerDestroyCVSyscall: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
-		return -1;
+		printf("Server - DestroyCV_RPC: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	//Make sure this machine is a client of the lock
@@ -696,8 +643,11 @@ void DestroyCV_RPC(int cIndex) {
 		}
 	}
 	if (!isClient) {
-		printf("ServerDestroyCVSyscall: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, conditionIndex);
-		return -1;
+		printf("Server - DestroyCV_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, conditionIndex);
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -713,109 +663,113 @@ void DestroyCV_RPC(int cIndex) {
 		serverCVs[conditionIndex].exists = false;
 		serverCVs[conditionIndex].name = "";
 		numServerCVs--;
-		return 0;
+
+		// SEND BACK MESSAGE
+
+		return;
 	}
-	/*
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-	
-	char* data;
-	char* ack;
-	
-	char buffer[MaxMailSize];
-	
-	//Create the correct message to send here? Ask Antonio later
-	
-	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
-    outMailHdr.from = 1;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Successfully called Destroy on Condition: %d\n", cIndex);
-	
-    fflush(stdout);
-	*/
 }
 
-int CreateMV_RPC(char* name, int value) {
+void CreateMV_RPC(char* name, int val, int machineID) {
 	if (numMVs >= MAX_MVS) {
-		// print error msg?
-		printf("CreateMV_Syscall: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
-		mvLock->Release();
-		return -1;
+		printf("Server - CreateMV__RPC: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
 	}
-	if (val == 0x9999) {
-		// print error msg
-		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
-		mvLock->Release();
-		return -1;
-	}
-	
+
 	int index = -1;
 	for (int i = 0; i < MAX_MVS; i++) {
-	// find 1st vacancy in the list
-		if (monitorVars[i] == 0x9999) {
-			index = i;
-			break;
+		if(strcmp(serverMVs[i].name, name) == 0){
+			if (val == 0x9999) {
+				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+				
+				// SEND i BACK IN MESSAGE
+				
+				return;
+			}
+			else{
+				serverMVs[i].value = val;
+
+				// SEND i BACK IN MESSAGE
+
+				return;
+			}
 		}
 	}
-	
-	monitorVars[index] = val;
-	
-	return index;
+
+	// Otherwise, it doesn't exist
+	// find 1st vacancy in the list
+	for (int i = 0; i < MAX_MVS; i++) {
+		if(serverMVs[i].name == NULL){
+			serverMVs[i].name = name;
+			if (val == 0x9999) {
+				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
+				
+				// SEND i BACK IN MESSAGE
+				
+				return;
+			}
+			else{
+				serverMVs[i].value = val;
+
+				// SEND i BACK IN MESSAGE
+
+				return;
+			}
+		}
+	}	
 }
 
-int GetMV_RPC(int index) {
-	
+void GetMV_RPC(int index, int machineID) {
 	if (index < 0) {
-		// print error msg
-		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
-		mvLock->Release();
-		return -1;
-	}
-	if (index >= MAX_CONDITIONS) {
-		// print error msg
-		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
-		mvLock->Release();
-		return -1;
-	}
-	
-	int val = monitorVars[index];
-	
-	return (val);
-}
+		printf("Server - GetMV_RPC: MV index less than zero. Invalid.\n");
 
-void SetMV_RPC(int index, int value) {
-	if (index < 0) {
-		// print error msg
-		printf("GetMV_Syscall: MV index less than zero. Invalid.\n");
-		mvLock->Release();
+		// SEND BACK ERROR MESSAGE
+
 		return;
 	}
 	if (index >= MAX_CONDITIONS) {
-		// print error msg
-		printf("GetMV_Syscall: MV index >= MAX_MVS. Invalid.\n");
-		mvLock->Release();
+		printf("Server - GetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+	
+	int val = serverMVs[index];
+	
+	// SEND BACK val IN MESSAGE
+}
+
+void SetMV_RPC(int index, int val, int machineID) {
+	if (index < 0) {
+		printf("Server - SetMV_RPC: MV index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+
+		return;
+	}
+	if (index >= MAX_CONDITIONS) {
+		printf("Server - SetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+
 		return;
 	}
 	if (val == 0x9999) {
-		// print error msg
-		printf("GetMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
-		mvLock->Release();
+		printf("Server - GetMV_RPC: Cannot set MV to reserved \"uninitialized\" value.\n");
+
+		// SEND BACK ERROR MESSAGE
+
 		return;
 	}
 	
-	monitorVars[index] = val;
+	serverMVs[index] = val;
+
+	// SEND BACK MESSAGE
+
 	return;
 }
 
