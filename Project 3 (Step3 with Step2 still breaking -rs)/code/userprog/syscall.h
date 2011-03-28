@@ -226,39 +226,39 @@ void SetMV(int index, int val);
 
 /* Creates a lock for networking 
 */
-int ServerCreateLock(int machineID, char* name, int length);
+int ServerCreateLock(char* name, int length);
 
 /* Acquires a lock for networking 
 */
-int ServerAcquire(int machineID, int lockIndex);
+void ServerAcquire(int lockIndex);
 
 /* Releases a lock for networking 
 */
-int ServerRelease(int machineID, int lockIndex);
+void ServerRelease(int lockIndex);
 
 /* Creates a Condition Variable for networking 
 */
-int ServerCreateCV(int machineID, unsigned int vaddr, int length);
+int ServerCreateCV(unsigned int vaddr, int length);
 
 /* Waits on a condition variable for networking 
 */
-int ServerWait(int machineID, int conditionIndex, int lockIndex);
+void ServerWait(int conditionIndex, int lockIndex);
 
 /* Signals a condition variable for networking 
 */
-int ServerSignal(int machineID, int conditionIndex, int lockIndex);
+void ServerSignal(int conditionIndex, int lockIndex);
 
 /* Broadcasts all waiting condition variables for networking 
 */
-void ServerBroadcast(int machineID, int conditionIndex, int lockIndex);
+void ServerBroadcast(int conditionIndex, int lockIndex);
 
 /* Destroys a lock for networking 
 */
-int ServerDestroyLock(int machineID, int lockIndex);
+int ServerDestroyLock(int lockIndex);
 
 /* Destroys a Condition Variable for networking 
 */
-int ServerDestroyCV(int machineID, int conditionIndex);
+int ServerDestroyCV(int conditionIndex);
 
 
 
