@@ -900,16 +900,14 @@ void Server() {
 	int farAddr;
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
-    char *reply;
-    //char buffer[MaxMailSize];
-	char buffer[] = "mon set 348 5 62";
+    //char *reply;
+    char buffer[MaxMailSize];
 	
 	char* obj;
 	char* act;
 	char* param1;
 	char* param2;
 	char* param3;
-	char temp;
 	int counter = 0;
 	int maxParamSize = 64;
 	
@@ -929,7 +927,7 @@ void Server() {
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
 		fflush(stdout);
 		
-		clientID = inMailHdr.from;
+		clientID = inPktHdr.from;
 		
 		// PARSE MESSAGE
 		// Message Format:
@@ -1079,22 +1077,41 @@ void Server() {
 		printf("Server: forming reply.\n");
 		
 		// Create reply for client
-		//itoa(rv, reply, 10);	// needs library
-		//sscanf(reply, "%d", &rv);	// used wrong char buffer
-		//reply = reinterpret_cast<char *>(rv);		// segfault
-		reply = "hardcoded";
-		printf("Reply = %s.\n", reply);
+		// Try using Sprintf
+		
+		rv = -583;
+		
+		int neg = 0;
+		if (rv < 0) {
+			neg = 1;
+		}
+		
+		int thousands = abs((rv % 10000)/1000);
+		int hundreds = abs((rv % 1000)/100);
+		int tens = abs((rv % 100)/10);
+		int ones = abs((rv % 10));
+		
+		printf("Server: neg: %d, thousands: %d, hundreds: %d, tens: %d, ones: %d\n", neg, thousands, hundreds, tens, ones);
+		char reply[10];// = (char)rv;		// need null char
+		reply[0] = (char)((int)'0' + neg);
+		reply[1] = (char)((int)'0' + thousands);
+		reply[2] = (char)((int)'0' + hundreds);
+		reply[3] = (char)((int)'0' + tens);
+		reply[4] = (char)((int)'0' + ones);
+		reply[5] = '\0';
+		
+		printf("Server: reply array: %s\n", reply);
 		
 		// construct packet, mail header for original message
 		// To: destination machine, mailbox clientID
 		// From: our machine, reply to: mailbox 0
 		
-		outPktHdr.to = clientID;		
-		outMailHdr.to = clientID;
+		outPktHdr.to = clientID;
 		outPktHdr.from = 0;
+		outMailHdr.to = 0;
 		outMailHdr.from = 0;
-		outMailHdr.length = strlen(data) + 1;
-
+		outMailHdr.length = strlen(reply) + 1;
+		
 		printf("Server: sending reply.\n");
 		
 		// Send reply to client
@@ -1106,7 +1123,7 @@ void Server() {
 			printf("Server: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 			interrupt->Halt();
 		}
-		interrupt->Halt();
+		//interrupt->Halt();
 	}
 }
 
@@ -1120,14 +1137,14 @@ void Client(int farAddr) {
     // construct packet, mail header for original message
     // To: destination machine, mailbox 0
     // From: our machine, reply to: mailbox 1
-    outPktHdr.to = 0;		
+    outPktHdr.to = 0;
     outMailHdr.to = 0;
-    outMailHdr.from = farAddr;
+    outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
-
+	
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
+	
     if ( !success ) {
       printf("Client: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
@@ -1135,52 +1152,35 @@ void Client(int farAddr) {
 	
 	// Wait for server reply
 	// Wait for the first message from the other machine
-    postOffice->Receive(farAddr, &inPktHdr, &inMailHdr, buffer);
+    postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
     printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
     fflush(stdout);
 	
+	int rv = 0;
 	
-	// BAD REQUEST TEST
-	data = "derp";
+	char temp[2];
+	temp[0] = buffer[0];
+	int neg = atoi(temp);
 	
-	// construct packet, mail header for original message
-    // To: destination machine, mailbox 0
-    // From: our machine, reply to: mailbox 1
-    outPktHdr.to = 0;		
-    outMailHdr.to = 0;
-    outMailHdr.from = farAddr;
-    outMailHdr.length = strlen(data) + 1;
-
-    // Send the first message
-    success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
-    if ( !success ) {
-      printf("Client: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-/*
-    // Wait for the first message from the other machine
-    postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Client: Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
-    fflush(stdout);
-
-    // Send acknowledgement to the other machine (using "reply to" mailbox
-    // in the message that just arrived
-    outPktHdr.to = inPktHdr.from;
-    outMailHdr.to = inMailHdr.from;
-    outMailHdr.length = strlen(ack) + 1;
-    success = postOffice->Send(outPktHdr, outMailHdr, ack); 
-
-    if ( !success ) {
-      printf("Client: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-
-    // Wait for the ack from the other machine to the first message we sent.
-    postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
-    printf("Client: Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
-    fflush(stdout);*/
-
+	temp[0] = buffer[1];
+	int thousands = atoi(temp);
+	
+	temp[0] = buffer[2];
+	int hundreds = atoi(temp);
+	
+	temp[0] = buffer[3];
+	int tens = atoi(temp);
+	
+	temp[0] = buffer[4];
+	int ones = atoi(temp);
+	
+	rv = (thousands * 1000) + (hundreds * 100) + (tens * 10) + ones;
+	
+	if (neg == 1) {
+		rv *= -1;
+	}
+	printf("Client: rv = %d\n", rv);
+	
     // Then we're done!
     interrupt->Halt();
 }
