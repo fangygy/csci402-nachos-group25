@@ -298,15 +298,16 @@ void Release_RPC(int lockIndex, int machineID) {
 		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
-		ServerReply(-1, machineID);
+		ServerReply(NOT_OWNER, machineID);
 		return;
 	}
 	
 	//SEND ACTUAL MESSAGE BACK TO machineID
+	ServerReply(0, machineID);
 	
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;
-		ServerReply(0, machineID);
+		//ServerReply(0, machineID);
 		return;
 	}
 	
@@ -354,13 +355,13 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	serverLocks[lockIndex].numClients--;
 	
 	//SEND MESSAGE BACK TO machineID
+	ServerReply(0, machineID);
 	
 	//If no more clients, delete lock
 	if (serverLocks[lockIndex].numClients == 0) {
 		serverLocks[lockIndex].exists = false;
 		serverLocks[lockIndex].name = "";
 		numServerLocks--;
-		ServerReply(0, machineID);
 		return;
 	}
 	
@@ -368,7 +369,6 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	if (serverLocks[lockIndex].holder == machineID) {
 		if (serverLocks[lockIndex].queue->IsEmpty()) {
 			serverLocks[lockIndex].holder = -1;
-			ServerReply(0, machineID);
 			return;
 		}
 		
@@ -405,7 +405,7 @@ void CreateCV_RPC(char* name, int machineID) {
 					printf("Server - CreateCV_RPC: Machine%d has already created this cv.\n", machineID);
 					
 					// SEND BACK MESSAGE
-					ServerReply(0, machineID);
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -417,7 +417,7 @@ void CreateCV_RPC(char* name, int machineID) {
 					serverCVs[i].numClients++;
 
 					// SEND i IN MESSAGE BACK
-
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -437,9 +437,8 @@ void CreateCV_RPC(char* name, int machineID) {
 				if (serverCVs[i].clientID[j] == 0) {
 					serverCVs[i].clientID[j] = machineID;
 					serverCVs[i].numClients++;
-
 					// SEND i IN MESSAGE BACK
-
+					ServerReply(i, machineID);
 					return;
 				}
 			}
@@ -451,7 +450,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
-
+		ServerReply(DELETED, machineID);
 		// SEND BACK ERROR MESSAGE
 
 		return;
@@ -460,7 +459,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//If condition doesn't exist, return -1
 	if (!serverCVs[conditionIndex].exists) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, conditionIndex);
-
+		ServerReply(DELETED, machineID);
 		// SEND BACK ERROR MESSAGE
 
 		return;
@@ -478,7 +477,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 	
@@ -494,7 +493,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}	
 	
@@ -507,7 +506,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-	
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
@@ -516,7 +515,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Wait_RPC: Machine%d is not the holder of ServerLock%d\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_OWNER, machineID);
 		return;
 	}
 	
@@ -538,6 +537,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//return serverLocks[lockIndex].holder;
 
 	// SEND MESSAGE TO nextToAcquire
+	ServerReply(0, nextToAcquire);
 
 	return;
 }
@@ -548,7 +548,7 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -557,7 +557,7 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(DELETED, machineID);
 		return;
 	}
 
@@ -573,7 +573,7 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 
@@ -589,20 +589,17 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}	
 	
 	// If waitingLock is -1, set it to the passed in lock
 	// Else if lock is wrong, return -1
-	if (serverCVs[conditionIndex].waitingLock == -1) {
-		serverCVs[conditionIndex].waitingLock = lockIndex;
-	}
-	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
+	if (serverCVs[conditionIndex].waitingLock != lockIndex) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
@@ -611,7 +608,7 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_OWNER, machineID);
 		return;
 	}
 
@@ -620,7 +617,7 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 
@@ -635,13 +632,13 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		serverLocks[lockIndex].holder = nextWaiting;
 
 		// SEND MESSAGE TO nextWaiting
-
+		ServerReply(0, nextWaiting);
 	}
 	else {
 		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
 	}		
 	
-	// SEND MESSAGE TO machineID
+	ServerReply(0, machineID);
 }
 
 void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
@@ -650,7 +647,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -659,7 +656,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(DELETED, machineID);
 		return;
 	}
 
@@ -675,7 +672,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 
@@ -691,20 +688,17 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}	
 	
 	// If waitingLock is -1, set it to the passed in lock
 	// Else if lock is wrong, return -1
-	if (serverCVs[conditionIndex].waitingLock == -1) {
-		serverCVs[conditionIndex].waitingLock = lockIndex;
-	}
-	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
+	if (serverCVs[conditionIndex].waitingLock != lockIndex) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
@@ -713,7 +707,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_OWNER, machineID);
 		return;
 	}
 
@@ -722,7 +716,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
@@ -734,7 +728,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 			serverLocks[lockIndex].holder = nextWaiting;
 
 			// SEND MESSAGE TO nextWaiting
-
+			ServerReply(0, nextWaiting);
 		}
 		else {
 			serverLocks[lockIndex].queue->Append((void*)nextWaiting);
@@ -742,6 +736,7 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 
 	// SEND MESSAGE BACK TO machineID
+	ServerReply(0, machineID);
 	printf("Server - Signal_RPC: Condition queue is now empty. Nothing waiting.\n");
 	serverCVs[conditionIndex].waitingLock = -1;	
 }
@@ -752,7 +747,7 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 		printf("Server - DestroyCV_RPC: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(DELETED, machineID);
 		return;
 	}
 	
@@ -768,7 +763,7 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 		printf("Server - DestroyCV_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, conditionIndex);
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NOT_CREATED, machineID);
 		return;
 	}
 	
@@ -780,13 +775,14 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 	}
 	serverCVs[conditionIndex].numClients--;
 	
+	// SEND BACK MESSAGE
+	ServerReply(0, machineID);
+	
 	//If no more clients, delete lock
 	if (serverCVs[conditionIndex].numClients == 0) {
 		serverCVs[conditionIndex].exists = false;
 		serverCVs[conditionIndex].name = "";
 		numServerCVs--;
-
-		// SEND BACK MESSAGE
 
 		return;
 	}
@@ -797,7 +793,7 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 		printf("Server - CreateMV__RPC: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(NO_SPACE, machineID);
 		return;
 	}
 
@@ -808,14 +804,14 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
 				
 				// SEND i BACK IN MESSAGE
-				
+				ServerReply(i, machineID);
 				return;
 			}
 			else{
 				serverMVs[i].value = val;
 
 				// SEND i BACK IN MESSAGE
-
+				ServerReply(i, machineID);
 				return;
 			}
 		}
@@ -830,14 +826,14 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
 				
 				// SEND i BACK IN MESSAGE
-				
+				ServerReply(i, machineID);
 				return;
 			}
 			else{
 				serverMVs[i].value = val;
 
 				// SEND i BACK IN MESSAGE
-
+				ServerReply(i, machineID);
 				return;
 			}
 		}
@@ -849,20 +845,21 @@ void GetMV_RPC(int index, int machineID) {
 		printf("Server - GetMV_RPC: MV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	if (index >= MAX_CONDITIONS) {
 		printf("Server - GetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
 	int val = serverMVs[index].value;
 	
 	// SEND BACK val IN MESSAGE
+	ServerReply(val, machineID);
 }
 
 void SetMV_RPC(int index, int val, int machineID) {
@@ -870,28 +867,28 @@ void SetMV_RPC(int index, int val, int machineID) {
 		printf("Server - SetMV_RPC: MV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	if (index >= MAX_CONDITIONS) {
 		printf("Server - SetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	if (val == 0x9999) {
 		printf("Server - GetMV_RPC: Cannot set MV to reserved \"uninitialized\" value.\n");
 
 		// SEND BACK ERROR MESSAGE
-
+		ServerReply(BAD_INDEX, machineID);
 		return;
 	}
 	
 	serverMVs[index].value = val;
 
 	// SEND BACK MESSAGE
-
+	ServerReply(0, machineID);
 	return;
 }
 

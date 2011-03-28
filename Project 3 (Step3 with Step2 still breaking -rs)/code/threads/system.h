@@ -69,6 +69,7 @@ extern int BAD_INDEX;
 extern int NO_SPACE;
 extern int NOT_CREATED;
 extern int DELETED;
+extern int NOT_OWNER;
 
 extern PostOffice* postOffice;
 #endif
