@@ -31,7 +31,9 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests passportTest1 passportTest2 passportTest3 execPassportTests2
+all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
+	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
+	passportTest1 passportTest2 passportTest3 execPassportTests2 Client
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -175,6 +177,12 @@ execPassportTests2.o: execPassportTests2.c
 execPassportTests2: execPassportTests2.o start.o
 	$(LD) $(LDFLAGS) start.o execPassportTests2.o -o execPassportTests2.coff
 	../bin/coff2noff execPassportTests2.coff execPassportTests2
+
+Client.o: Client.c
+	$(CC) $(CFLAGS) -c Client.c
+Client: Client.o start.o
+	$(LD) $(LDFLAGS) start.o Client.o -o Client.coff
+	../bin/coff2noff Client.coff Client
 
 clean:
 	rm -f *.o *.coff

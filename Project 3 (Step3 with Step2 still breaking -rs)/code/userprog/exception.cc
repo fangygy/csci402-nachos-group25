@@ -775,8 +775,47 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
-int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 
+#ifdef NETWORK
+int ClientReceive() {
+	PacketHeader inPktHdr;
+    MailHeader inMailHdr;
+	
+	char buffer[MaxMailSize];
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	printf("Client: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
+	fflush(stdout);
+	
+	//Parse buffer into a return value
+	int rv = 0;
+	
+	char temp[2];
+	temp[0] = buffer[0];
+	int neg = atoi(temp);
+	
+	temp[0] = buffer[1];
+	int thousands = atoi(temp);
+	
+	temp[0] = buffer[2];
+	int hundreds = atoi(temp);
+	
+	temp[0] = buffer[3];
+	int tens = atoi(temp);
+	
+	temp[0] = buffer[4];
+	int ones = atoi(temp);
+	
+	rv = (thousands * 1000) + (hundreds * 100) + (tens * 10) + ones;
+	if (neg == 1) {
+		rv *= -1;
+	}
+	printf("Client: rv = %d\n", rv);
+	
+	return rv;
+}
+#endif
+
+int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	char* name;
 	
 	//Read char* from the vaddr
@@ -893,7 +932,6 @@ void SetMV_Syscall(int index, int val) {
 }
 
 int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
-	
 	char* name;
 	
 	//Read char* from the vaddr
@@ -911,11 +949,12 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	int lockIndex;
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc cre %s", name);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -932,12 +971,29 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
       interrupt->Halt();
     }
 	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in CreateLock: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in CreateLock: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in CreateLock: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in CreateLock: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in CreateLock: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in CreateLock: Not Lock owner\n", NOT_OWNER);
+	}
+	
+	lockIndex = rv;
     
 	//Do data parsing here with lockIndex and buffer
 	//lockIndex = buffer?
 	
-    fflush(stdout);
+    //fflush(stdout);		// clientReceive takes care of this
 	
 	#endif
 	return lockIndex;
@@ -948,7 +1004,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data [MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -961,6 +1017,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
 
 	#ifdef NETWORK
     // Send the first message
+	sprintf(data, "loc des %d", lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -980,7 +1037,7 @@ void ServerAcquire_Syscall(int lockIndex) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -990,11 +1047,12 @@ void ServerAcquire_Syscall(int lockIndex) {
     outMailHdr.to = 0; 
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
-
+	
 	#ifdef NETWORK
     // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-
+	sprintf(data, "loc acq %d", lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data);
+	
     if ( !success ) {
       printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
@@ -1058,22 +1116,23 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
 	char buffer[MaxMailSize];
 	
 	int condIndex;
 	
 	//Create the correct message to send here? Ask Antonio later
+	char request[MaxMailSize];
+	sprintf(request, "con cre %s", name);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
     outMailHdr.from = 0;
-    outMailHdr.length = strlen(data) + 1;
-
+    outMailHdr.length = strlen(request) + 1;
+	
 	#ifdef NETWORK
     // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+    bool success = postOffice->Send(outPktHdr, outMailHdr, request); 
 
     if ( !success ) {
       printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
