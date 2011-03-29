@@ -41,7 +41,7 @@ OpenFile* swapFile;
 BitMap swapBitMap(2048);
 Lock* swapLock;
 
-int evictPage = 0;
+List* evictQueue;
 bool EvictFIFO = true;
 #endif
 
@@ -198,6 +198,8 @@ Initialize(int argc, char **argv)
 	fileSystem->Create("SwapFile", 0);
 	swapFile = fileSystem->Open("SwapFile");
 	swapLock = new Lock("SwapLock");
+	
+	evictQueue = new List;
 #endif
 
 #ifdef FILESYS
