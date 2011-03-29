@@ -58,7 +58,7 @@ struct ServerLock {
 	}
 
 	ServerLock(char* n){
-		exists = true;
+		exists = false;
 		name = n;
 		holder = -1;
 		queue = new List;
@@ -162,9 +162,9 @@ void CreateLock_RPC(char* name, int machineID) {
 	
 	for (int i = 0; i < MAX_LOCKS; i++) {
 		//Check if lock already exists
-		if ( (strcmp(name, serverLocks[i].name)) == 0 &&
-			 serverLocks[i].exists) {
+		if ( strcmp(name, serverLocks[i].name) == 0 && serverLocks[i].exists) {
 			
+			//printf("%s and %s\n", serverLocks[i].name, name);
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverLocks[i].clientID[j] == machineID) {
@@ -439,8 +439,7 @@ void CreateCV_RPC(char* name, int machineID) {
 		
 	for (int i = 0; i < MAX_CONDITIONS; i++) {
 		//Check if condition already exists
-		if ( (strcmp(name, serverCVs[i].name)) == 0 &&
-			 serverCVs[i].exists) {
+		if ( (strcmp(name, serverCVs[i].name)) == 0 && serverCVs[i].exists) {
 			
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
@@ -1092,13 +1091,12 @@ void Server() {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
     //char *reply;
-    char buffer[MaxMailSize];
 	
-	char* obj;
+	/*char* obj;
 	char* act;
 	char* param1;
 	char* param2;
-	char* param3;
+	char* param3;*/
 	int counter = 0;
 	int maxParamSize = 64;
 	
@@ -1113,6 +1111,12 @@ void Server() {
 	
 	// Need to add error handling for wrong # params
 	while (true) {
+		char buffer[MaxMailSize];
+		char* obj;
+		char* act;
+		char* param1;
+		char* param2;
+		char* param3;
 		// Receive message from client (other machine)
 		postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
