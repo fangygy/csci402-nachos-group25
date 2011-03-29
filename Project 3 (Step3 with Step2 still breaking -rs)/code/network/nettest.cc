@@ -198,7 +198,7 @@ void CreateLock_RPC(char* name, int machineID) {
 		if (!serverLocks[i].exists) {
 			numServerLocks++;
 			serverLocks[i].exists = true;
-			serverLocks[i].name = name;
+			strcpy(serverLocks[i].name, name);
 			
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverLocks[i].clientID[j] == 0) {
@@ -473,7 +473,8 @@ void CreateCV_RPC(char* name, int machineID) {
 		if (!serverCVs[i].exists) {
 			numServerCVs++;
 			serverCVs[i].exists = true;
-			serverCVs[i].name = name;
+			strcpy(serverCVs[i].name, name);
+			//serverCVs[i].name = name;
 			
 			for (int j = 0; j < MAX_CLIENTS; j++) {
 				if (serverCVs[i].clientID[j] == 0) {
