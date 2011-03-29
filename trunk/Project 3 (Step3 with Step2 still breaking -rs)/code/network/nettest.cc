@@ -966,7 +966,8 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 	// find 1st vacancy in the list
 	for (int i = 0; i < MAX_MVS; i++) {
 		if(serverMVs[i].name == NULL){
-			serverMVs[i].name = name;
+			//serverMVs[i].name = name;
+			strcpy(serverMVs[i].name, name);
 			if (val == 0x9999) {
 				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
 				
