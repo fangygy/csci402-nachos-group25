@@ -47,6 +47,8 @@ bool EvictFIFO = true;
 
 #ifdef NETWORK
 
+int netname = -1;		// default value for non-network programs
+
 int BAD_FORMAT;
 int BAD_INDEX;
 int NO_SPACE;
@@ -110,8 +112,8 @@ Initialize(int argc, char **argv)
     bool format = FALSE;	// format disk
 #endif
 #ifdef NETWORK
-    double rely = 1;		// network reliability
-    int netname = 0;		// UNIX socket name
+	double rely = 1;		// network reliability
+	netname = 0;		// UNIX socket name
 	
 	// RPC Error Codes
 	

@@ -211,7 +211,7 @@ int Random(int max);
 */
 void Trace(int vaddr, int val);
 
-///////////////////////////////////////// Networking stuff
+/* ******************** Networking stuff *********************/
 /* Creates a monitor variable for networking 
 */
 int CreateMV(char* name, int length, int value);

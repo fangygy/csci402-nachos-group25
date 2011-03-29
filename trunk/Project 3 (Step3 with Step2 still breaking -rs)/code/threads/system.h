@@ -63,7 +63,9 @@ extern SynchDisk   *synchDisk;
 #endif
 
 #ifdef NETWORK
-#include "post.h"
+#include "../network/post.h"
+
+extern int netname;
 
 extern int BAD_FORMAT;
 extern int BAD_INDEX;

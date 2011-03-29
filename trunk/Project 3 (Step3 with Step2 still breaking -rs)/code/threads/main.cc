@@ -115,9 +115,11 @@ main(int argc, char **argv)
 
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-x")) {        	// run a user program
-	ASSERT(argc > 1);
-		StartProcess(*(argv + 1));
-		argCount = 2;
+		//if (netname == -1) {			// this is a regular, non-network program
+		ASSERT(argc > 1);
+			StartProcess(*(argv + 1));
+			argCount = 2;
+		//}
 	} else if (!strcmp(*argv, "-c")) {      // test the console
 		if (argc == 1)
 			ConsoleTest(NULL, NULL);
@@ -166,14 +168,30 @@ main(int argc, char **argv)
 #endif // FILESYS
 #ifdef NETWORK
         if (!strcmp(*argv, "-o")) {
-	    ASSERT(argc > 1);
-            Delay(2); 				// delay for 2 seconds
+	    ASSERT(argc > 1);		//ASSERT(argc > 1);
+            //Delay(2); 				// delay for 2 seconds
 						// to give the user time to 
 						// start up another nachos
             //MailTest(atoi(*(argv + 1)));		// Original
-			LockTest(atoi(*(argv + 1)));
+			//LockTest(atoi(*(argv + 1)));
             argCount = 2;
+			if (netname == 0) {		// This is a server
+				Server();
+			}
         }
+		// this "-x" section is copied from the user program section
+		
+		if (netname > 0) {					// If this machine is a client, look for a userprog tag
+			if (!strcmp(*argv, "-x")) {        	// run a user program
+			ASSERT(argc > 1);
+				
+				if (netname != 0) {
+					//StartProcess(*(argv + 1));		// NO USERPROG STUFF! Assertion Fail: TLB and PageTable are NULL
+				}
+				
+				argCount = 2;
+			}
+		}
 #endif // NETWORK
     }
 
