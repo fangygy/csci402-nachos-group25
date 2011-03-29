@@ -838,6 +838,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	int mvIndex;
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon cre %s %d", name, value);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -875,6 +876,7 @@ int GetMV_Syscall(int index) {
 	int mvValue;
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon get %d", index);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -908,6 +910,7 @@ void SetMV_Syscall(int index, int val) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon set %d %d", index, val);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1008,6 +1011,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc des %d", lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1017,7 +1021,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "loc des %d", lockIndex);
+	//sprintf(data, "loc des %d", lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -1057,6 +1061,7 @@ void ServerAcquire_Syscall(int lockIndex) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc acq %d", lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1066,7 +1071,10 @@ void ServerAcquire_Syscall(int lockIndex) {
 	
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "loc acq %d", lockIndex);
+	//sprintf(data, "loc acq %d", lockIndex);
+	//char* tdata = "lock acq 0";
+	//sprintf(data, "%s", tdata);
+	//printf("%s\n", data);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data);
 	
     if ( !success ) {
@@ -1107,6 +1115,7 @@ void ServerRelease_Syscall(int lockIndex) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc rel %d", lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1116,7 +1125,7 @@ void ServerRelease_Syscall(int lockIndex) {
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "loc rel %d", lockIndex);
+	//sprintf(data, "loc rel %d", lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -1225,6 +1234,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con del %d", conditionIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1234,7 +1244,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "con del %d", conditionIndex);
+	//sprintf(data, "con del %d", conditionIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -1275,6 +1285,7 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1284,7 +1295,7 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
+	//sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
     if ( !success ) {
@@ -1325,6 +1336,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1334,7 +1346,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
+	//sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
 	printf("Signalling Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1372,6 +1384,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con bro %d %d", conditionIndex, lockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1381,7 +1394,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
 
 	#ifdef NETWORK
     // Send the first message
-	sprintf(data, "con bro %d", conditionIndex, lockIndex);
+	//sprintf(data, "con bro %d", conditionIndex, lockIndex);
 	printf("Broadcasting Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 

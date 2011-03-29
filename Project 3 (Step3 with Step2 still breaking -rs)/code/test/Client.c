@@ -11,10 +11,12 @@
 char* name;
 int length;
 int lock;
+int lock2;
 
 int main()
 {
 	lock = ServerCreateLock("LockA", sizeof("LockA"));
+	lock2 = ServerCreateLock("LockB", sizeof("LockB"));
 	ServerAcquire(lock);
 	ServerDestroyLock(lock);
 	
