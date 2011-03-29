@@ -15,6 +15,7 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
+#include "list.h"
 #include "../vm/IPTEntry.h"
 
 // Initialization and cleanup routines
@@ -46,7 +47,7 @@ extern OpenFile* swapFile;
 extern BitMap swapBitMap;
 extern Lock* swapLock;
 
-extern int evictPage;
+extern List* evictQueue;
 extern bool EvictFIFO;
 
 #endif

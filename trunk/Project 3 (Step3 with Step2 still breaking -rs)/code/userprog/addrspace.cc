@@ -20,6 +20,7 @@
 #include "addrspace.h"
 #include "noff.h"
 #include "table.h"
+#include "list.h"
 #include "synch.h"
 #include <ctime>		// For seeding random
 #include <cstdlib>	// For generating random
@@ -396,6 +397,21 @@ void AddrSpace::DeallocateStack() {
 				pageTable[i].valid = FALSE;
 				ipt[paddr].valid = FALSE;
 				bitMap.Clear(paddr);
+				
+				if(EvictFIFO) {
+					List *tempQueue = new List;
+					while (!evictQueue->IsEmpty()) {
+						int tempPage = (int)evictQueue->Remove();
+						if (tempPage != paddr) {
+							tempQueue->Append((void*)tempPage);
+						}
+					}
+					
+					List *deleteQueue = evictQueue;
+					evictQueue = tempQueue;
+					delete deleteQueue;
+				}
+				
 				bitMapLock->Release();
 				//pageTable[i].valid = FALSE;
 			}
@@ -428,6 +444,21 @@ void AddrSpace::DeallocateProcess() {
 				pageTable[i].valid = FALSE;
 				ipt[paddr].valid = FALSE;
 				bitMap.Clear(paddr);
+				
+				if(EvictFIFO) {
+					List *tempQueue = new List;
+					while (!evictQueue->IsEmpty()) {
+						int tempPage = (int)evictQueue->Remove();
+						if (tempPage != paddr) {
+							tempQueue->Append((void*)tempPage);
+						}
+					}
+					
+					List *deleteQueue = evictQueue;
+					evictQueue = tempQueue;
+					delete deleteQueue;
+				}
+				
 				bitMapLock->Release();
 				//pageTable[i].valid = FALSE;
 			}
@@ -492,11 +523,9 @@ void AddrSpace::PageToTLB(SpaceId id) {
 	int paddr = bitMap.Find();
 	if (paddr == -1) {
 		//iptLock->Acquire();
+		int evictPage;
 		if (EvictFIFO) {
-			evictPage = (evictPage + 1) % NumPhysPages;
-			while (ipt[evictPage].inUse) {
-				evictPage = (evictPage + 1) % NumPhysPages;
-			}
+			evictPage = (int)evictQueue->Remove();
 		}
 		else {
 			evictPage = rand() % NumPhysPages;
@@ -523,6 +552,10 @@ void AddrSpace::PageToTLB(SpaceId id) {
 		}
 		paddr = evictPage;
 		//iptLock->Release();
+	}
+	
+	if (EvictFIFO) {
+		evictQueue->Append((void*)paddr);
 	}
 	
 	//printf("AddrSpace: New paddr - %d\n", paddr);
