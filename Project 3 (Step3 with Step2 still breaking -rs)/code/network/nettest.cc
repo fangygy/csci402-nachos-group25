@@ -218,6 +218,20 @@ void CreateLock_RPC(char* name, int machineID) {
 }
 
 void Acquire_RPC(int lockIndex, int machineID) {
+	if (lockIndex < 0) {
+		printf("Server - Acquire_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - Acquire_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Acquire_RPC: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
@@ -269,6 +283,20 @@ void Acquire_RPC(int lockIndex, int machineID) {
 }
 
 void Release_RPC(int lockIndex, int machineID) {
+	if (lockIndex < 0) {
+		printf("Server - Release_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - Release_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Release_RPC: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
@@ -322,6 +350,20 @@ void Release_RPC(int lockIndex, int machineID) {
 }
 
 void DestroyLock_RPC(int lockIndex, int machineID) {
+	if (lockIndex < 0) {
+		printf("Server - DestroyLock_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - DestroyLock_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
 	//If this lock doesn't exist, return
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - DestroyLock_RPC: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
@@ -448,6 +490,35 @@ void CreateCV_RPC(char* name, int machineID) {
 }
 
 void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
+	if (conditionIndex < 0) {
+		printf("Server - Wait_RPC: CV index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (conditionIndex >= MAX_CONDITIONS) {
+		printf("Server - Wait_RPC: CV index >= MAX_CVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex < 0) {
+		printf("Server - Wait_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - Wait_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
@@ -545,6 +616,35 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 }
 
 void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
+	if (conditionIndex < 0) {
+		printf("Server - Signal_RPC: CV index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (conditionIndex >= MAX_CONDITIONS) {
+		printf("Server - Signal_RPC: CV index >= MAX_CVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex < 0) {
+		printf("Server - Signal_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - Signal_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
@@ -644,6 +744,34 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 }
 
 void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
+	if (conditionIndex < 0) {
+		printf("Server - Broadcast_RPC: CV index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (conditionIndex >= MAX_CONDITIONS) {
+		printf("Server - Broadcast_RPC: CV index >= MAX_CVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex < 0) {
+		printf("Server - Broadcast_RPC: Lock index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (lockIndex >= MAX_LOCKS) {
+		printf("Server - Broadcast_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[lockIndex].exists) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
@@ -744,6 +872,21 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 }
 
 void DestroyCV_RPC(int conditionIndex, int machineID) {
+	if (conditionIndex < 0) {
+		printf("Server - DestroyCV_RPC: CV index less than zero. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+	if (conditionIndex >= MAX_CONDITIONS) {
+		printf("Server - DestroyCV_RPC: CV index >= MAX_CVS. Invalid.\n");
+
+		// SEND BACK ERROR MESSAGE
+		ServerReply(machineID, BAD_INDEX);
+		return;
+	}
+
 	//If this CV doesn't exist, return
 	if (!serverCVs[conditionIndex].exists) {
 		printf("Server - DestroyCV_RPC: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
@@ -850,7 +993,7 @@ void GetMV_RPC(int index, int machineID) {
 		ServerReply(machineID, BAD_INDEX);
 		return;
 	}
-	if (index >= MAX_CONDITIONS) {
+	if (index >= MAX_MVS) {
 		printf("Server - GetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -872,7 +1015,7 @@ void SetMV_RPC(int index, int val, int machineID) {
 		ServerReply(machineID, BAD_INDEX);
 		return;
 	}
-	if (index >= MAX_CONDITIONS) {
+	if (index >= MAX_MVS) {
 		printf("Server - SetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
