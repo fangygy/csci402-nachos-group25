@@ -9,7 +9,7 @@
 
 #include "syscall.h"
 
-#define size 4
+#define size 256
 
 int A[size];	/* size of physical memory; with code, we'll run out of space!*/
 int B[size];
