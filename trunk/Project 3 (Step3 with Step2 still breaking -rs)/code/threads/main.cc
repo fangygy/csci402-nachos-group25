@@ -167,7 +167,7 @@ main(int argc, char **argv)
 	}
 #endif // FILESYS
 #ifdef NETWORK
-        if (!strcmp(*argv, "-o")) {
+        /*if (!strcmp(*argv, "-o")) {
 	    ASSERT(argc > 1);		//ASSERT(argc > 1);
             //Delay(2); 				// delay for 2 seconds
 						// to give the user time to 
@@ -191,7 +191,12 @@ main(int argc, char **argv)
 				
 				argCount = 2;
 			}
+		}*/
+		
+		if (netname == 0) {		// This is a server
+			Server();
 		}
+		
 #endif // NETWORK
     }
 
