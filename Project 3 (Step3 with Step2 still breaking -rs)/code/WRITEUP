@@ -1,5 +1,5 @@
-Title: Writeup for Project 2, Spring 2011
-Date: 02/27/11
+Title: Writeup for Project 3, Spring 2011
+Date: 03/29/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
 	Jasper Lee			jasperkl@usc.edu		3483925510
@@ -24,8 +24,12 @@ II. Assumptions:
 
 III. Design:
 
+	Memory Management
 	- exception.cc
-	- addrspace.cc/h
+	- system.cc, system.h
+	- addrspace.cc, addrspace.h
+
+	Network
 	- syscall.h
 	- IPTEntry.cc/h
 	- EnhancedTranslationEntry.cc/h
@@ -245,12 +249,20 @@ V. Testing:
 		ClientA and B awake. All Clients will then destroy the lock and CV before printing out the MV, which should be 4, and exiting.
 
 VI. Discussion:
-		We expected that bulletproofing out syscalls wouldn't be too difficult through the use of locks and error handling.
-		Our safeguards are very thorough, however we ran into a problem with syscalls that take in virtual addresses. We were not
-		able to implement a way of checking that the input vitrual address was within valid bounds. Other than that, out syscall
-		implementation went about as smoothly as we expected.
+		We expected that our memory management implementation and design of our TLB and IPT would go smoothly and that all our Project 2
+		tests would run fine, the same way they ran in Project 2. We followed Crowley's notes step by step while implementing the 
+		TLD handling and virtual memory, and we hoped everything would turn out smoothly.
 
-		All of our syscalls, along with our passport office, run proplerly and synchronously (aside from the aforementioned problem
-		with bad input virtual addresses). We are able to run multiple passport offices, with and without random context switching.
+		However, even though our Project 2 tests did work, when we tried running them using -rs, they wouldn't work anymore. We tried several
+		methods to fix it, and went through our code many times, including several trips to office hours, to no avail. In the end, we couldn't figure
+		out why the -rs didn't work with our original Project 2 tests when they worked perfectly fine in Project 2, with or without -rs. Also,
+		our tests work fine without -rs in this project using the new memory management, and some tests also work with -rs. Only the tests that 
+		involve complex forking syscalls (such as PassportOffice and CVTest) run into race conditions. In the end, we couldn't figure out why 
+		-rs never worked, so we disabled the interrupts in the particular functions that caused the race conditions  in addrspace.cc, and continued
+		on with the project.
+
+		Other than that particular roadbump, all the rest of our work went fine and to our expectations. Networking and setting up
+		clients and servers and new syscalls went well, and things worked and ran to our expectations.
+
 		
 VII. Miscellaneous:
