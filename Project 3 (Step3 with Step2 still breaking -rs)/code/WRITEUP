@@ -25,13 +25,16 @@ II. Assumptions:
 III. Design:
 
 	- exception.cc
-	- process.cc/h
-	- syscall.h
 	- addrspace.cc/h
+	- syscall.h
+	- IPTEntry.cc/h
+	- EnhancedTranslationEntry.cc/h
+	- nettest.cc
 
 IV. Implementation:
 
 	+ Files Modified
+	  Parts 1 & 2
 		+ addrspace.h, addrspace.cc
 		+ exception.cc
 		+ syscall.h
@@ -39,61 +42,96 @@ IV. Implementation:
 		+ Makefile.common
 		+ Makefile (in test directory)
 		+ machine.h
+		+ matmult.c
+		+ sort.c
+	  Part 3
+		+ exception.cc
+		+ syscall.h
+		+ main.cc
+		+ system.h, system.cc
+		+ nettest.cc
 	
 	+ Files added
-		+ process.h, process.cc
-		+ lockTest.c, CVTest.c, forkTest.c, execTest.c, execCVTest.c
+	  Parts 1 & 2
+		+ IPTEntry.h, IPTEntry.cc
+		+ EnhancedTranslationEntry.h, EnhancedTranslationEntry.cc
+	  Part 3
+		+ Client.c
+		+ Client1A.c, Client1B.c
+		+ Client2A.c, Client2B.c, Client2C.c
 	
 	+ Data Structures added
-		-- in file process.h
-		struct Process {
-			AddrSpace* space;			// The address space of this process
-			char* name;					// A name for debugging
-			SpaceId processId;			// SpaceId of location in processTable
-			int numThreads;				// Number of threads in this process
+		-- in file IPTEntry.h
+		class IPTEntry {
+		  public:
+			int virtualPage; 	// The page number in virtual memory.
+			int physicalPage;	// The page number in real memory (relative to the
+									//  start of "mainMemory"
+			SpaceId processID;	// Proccess ID, what else?
+			bool valid;     	// If this bit is set, the translation is ignored.
+									// (In other words, the entry hasn't been initialized.)
+			bool readOnly;		// If this bit is set, the user program is not allowed
+									// to modify the contents of the page.
+			bool use;       	// This bit is set by the hardware every time the
+									// page is referenced or modified.
+			bool dirty;     	// This bit is set by the hardware every time the
+									// page is modified.
+			bool inUse;			// For eviction
+		};
+		
+		-- in file EnhancedTranslationEntry.h
+		class EnhancedTranslationEntry {
+		  public:
+			int virtualPage;  	// The page number in virtual memory.
+			int physicalPage;  	// The page number in real memory (relative to the
+									//  start of "mainMemory"
+			bool valid;         // If this bit is set, the translation is ignored.
+									// (In other words, the entry hasn't been initialized.)
+			bool readOnly;		// If this bit is set, the user program is not allowed
+									// to modify the contents of the page.
+			bool use;           // This bit is set by the hardware every time the
+									// page is referenced or modified.
+			bool dirty;         // This bit is set by the hardware every time the
+									// page is modified.
+					
+			enum DiskLocation { EXECUTABLE, NOTONDISK, SWAP };
+			DiskLocation diskLocation;	// location of this page
+			
+			int byteOffset;	// byte offset of this page
 		};
 		-- in file exception.cc
-		struct KernelLock {
-			Lock* lock;					// The lock this KernelLock references
-			AddrSpace* space;			// The space the lock is associated with
-			bool beingAcquired;			// Prevents deletion while being acquired
-			bool isToBeDeleted;			// Used to delete lock after thread releases it
-			bool deleted;				// Used to verify status of lock
-			
-			KernelLock() {
-				lock = NULL;
-				beingAcquired = false;
-				space = NULL;
-				isToBeDeleted = false;
-				deleted = true;
-			}
+		struct ServerLock {
+			bool exists;				// Whether this lock has been created
+			char* name;					// Name of this lock
+			int holder;					// machineID of the lock owner
+			List *queue;				// Queue for lock acquisition
+			int numClients;				// Number of clients that "created" this lock
+			int clientID[MAX_CLIENTS];	// ID's of clients that "created" this lock
 		};
 
-		struct KernelCondition {
-			Condition* condition;		// Condition this KernelCondition refers to
-			AddrSpace* space;			// The space associated with this condition
-			bool beingAcquired;			// Prevents deletion while waiting
-			bool isToBeDeleted;			// Used to delete after waking up from a wait
-			bool deleted;				// Used to verify status of lock
-			
-			KernelCondition() {
-				condition = NULL;
-				beingAcquired = false;
-				space = NULL;
-				isToBeDeleted = false;
-				deleted = true;
-			}
+		struct ServerCV {
+			char* name;					// Name of this CV
+			bool exists;				// Whether this CV has been created
+			int waitingLock;			// Lock using this CV
+			List* queue;				// Queue for clients waiting on this CV
+			int numClients;				// Number of clients that "created" this CV
+			int clientID[MAX_CLIENTS];	// ID's of clients that "created" this CV
+		};
+
+		struct ServerMV {
+			char* name;					// "Name" of this MV
+			int value;					// Value of this MV
 		};
 	+ Data Structures created
-		-- Syscalls in exception.cc
-		-- AllocateStack(unsigned int vaddr), DeallocateStack, DeallocateProcess
-			- For allocating more stack space or deallocating space
+		-- ServerSyscalls in exception.cc
+		-- PageToTLB(SpaceId id), SetSwapFile(int vaddr) in addrspace.h/cc
 V. Testing:
 
 	+ How to test
+	  Parts 1 & 2
 		Compile tests with gmake in the test directory.
-		If haven't done so beforehand, gmake programs in userprog directory.
-		To run tests, you must call them in the userprog directory.
+		If haven't done so beforehand, gmake in vm directory.
+		To run tests, you must call them in the vm directory.
 
 		To run lockTest, type:
 		nachos -x ../test/lockTest
@@ -113,28 +151,58 @@ V. Testing:
 		To run traceTest, type:
 		nachos -x ../test/traceTest
 		
-		To run passport tests, type:
-		nachos -x ../test/execPassportTests
+		To run passport office, type:
+		nachos -x ../test/PassportOffice
+		
+		To run matmult, type:
+		nachos -x ../test/matmult
+		
+		To run sort, type:
+		nachos -x ../test/sort
 
+	  Part 3
+		Compile tests with gmale in the test directory
+		If haven't done so beforehand, gmake in network directory
+		To run tests, call them in network directory
+		
+		*NOTE* Make sure to run "nachos -m 0" to set up the Server before running other clients
+		
+		To run single client lock test, type:
+		nachos -m 1 -x ../test/Client
+		
+		To run two clients lock/CV test, type: (In this order on different machines)
+		nachos -m 1 -x ../test/Client1A
+		nachos -m 2 -x ../test/Client1B
+		
+		To run three clients lock/CV/MV test, type: (In this order on different machines)
+		nachos -m 1 -x ../test/Client2A
+		nachos -m 2 -x ../test/Client2B
+		nachos -m 3 -x ../test/Client2C
+		
 	+ Test Output
 		All our tests output expected results. For more a more in-depth discussion
 		of our test cases, you can reference the TEST_WRITEUP in the test directory.
+		
+		Ctrl+C is needed to exit the Server for Network testing
 
 		- Our most basic test, execTest, tests both good and bad usage of the Exec syscall. 
 		Calling a bad file name or anything other than a proper program will output an 
 		error message but will not crash Nachos. It will then continue on to call Exec on 
 		the second test, forkTest, which tests our Fork syscall. execTest properly executes 
 		forkTest, thus we know Exec works. 
+		
 		- forkTest tests our Fork functionality by calling Fork on a test function that simply
 		prints out a statement to show it works. forkTest calls Fork twice, so we expected 
 		two output statements from the function, which it did. Afterwards, it would call
 		Fork using bad inputs, which printed out the errors that we expected while not crashing the system.
+		
 		- lockTest and CVTest (the latter of which executes with execCVTest) both test the
 		functionality of all our Lock and Condition Variable related syscalls, including Acquire,
 		Release, Wait, Signal, and Broadcast, along with thier respective Create and Destroy syscalls.
 		The test cases utilize simple functions to test the order of execution using
 		the functions Wait, Signal, and Broadcast along with the usage of Acquire and Release. 
 		All tests output expected results without crashing Nachos unexpectedly.
+		
 		- destroyCVTest tests the functionality of locks and CVs that have been destroyed and the threads that
 		still need those locks/CVs. 2 "Waiter" threads and one "Troll" threads are forked off, and they wait on a CV.
 		A "Signaller" thread broadcasts to awaken them and waits on a new CV. The Troll deletes a lock that
@@ -150,10 +218,12 @@ V. Testing:
 		That customers are "smart" enough to go into regular lines if both regular and privileged lines are equal lengths,
 		whether they have enough money for it or not, and otherwise will always pick the shortest line if they have the
 		funds for it. If the customer has no funds, then the customer will compare regular lines only.
+		
 		- passportTest2 tests the Manager and reading money from each Clerk. The Manager will read
 		one Clerk's money total at a time, and add that total to his calculated sum.
 		This test also tests that the Clerks all go on break when there are no customers,
 		as there are never any customers, thus no customers in thier lines.
+		
 		- passport3 tests a regular passport runthrough with 5 customers and one of each clerk type. 
 		At the end, it is shown clearly that Customers do not leave the office until they receive thier passport from the cashier,
 		and the one cashier will not begin the next customer until the first one finishes leaving the office.
@@ -162,6 +232,17 @@ V. Testing:
 		the clerks all go on break when they are done with all the customers in thier line.
 		Additionally, this test also demonstrates that the Manager calls back Clerks from break when there are too many
 		customers in their line (as seen near the middle of the output block).
+		
+		- Single Client test will create two locks, acquire the first one, and call destroy before exiting.
+		
+		- Two Client test will create one lock and one CV that is shared between two clients. ClientA will acquire the lock
+		and wait on it, while ClientB will acquire and signal. ClientA should be run before ClientB. Afterwards, both Clients will
+		call destroy on the lock and CV and exit.
+		
+		- Three Client test will create one lock, one CV, and one monitor variable that is shared between three clients. ClientA
+		will initially set the MV to 10, then acquire the lock and increment it to 11 before waiting on the CV. ClientB will then acquire
+		the lock and set the MV to 5 before waiting on the CV. ClientC will finally acquire the lock, decrement the MV to 4 and broadcast both
+		ClientA and B awake. All Clients will then destroy the lock and CV before printing out the MV, which should be 4, and exiting.
 
 VI. Discussion:
 		We expected that bulletproofing out syscalls wouldn't be too difficult through the use of locks and error handling.
