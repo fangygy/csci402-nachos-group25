@@ -788,7 +788,7 @@ int ClientReceive() {
 	
 	//Parse buffer into a return value
 	int rv = 0;
-	
+	/*
 	char temp[2];
 	temp[0] = buffer[0];
 	int neg = atoi(temp);
@@ -809,6 +809,8 @@ int ClientReceive() {
 	if (neg == 1) {
 		rv *= -1;
 	}
+	*/
+	rv = atoi(buffer);
 	printf("Client: rv = %d\n", rv);
 	
 	return rv;
@@ -833,7 +835,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	int mvIndex;
 	
@@ -855,10 +857,27 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
       interrupt->Halt();
     }
 	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in CreateMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in CreateMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in CreateMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in CreateMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in CreateMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in CreateMV: Not Lock owner\n", NOT_OWNER);
+	}
+
     
 	//Do data parsing here with mvIndex and buffer
-	//mvIndex = buffer?
+	mvIndex = rv;
 	
     fflush(stdout);
 	#endif
@@ -870,7 +889,7 @@ int GetMV_Syscall(int index) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	int mvValue;
@@ -893,9 +912,26 @@ int GetMV_Syscall(int index) {
       interrupt->Halt();
     }
 	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in GetMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in GetMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in GetMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in GetMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in GetMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in GetMV: Not Lock owner\n", NOT_OWNER);
+	}
 	
 	//Parse buffer to get mvValue
+	mvValue = rv;
 	
     fflush(stdout);
 	#endif
@@ -906,7 +942,7 @@ void SetMV_Syscall(int index, int val) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -927,7 +963,22 @@ void SetMV_Syscall(int index, int val) {
       interrupt->Halt();
     }
 	
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in SetMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in SetMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in SetMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in SetMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in SetMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in SetMV: Not Lock owner\n", NOT_OWNER);
+	}
 	printf("Successfully set MV at Index: %d to Value: %d", index, val);
 	
     fflush(stdout);
@@ -1111,7 +1162,7 @@ void ServerRelease_Syscall(int lockIndex) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -1230,7 +1281,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -1281,23 +1332,26 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
+	printf("Segmentation?\n");
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
+	printf("Segmentation?\n");
 
 	#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
+	printf("Segmentation?\n");
     if ( !success ) {
       printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
@@ -1332,7 +1386,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
@@ -1380,7 +1434,7 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
-	char* data;
+	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later

@@ -96,7 +96,7 @@ struct ServerMV {
 	int value;
 	
 	ServerMV() {
-		name = NULL;
+		name = "";
 		value = 0;
 	}
 };
@@ -598,7 +598,7 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	// after this one releases it
 	if (serverLocks[lockIndex].queue->IsEmpty()) {
 		serverLocks[lockIndex].holder = -1;		
-		ServerReply(machineID, 0);
+		//ServerReply(machineID, 0);
 		return;
 	}
 	
@@ -941,8 +941,9 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 		ServerReply(machineID, NO_SPACE);
 		return;
 	}
+	
+	printf("CreateMV\n");
 
-	int index = -1;
 	for (int i = 0; i < MAX_MVS; i++) {
 		if(strcmp(serverMVs[i].name, name) == 0){
 			if (val == 0x9999) {
@@ -965,7 +966,7 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 	// Otherwise, it doesn't exist
 	// find 1st vacancy in the list
 	for (int i = 0; i < MAX_MVS; i++) {
-		if(serverMVs[i].name == NULL){
+		if(strcmp(serverMVs[i].name, "") == 0){
 			//serverMVs[i].name = name;
 			strcpy(serverMVs[i].name, name);
 			if (val == 0x9999) {
@@ -1005,7 +1006,7 @@ void GetMV_RPC(int index, int machineID) {
 	int val = serverMVs[index].value;
 	
 	// SEND BACK val IN MESSAGE
-	ServerReply(val, machineID);
+	ServerReply(machineID, val);
 }
 
 void SetMV_RPC(int index, int val, int machineID) {
@@ -1223,6 +1224,7 @@ void Server() {
 		} else if (strcmp(data, "mon") == 0) {
 			data = strtok (NULL, " ,.-");
 			act = data;
+			//printf("This far\n");
 			if (strcmp(data, "cre") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1241,15 +1243,18 @@ void Server() {
 				printf("Server: MV Get, machine = %d, name = %s\n", clientID, param1);
 				GetMV_RPC(mvIndex, clientID);
 			} else if (strcmp(data, "set") == 0) {
+				//printf("This farr\n");
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				mvIndex = atoi(param1);
 				
+				//printf("This farr\n");
 				data = strtok (NULL, " ,.-");
 				param2 = data;
 				value = atoi(param2);
 				
-				printf("Server: MV Set, machine = %d, index = %s, value = %s\n", clientID, mvIndex, value);
+				//printf("This farr\n");
+				printf("Server: MV Set, machine = %d, index = %d, value = %d\n", clientID, mvIndex, value);
 				SetMV_RPC(mvIndex, value, clientID);
 			/*} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
