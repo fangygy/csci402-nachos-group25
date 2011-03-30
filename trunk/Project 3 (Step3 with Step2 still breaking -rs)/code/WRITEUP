@@ -6,35 +6,29 @@ Group Num 25:
 	Yinlerthai Chan		yinlertc@usc.edu		4550945929
 
 I. Requirements:
-
-	- Modify the Nachos code to support multiprogramming.
-	- Implement system calls and exception handling.
-	- Use this new system to simulate the passport office done in Project 1
+	- Implement software-management of the TLB
+	- Implement virtual memory
+	- Implement remote procedure calls for Locks and CVs yadda yadda yadda
 	
 II. Assumptions:
-		We hoped that everything would go as planned. After designing our code and test cases, we
-	hoped our implementations would go smoothly without too many severe problems that would
-	cause any major setbacks. We worked slowly and took every class and function one step at a time.
-	We did have expectations that things would be rough near the middle of the project phase
-	as we encountered road bumps with understanding out assignment and the syntax we need to know
-	to accomplish them. We might have had some doubts whether or not we would be able to submit this project
-	within the deadline, and assumed using another slipdate as we stumbled with the 
-	implementation of the Fork, Exec, and Exit syscalls since it involved utilizing stacks and
-	page allocations where we had little experience.
+	We did not expect needing to change the Makefile for the Network directory to allow TLB usage
+	We also assumed that following the virtual memory designs from lecture would be sufficient, but we ran
+	into a race condition.
 
 III. Design:
-
+	
 	Memory Management
 	- exception.cc
 	- system.cc, system.h
 	- addrspace.cc, addrspace.h
-
-	Network
 	- syscall.h
 	- IPTEntry.cc/h
 	- EnhancedTranslationEntry.cc/h
+	
+	Network
 	- nettest.cc
-
+	- exception.cc
+	
 IV. Implementation:
 
 	+ Files Modified
@@ -134,7 +128,7 @@ V. Testing:
 	+ How to test
 	  Parts 1 & 2
 		Compile tests with gmake in the test directory.
-		If haven't done so beforehand, gmake in vm directory.
+		If you haven't done so beforehand, gmake in vm directory.
 		To run tests, you must call them in the vm directory.
 
 		To run lockTest, type:
@@ -158,15 +152,20 @@ V. Testing:
 		To run passport office, type:
 		nachos -x ../test/PassportOffice
 		
-		To run matmult, type:
+		To run matmult test, type:
 		nachos -x ../test/matmult
+		Note: We modified matmult to perform 3 Matrix multiplications, each on a separate thread.
+		There are 6 20x20 matricess, and each multiplication Exits with 7220.
 		
-		To run sort, type:
+		To run sort test, type:
 		nachos -x ../test/sort
+		Note: The sort algorithm given to us was flawed, so we changed it to run Bubblesort. 4 arrays of 256 ints
+		are generated in reverse order (256, 255, ... , 1), each on a separate thread. Each thread sorts a list and
+		prints the value stored in the first element. Each threads exits with a value of 1.
 
 	  Part 3
-		Compile tests with gmale in the test directory
-		If haven't done so beforehand, gmake in network directory
+		Compile tests with gmake in the test directory
+		If you haven't done so beforehand, gmake in network directory
 		To run tests, call them in network directory
 		
 		*NOTE* Make sure to run "nachos -m 0" to set up the Server before running other clients
