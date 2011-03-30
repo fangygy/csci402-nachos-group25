@@ -1337,21 +1337,21 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
-	printf("Segmentation?\n");
+	//printf("Segmentation?\n");
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
     outMailHdr.from = 0;
     outMailHdr.length = strlen(data) + 1;
-	printf("Segmentation?\n");
+	//printf("Segmentation?\n");
 
 	#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
-	printf("Segmentation?\n");
+	//printf("Segmentation?\n");
     if ( !success ) {
       printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
