@@ -15,6 +15,7 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
+#include "list.h"
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -50,7 +51,17 @@ extern SynchDisk   *synchDisk;
 #endif
 
 #ifdef NETWORK
-#include "post.h"
+#include "../network/post.h"
+
+extern int netname;
+
+extern int BAD_FORMAT;
+extern int BAD_INDEX;
+extern int NO_SPACE;
+extern int NOT_CREATED;
+extern int DELETED;
+extern int NOT_OWNER;
+
 extern PostOffice* postOffice;
 #endif
 

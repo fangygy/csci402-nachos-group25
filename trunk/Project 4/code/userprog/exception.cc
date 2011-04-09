@@ -26,6 +26,8 @@
 #include "syscall.h"
 #include "synch.h"
 #include "process.h"
+#include "../machine/network.h"
+#include "../network/post.h"
 #include <stdio.h>
 #include <iostream>
 #include <ctime>		// For seeding random
@@ -35,11 +37,15 @@ using namespace std;
 
 #define MAX_LOCKS 512
 #define MAX_CONDITIONS 512
+#define MAX_MVS 512
+#define MAX_CLIENTS 512
+
 int numLocks = 0;
 int numConditions = 0;
 
 Lock* lock_condLock = new Lock("lock_condLock");
 Lock* memoryLock = new Lock("memoryLock");
+Lock* traceLock = new Lock("traceLock");
 
 struct KernelLock {
 	Lock* lock;
@@ -769,6 +775,686 @@ void Wait_Syscall(int cIndex, int lIndex) {
 	return;
 }
 
+#ifdef NETWORK
+int ClientReceive() {
+	PacketHeader inPktHdr;
+    MailHeader inMailHdr;
+	
+	char buffer[MaxMailSize];
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	printf("Client: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
+	fflush(stdout);
+	
+	//Parse buffer into a return value
+	int rv = 0;
+	
+	rv = atoi(buffer);
+	printf("Client: rv = %d\n", rv);
+	
+	return rv;
+}
+#endif
+
+int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
+	char* name;
+	
+	//Read char* from the vaddr
+	if ( !(name = new char[length]) ) {
+		printf("%s","Error allocating kernel buffer for server lock creation!\n");
+		return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+			printf("%s","Bad pointer passed to server lock creation\n");
+			delete[] name;
+			return -1;
+		}
+    }
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	int mvIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon cre %s %d", name, value);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in CreateMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in CreateMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in CreateMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in CreateMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in CreateMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in CreateMV: Not Lock owner\n", NOT_OWNER);
+	}
+
+    
+	//Do data parsing here with mvIndex and buffer
+	mvIndex = rv;
+	
+    fflush(stdout);
+	#endif
+	return mvIndex;
+}
+
+int GetMV_Syscall(int index) {
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	int mvValue;
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon get %d", index);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in GetMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in GetMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in GetMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in GetMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in GetMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in GetMV: Not Lock owner\n", NOT_OWNER);
+	}
+	
+	//Parse buffer to get mvValue
+	mvValue = rv;
+	
+    fflush(stdout);
+	#endif
+	return mvValue;
+}
+
+void SetMV_Syscall(int index, int val) {
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "mon set %d %d", index, val);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in SetMV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in SetMV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in SetMV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in SetMV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in SetMV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in SetMV: Not Lock owner\n", NOT_OWNER);
+	}
+	printf("Successfully set MV at Index: %d to Value: %d", index, val);
+	
+    fflush(stdout);
+	#endif
+}
+
+int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
+	char* name;
+	
+	//Read char* from the vaddr
+	if ( !(name = new char[length]) ) {
+		printf("%s","Error allocating kernel buffer for server lock creation!\n");
+		return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+			printf("%s","Bad pointer passed to server lock creation\n");
+			delete[] name;
+			return -1;
+		}
+    }
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	int lockIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc cre %s", name);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	//postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in CreateLock: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in CreateLock: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in CreateLock: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in CreateLock: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in CreateLock: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in CreateLock: Not Lock owner\n", NOT_OWNER);
+	}
+	
+	lockIndex = rv;
+    
+	//Do data parsing here with lockIndex and buffer
+	//lockIndex = buffer?
+	
+    //fflush(stdout);		// clientReceive takes care of this
+	
+	#endif
+	return lockIndex;
+}
+
+void ServerDestroyLock_Syscall(int lockIndex){
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data [MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc des %d", lockIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "loc des %d", lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in DestroyLock: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in DestroyLock: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in DestroyLock: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in DestroyLock: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in DestroyLock: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in DestroyLock: Not Lock owner\n", NOT_OWNER);
+	}
+
+    printf("Successfully sent a Destroy Request on Lock: %d\n", lockIndex);
+	
+    fflush(stdout);
+	#endif
+}
+
+void ServerAcquire_Syscall(int lockIndex) {
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc acq %d", lockIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+	
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "loc acq %d", lockIndex);
+	//char* tdata = "lock acq 0";
+	//sprintf(data, "%s", tdata);
+	//printf("%s\n", data);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data);
+	
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in Acquire: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in Acquire: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in Acquire: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in Acquire: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in Acquire: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in Acquire: Not Lock owner\n", NOT_OWNER);
+	}
+
+
+    printf("Successfully acquired Lock: %d\n", lockIndex);
+	
+    fflush(stdout);
+	#endif
+}
+
+void ServerRelease_Syscall(int lockIndex) {
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "loc rel %d", lockIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "loc rel %d", lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in Release: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in Release: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in Release: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in Release: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in Release: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in Release: Not Lock owner\n", NOT_OWNER);
+	}
+
+
+    printf("Successfully released Lock: %d\n", lockIndex);
+	
+    fflush(stdout);
+	#endif
+}
+
+int ServerCreateCV_Syscall(unsigned int vaddr, int length){
+	
+	char* name;
+	
+	//Read char* from the vaddr
+	if ( !(name = new char[length]) ) {
+		printf("%s","Error allocating kernel buffer for server cv creation!\n");
+		return -1;
+    } else {
+        if ( copyin(vaddr,length,name) == -1 ) {
+			printf("%s","Bad pointer passed to server cv creation\n");
+			delete[] name;
+			return -1;
+		}
+    }
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char buffer[MaxMailSize];
+	
+	int condIndex;
+	
+	//Create the correct message to send here? Ask Antonio later
+	char request[MaxMailSize];
+	sprintf(request, "con cre %s", name);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(request) + 1;
+	
+	#ifdef NETWORK
+    // Send the first message
+    bool success = postOffice->Send(outPktHdr, outMailHdr, request); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in CreateCV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in CreateCV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in CreateCV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in CreateCV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in CreateCV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in CreateCV: Not Lock owner\n", NOT_OWNER);
+	}
+
+	condIndex = rv;
+	
+	//Parse buffer into a condIndex
+	
+    fflush(stdout);
+	#endif
+	return condIndex;
+}
+
+void ServerDestroyCV_Syscall(int conditionIndex){
+	
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con del %d", conditionIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "con del %d", conditionIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in DestroyCV: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in DestroyCV: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in DestroyCV: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in DestroyCV: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in DestroyCV: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in DestroyCV: Not Lock owner\n", NOT_OWNER);
+	}
+
+	printf("Successfully called Destroy on Condition: %d\n", conditionIndex);
+	
+    fflush(stdout);
+	#endif
+}
+
+void ServerWait_Syscall(int conditionIndex, int lockIndex){
+
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
+	//printf("Segmentation?\n");
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+	//printf("Segmentation?\n");
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+	//printf("Segmentation?\n");
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+	printf("Waiting on Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in Wait: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in Wait: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in Wait: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in Wait: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in Wait: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in Wait: Not Lock owner\n", NOT_OWNER);
+	}
+
+	printf("Woken on Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
+	
+    fflush(stdout);
+	#endif
+}
+
+void ServerSignal_Syscall(int conditionIndex, int lockIndex){
+
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
+	printf("Signalling Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in Signal: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in Signal: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in Signal: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in Signal: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in Signal: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in Signal: Not Lock owner\n", NOT_OWNER);
+	}
+	
+    fflush(stdout);
+	#endif
+}
+
+void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
+	PacketHeader outPktHdr, inPktHdr;
+    MailHeader outMailHdr, inMailHdr;
+	
+	char data[MaxMailSize];
+	char buffer[MaxMailSize];
+	
+	//Create the correct message to send here? Ask Antonio later
+	sprintf(data, "con bro %d %d", conditionIndex, lockIndex);
+	
+	// Check following if this will actually work?
+	outPktHdr.to = 0;		
+    outMailHdr.to = 0; 
+    outMailHdr.from = 0;
+    outMailHdr.length = strlen(data) + 1;
+
+	#ifdef NETWORK
+    // Send the first message
+	//sprintf(data, "con bro %d", conditionIndex, lockIndex);
+	printf("Broadcasting Condition: %d with Lock: %d\n", conditionIndex, lockIndex);
+    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
+
+    if ( !success ) {
+      printf("The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+	
+//	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	int rv = ClientReceive();
+	
+	if (rv == BAD_FORMAT) {
+		printf("Client: Error Code %d in Broadcast: Bad Format\n", BAD_FORMAT);
+	} else if (rv == BAD_INDEX) {
+		printf("Client: Error Code %d in Broadcast: Index out of range\n", BAD_INDEX);
+	} else if (rv == NO_SPACE) {
+		printf("Client: Error Code %d in Broadcast: Not enough space\n", NO_SPACE);
+	} else if (rv == NOT_CREATED) {
+		printf("Client: Error Code %d in Broadcast: Lock has not been created\n", NOT_CREATED);
+	} else if (rv == DELETED) {
+		printf("Client: Error Code %d in Broadcast: Lock has been deleted\n", DELETED);
+	} else if (rv == NOT_OWNER) {
+		printf("Client: Error Code %d in Broadcast: Not Lock owner\n", NOT_OWNER);
+	}
+	
+    fflush(stdout);
+	#endif
+}
 
 void Exit_Syscall(int status) {
 	Process* process = currentThread->myProcess;
@@ -1080,6 +1766,55 @@ void ExceptionHandler(ExceptionType which) {
 		DEBUG('a', "Trace syscall.\n");
 		Trace_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
+		break;
+		
+		case SC_CreateMV:
+		DEBUG('a', "Create MV syscall.\n");
+			rv = CreateMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
+		break;
+		case SC_GetMV:
+		DEBUG('a', "Get MV syscall.\n");
+			rv = GetMV_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_SetMV:
+		DEBUG('a', "Set MV syscall.\n");
+			SetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+		break;
+		case SC_ServerCreateLock:
+		DEBUG('a', "Server Create Lock syscall.\n");
+			rv = ServerCreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+		break;
+		case SC_ServerDestroyLock:
+		DEBUG('a', "Server Destroy Lock syscall.\n");
+			ServerDestroyLock_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_ServerAcquire:
+		DEBUG('a', "Server Acquire syscall.\n");
+			ServerAcquire_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_ServerRelease:
+		DEBUG('a', "Server Release syscall.\n");
+			ServerRelease_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_ServerCreateCV:
+		DEBUG('a', "Server Create CV syscall.\n");
+			rv = ServerCreateCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+		break;
+		case SC_ServerDestroyCV:
+		DEBUG('a', "Server Destroy CV syscall.\n");
+			ServerDestroyCV_Syscall(machine->ReadRegister(4));
+		break;
+		case SC_ServerWait:
+		DEBUG('a', "Server Wait syscall.\n");
+			ServerWait_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5));
+		break;
+		case SC_ServerSignal:
+		DEBUG('a', "Server Signal syscall.\n");
+			ServerSignal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+		break;
+		case SC_ServerBroadcast:
+		DEBUG('a', "Server Broadcast syscall.\n");
+		ServerBroadcast_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5));
 		break;
 	}
 
