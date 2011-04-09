@@ -218,6 +218,103 @@ Trace:
    j     $31
    .end Trace
 
+   .globl CreateMV
+   .ent  CreateMV
+CreateMV:
+   addiu $2,$0,SC_CreateMV
+   syscall
+   j     $31
+   .end CreateMV
+
+   .globl GetMV
+   .ent  GetMV
+GetMV:
+   addiu $2,$0,SC_GetMV
+   syscall
+   j     $31
+   .end GetMV
+
+   .globl SetMV
+   .ent  SetMV
+SetMV:
+   addiu $2,$0,SC_SetMV
+   syscall
+   j     $31
+   .end SetMV
+
+   .globl ServerRelease
+   .ent  ServerRelease
+ServerRelease:
+   addiu $2,$0,SC_ServerRelease
+   syscall
+   j     $31
+   .end ServerRelease
+
+   .globl ServerAcquire
+   .ent  ServerAcquire
+ServerAcquire:
+   addiu $2,$0,SC_ServerAcquire
+   syscall
+   j     $31
+   .end ServerAcquire
+
+   .globl ServerCreateLock
+   .ent  ServerCreateLock
+ServerCreateLock:
+   addiu $2,$0,SC_ServerCreateLock
+   syscall
+   j     $31
+   .end ServerCreateLock
+
+   .globl ServerCreateCV
+   .ent  ServerCreateCV
+ServerCreateCV:
+   addiu $2,$0,SC_ServerCreateCV
+   syscall
+   j     $31
+   .end ServerCreateCV
+
+   .globl ServerWait
+   .ent  ServerWait
+ServerWait:
+   addiu $2,$0,SC_ServerWait
+   syscall
+   j     $31
+   .end ServerWait
+
+   .globl ServerSignal
+   .ent  ServerSignal
+ServerSignal:
+   addiu $2,$0,SC_ServerSignal
+   syscall
+   j     $31
+   .end ServerSignal
+
+   .globl ServerBroadcast
+   .ent  ServerBroadcast
+ServerBroadcast:
+   addiu $2,$0,SC_ServerBroadcast
+   syscall
+   j     $31
+   .end ServerBroadcast
+
+   .globl ServerDestroyLock
+   .ent  ServerDestroyLock
+ServerDestroyLock:
+   addiu $2,$0,SC_ServerDestroyLock
+   syscall
+   j     $31
+   .end ServerDestroyLock
+
+   .globl ServerDestroyCV
+   .ent  ServerDestroyCV
+ServerDestroyCV:
+   addiu $2,$0,SC_ServerDestroyCV
+   syscall
+   j     $31
+   .end ServerDestroyCV
+
+   
 /* dummy function to keep gcc happy */
         .globl  __main
         .ent    __main

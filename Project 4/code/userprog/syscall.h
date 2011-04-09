@@ -18,28 +18,43 @@
 /* system call codes -- used by the stubs to tell the kernel which system call
  * is being asked for
  */
-#define SC_Halt				0
-#define SC_Exit				1
-#define SC_Exec				2
-#define SC_Join				3
-#define SC_Create			4
-#define SC_Open				5
-#define SC_Read				6
-#define SC_Write			7
-#define SC_Close			8
-#define SC_Fork				9
-#define SC_Yield			10
-#define SC_Acquire			11
-#define SC_Release			12
-#define SC_Wait				13
-#define SC_Signal			14
-#define SC_Broadcast		15
-#define SC_CreateLock		16
-#define SC_DestroyLock		17
-#define SC_CreateCondition	18
-#define SC_DestroyCondition	19
-#define SC_Random			20
-#define SC_Trace			21
+#define SC_Halt					0
+#define SC_Exit					1
+#define SC_Exec					2
+#define SC_Join					3
+#define SC_Create				4
+#define SC_Open					5
+#define SC_Read					6
+#define SC_Write				7
+#define SC_Close				8
+#define SC_Fork					9
+#define SC_Yield				10
+
+#define SC_Acquire				11
+#define SC_Release				12
+#define SC_Wait					13
+#define SC_Signal				14
+#define SC_Broadcast			15
+#define SC_CreateLock			16
+#define SC_DestroyLock			17
+#define SC_CreateCondition		18
+#define SC_DestroyCondition		19
+#define SC_Random				20
+#define SC_Trace				21
+
+#define SC_CreateMV				22
+#define SC_GetMV				23
+#define SC_SetMV				24
+
+#define SC_ServerCreateLock		25
+#define SC_ServerAcquire		26
+#define SC_ServerRelease		27
+#define SC_ServerCreateCV		28
+#define SC_ServerWait			29
+#define SC_ServerSignal			30
+#define SC_ServerBroadcast		31
+#define SC_ServerDestroyLock	32
+#define SC_ServerDestroyCV		33
 
 #define MAXFILENAME 256
 
@@ -193,6 +208,55 @@ int Random(int max);
 /* Print a sentence and a number to the console window.
 */
 void Trace(int vaddr, int val);
+
+/* ******************** Networking stuff *********************/
+/* Creates a monitor variable for networking 
+*/
+int CreateMV(char* name, int length, int value);
+
+/* Gets a monitor variable for networking 
+*/
+int GetMV(int index);
+
+/* Sets a monitor variable for networking 
+*/
+void SetMV(int index, int val);
+
+/* Creates a lock for networking 
+*/
+int ServerCreateLock(char* name, int length);
+
+/* Acquires a lock for networking 
+*/
+void ServerAcquire(int lockIndex);
+
+/* Releases a lock for networking 
+*/
+void ServerRelease(int lockIndex);
+
+/* Creates a Condition Variable for networking 
+*/
+int ServerCreateCV(unsigned int vaddr, int length);
+
+/* Waits on a condition variable for networking 
+*/
+void ServerWait(int conditionIndex, int lockIndex);
+
+/* Signals a condition variable for networking 
+*/
+void ServerSignal(int conditionIndex, int lockIndex);
+
+/* Broadcasts all waiting condition variables for networking 
+*/
+void ServerBroadcast(int conditionIndex, int lockIndex);
+
+/* Destroys a lock for networking 
+*/
+void ServerDestroyLock(int lockIndex);
+
+/* Destroys a Condition Variable for networking 
+*/
+void ServerDestroyCV(int conditionIndex);
 
 
 #endif /* IN_ASM */

@@ -36,6 +36,16 @@ Lock* mainmemLock;
 #endif
 
 #ifdef NETWORK
+
+int netname = -1;		// default value for non-network programs
+
+int BAD_FORMAT;
+int BAD_INDEX;
+int NO_SPACE;
+int NOT_CREATED;
+int DELETED;
+int NOT_OWNER;
+
 PostOffice *postOffice;
 #endif
 
