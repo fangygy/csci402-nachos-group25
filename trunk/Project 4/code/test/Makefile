@@ -31,7 +31,9 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest destroyCVTest execDestroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests passportTest1 passportTest2 passportTest3 execPassportTests2
+all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
+	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
+	passportTest1 passportTest2 passportTest3 execPassportTests2 Client Client1A Client1B Client2A Client2B Client2C ClientBad
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -110,12 +112,6 @@ destroyCVTest: destroyCVTest.o start.o
 	$(LD) $(LDFLAGS) start.o destroyCVTest.o -o destroyCVTest.coff
 	../bin/coff2noff destroyCVTest.coff destroyCVTest
 
-execDestroyCVTest.o: execDestroyCVTest.c
-	$(CC) $(CFLAGS) -c execDestroyCVTest.c
-execDestroyCVTest: execDestroyCVTest.o start.o
-	$(LD) $(LDFLAGS) start.o execDestroyCVTest.o -o execDestroyCVTest.coff
-	../bin/coff2noff execDestroyCVTest.coff execDestroyCVTest
-
 writeTest.o: writeTest.c
 	$(CC) $(CFLAGS) -c writeTest.c
 writeTest: writeTest.o start.o
@@ -182,5 +178,47 @@ execPassportTests2: execPassportTests2.o start.o
 	$(LD) $(LDFLAGS) start.o execPassportTests2.o -o execPassportTests2.coff
 	../bin/coff2noff execPassportTests2.coff execPassportTests2
 
+Client.o: Client.c
+	$(CC) $(CFLAGS) -c Client.c
+Client: Client.o start.o
+	$(LD) $(LDFLAGS) start.o Client.o -o Client.coff
+	../bin/coff2noff Client.coff Client
+
+Client1A.o: Client1A.c
+	$(CC) $(CFLAGS) -c Client1A.c
+Client1A: Client1A.o start.o
+	$(LD) $(LDFLAGS) start.o Client1A.o -o Client1A.coff
+	../bin/coff2noff Client1A.coff Client1A
+
+Client1B.o: Client1B.c
+	$(CC) $(CFLAGS) -c Client1B.c
+Client1B: Client1B.o start.o
+	$(LD) $(LDFLAGS) start.o Client1B.o -o Client1B.coff
+	../bin/coff2noff Client1B.coff Client1B
+	
+Client2A.o: Client2A.c
+	$(CC) $(CFLAGS) -c Client2A.c
+Client2A: Client2A.o start.o
+	$(LD) $(LDFLAGS) start.o Client2A.o -o Client2A.coff
+	../bin/coff2noff Client2A.coff Client2A
+
+Client2B.o: Client2B.c
+	$(CC) $(CFLAGS) -c Client2B.c
+Client2B: Client2B.o start.o
+	$(LD) $(LDFLAGS) start.o Client2B.o -o Client2B.coff
+	../bin/coff2noff Client2B.coff Client2B
+
+Client2C.o: Client2C.c
+	$(CC) $(CFLAGS) -c Client2C.c
+Client2C: Client2C.o start.o
+	$(LD) $(LDFLAGS) start.o Client2C.o -o Client2C.coff
+	../bin/coff2noff Client2C.coff Client2C
+
+ClientBad.o: ClientBad.c
+	$(CC) $(CFLAGS) -c ClientBad.c
+ClientBad: ClientBad.o start.o
+	$(LD) $(LDFLAGS) start.o ClientBad.o -o ClientBad.coff
+	../bin/coff2noff ClientBad.coff ClientBad
+	
 clean:
 	rm -f *.o *.coff
