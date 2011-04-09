@@ -103,7 +103,17 @@ Initialize(int argc, char **argv)
 #endif
 #ifdef NETWORK
     double rely = 1;		// network reliability
-    int netname = 0;		// UNIX socket name
+	netname = 0;		// UNIX socket name
+	
+	// RPC Error Codes
+	
+	BAD_FORMAT = 9990;
+	BAD_INDEX = 9991;
+	NO_SPACE = 9992;
+	NOT_CREATED = 9993;
+	DELETED = 9994;
+	NOT_OWNER = 9995;
+	
 #endif
     
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
