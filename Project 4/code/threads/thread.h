@@ -131,6 +131,8 @@ class Thread {
 	int firstPageTable;			// index of first pageTableEntry in addrSpace
 	Process* myProcess;
 	
+	int mailboxID;
+	
 #endif
 };
 
