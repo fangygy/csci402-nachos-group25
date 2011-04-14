@@ -795,7 +795,7 @@ int ClientReceive() {
 }
 #endif
 
-int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
+int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	char* name;
 	
 	//Read char* from the vaddr
@@ -818,12 +818,12 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	int mvIndex;
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon cre %s %d", name, value);
+	sprintf(data, "mon cre %s %d %d", name, arraySize, value);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -862,7 +862,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int value) {
 	return mvIndex;
 }
 
-int GetMV_Syscall(int index) {
+int GetMV_Syscall(int outerIndex, int innerIndex) {
 	
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -873,12 +873,12 @@ int GetMV_Syscall(int index) {
 	int mvValue;
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon get %d", index);
+	sprintf(data, "mon get %d %d", outerIndex, innerIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -916,7 +916,7 @@ int GetMV_Syscall(int index) {
 	return mvValue;
 }
 
-void SetMV_Syscall(int index, int val) {
+void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
@@ -924,12 +924,12 @@ void SetMV_Syscall(int index, int val) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon set %d %d", index, val);
+	sprintf(data, "mon set %d %d %d", outerIndex, innerIndex, val);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -963,7 +963,7 @@ void SetMV_Syscall(int index, int val) {
 	#endif
 }
 
-int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
+int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	char* name;
 	
 	//Read char* from the vaddr
@@ -986,12 +986,12 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 	int lockIndex;
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc cre %s", name);
+	sprintf(data, "loc cre %s %d", name, arraySize);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1031,7 +1031,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length) {
 	return lockIndex;
 }
 
-void ServerDestroyLock_Syscall(int lockIndex){
+void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 	
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1040,12 +1040,12 @@ void ServerDestroyLock_Syscall(int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc des %d", lockIndex);
+	sprintf(data, "loc des %d %d", outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1081,7 +1081,7 @@ void ServerDestroyLock_Syscall(int lockIndex){
 	#endif
 }
 
-void ServerAcquire_Syscall(int lockIndex) {
+void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 	
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1090,12 +1090,12 @@ void ServerAcquire_Syscall(int lockIndex) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc acq %d", lockIndex);
+	sprintf(data, "loc acq %d %d", outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 	
 	#ifdef NETWORK
@@ -1135,7 +1135,7 @@ void ServerAcquire_Syscall(int lockIndex) {
 	#endif
 }
 
-void ServerRelease_Syscall(int lockIndex) {
+void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 	
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1144,12 +1144,12 @@ void ServerRelease_Syscall(int lockIndex) {
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc rel %d", lockIndex);
+	sprintf(data, "loc rel %d %d", outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1186,7 +1186,7 @@ void ServerRelease_Syscall(int lockIndex) {
 	#endif
 }
 
-int ServerCreateCV_Syscall(unsigned int vaddr, int length){
+int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 	
 	char* name;
 	
@@ -1211,12 +1211,12 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
 	
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
-	sprintf(request, "con cre %s", name);
+	sprintf(request, "con cre %s %d", name, arraySize);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(request) + 1;
 	
 	#ifdef NETWORK
@@ -1254,7 +1254,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length){
 	return condIndex;
 }
 
-void ServerDestroyCV_Syscall(int conditionIndex){
+void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 	
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1263,12 +1263,12 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con del %d", conditionIndex);
+	sprintf(data, "con del %d %d", outerConditionIndex, innerConditionIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1305,7 +1305,7 @@ void ServerDestroyCV_Syscall(int conditionIndex){
 	#endif
 }
 
-void ServerWait_Syscall(int conditionIndex, int lockIndex){
+void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex){
 
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1314,13 +1314,13 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con wai %d %d", conditionIndex, lockIndex);
+	sprintf(data, "con wai %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 	//printf("Segmentation?\n");
 
@@ -1359,7 +1359,7 @@ void ServerWait_Syscall(int conditionIndex, int lockIndex){
 	#endif
 }
 
-void ServerSignal_Syscall(int conditionIndex, int lockIndex){
+void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex){
 
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
@@ -1368,12 +1368,12 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con sig %d %d", conditionIndex, lockIndex);
+	sprintf(data, "con sig %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1408,7 +1408,7 @@ void ServerSignal_Syscall(int conditionIndex, int lockIndex){
 	#endif
 }
 
-void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
+void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex){
 	PacketHeader outPktHdr, inPktHdr;
     MailHeader outMailHdr, inMailHdr;
 	
@@ -1416,12 +1416,12 @@ void ServerBroadcast_Syscall(int conditionIndex, int lockIndex){
 	char buffer[MaxMailSize];
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con bro %d %d", conditionIndex, lockIndex);
+	sprintf(data, "con bro %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
     outMailHdr.to = 0; 
-    outMailHdr.from = 0;
+    outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
 	#ifdef NETWORK
@@ -1770,51 +1770,51 @@ void ExceptionHandler(ExceptionType which) {
 		
 		case SC_CreateMV:
 		DEBUG('a', "Create MV syscall.\n");
-			rv = CreateMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
+			rv = CreateMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6), machine->ReadRegister(7));
 		break;
 		case SC_GetMV:
 		DEBUG('a', "Get MV syscall.\n");
-			rv = GetMV_Syscall(machine->ReadRegister(4));
+			rv = GetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_SetMV:
 		DEBUG('a', "Set MV syscall.\n");
-			SetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			SetMV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerCreateLock:
 		DEBUG('a', "Server Create Lock syscall.\n");
-			rv = ServerCreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = ServerCreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerDestroyLock:
 		DEBUG('a', "Server Destroy Lock syscall.\n");
-			ServerDestroyLock_Syscall(machine->ReadRegister(4));
+			ServerDestroyLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerAcquire:
 		DEBUG('a', "Server Acquire syscall.\n");
-			ServerAcquire_Syscall(machine->ReadRegister(4));
+			ServerAcquire_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerRelease:
 		DEBUG('a', "Server Release syscall.\n");
-			ServerRelease_Syscall(machine->ReadRegister(4));
+			ServerRelease_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerCreateCV:
 		DEBUG('a', "Server Create CV syscall.\n");
-			rv = ServerCreateCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = ServerCreateCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 		break;
 		case SC_ServerDestroyCV:
 		DEBUG('a', "Server Destroy CV syscall.\n");
-			ServerDestroyCV_Syscall(machine->ReadRegister(4));
+			ServerDestroyCV_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 		break;
 		case SC_ServerWait:
 		DEBUG('a', "Server Wait syscall.\n");
-			ServerWait_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5));
+			ServerWait_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5), machine->ReadRegister(6), machine->ReadRegister(7));
 		break;
 		case SC_ServerSignal:
 		DEBUG('a', "Server Signal syscall.\n");
-			ServerSignal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			ServerSignal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6), machine->ReadRegister(7));
 		break;
 		case SC_ServerBroadcast:
 		DEBUG('a', "Server Broadcast syscall.\n");
-		ServerBroadcast_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5));
+		ServerBroadcast_Syscall(machine->ReadRegister(4),  machine->ReadRegister(5), machine->ReadRegister(6), machine->ReadRegister(7));
 		break;
 	}
 

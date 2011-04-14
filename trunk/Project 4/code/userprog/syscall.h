@@ -212,51 +212,51 @@ void Trace(int vaddr, int val);
 /* ******************** Networking stuff *********************/
 /* Creates a monitor variable for networking 
 */
-int CreateMV(char* name, int length, int value);
+int CreateMV(char* name, int length, int arraySize, int value);
 
 /* Gets a monitor variable for networking 
 */
-int GetMV(int index);
+int GetMV(int outerIndex, int innerIndex);
 
 /* Sets a monitor variable for networking 
 */
-void SetMV(int index, int val);
+void SetMV(int outerIndex, int innerIndex, int val);
 
 /* Creates a lock for networking 
 */
-int ServerCreateLock(char* name, int length);
+int ServerCreateLock(char* name, int length, int arraySize);
 
 /* Acquires a lock for networking 
 */
-void ServerAcquire(int lockIndex);
+void ServerAcquire(int outerLockIndex, int innerLockIndex);
 
 /* Releases a lock for networking 
 */
-void ServerRelease(int lockIndex);
+void ServerRelease(int outerLockIndex, int innerLockIndex);
 
 /* Creates a Condition Variable for networking 
 */
-int ServerCreateCV(unsigned int vaddr, int length);
+int ServerCreateCV(unsigned int vaddr, int length, int arraySize);
 
 /* Waits on a condition variable for networking 
 */
-void ServerWait(int conditionIndex, int lockIndex);
+void ServerWait(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex);
 
 /* Signals a condition variable for networking 
 */
-void ServerSignal(int conditionIndex, int lockIndex);
+void ServerSignal(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex);
 
 /* Broadcasts all waiting condition variables for networking 
 */
-void ServerBroadcast(int conditionIndex, int lockIndex);
+void ServerBroadcast(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex);
 
 /* Destroys a lock for networking 
 */
-void ServerDestroyLock(int lockIndex);
+void ServerDestroyLock(int outerLockIndex. int innerLockIndex);
 
 /* Destroys a Condition Variable for networking 
 */
-void ServerDestroyCV(int conditionIndex);
+void ServerDestroyCV(int outerConditionIndex, int innerConditionIndex);
 
 
 #endif /* IN_ASM */
