@@ -41,6 +41,7 @@ Thread::Thread(char* threadName)
 #ifdef USER_PROGRAM
     space = NULL;
 	firstPageTable = -1;
+	mailboxID = 0;
 #endif
 }
 

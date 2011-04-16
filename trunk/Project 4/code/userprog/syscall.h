@@ -252,7 +252,7 @@ void ServerBroadcast(int outerConditionIndex, int innerConditionIndex, int outer
 
 /* Destroys a lock for networking 
 */
-void ServerDestroyLock(int outerLockIndex. int innerLockIndex);
+void ServerDestroyLock(int outerLockIndex, int innerLockIndex);
 
 /* Destroys a Condition Variable for networking 
 */

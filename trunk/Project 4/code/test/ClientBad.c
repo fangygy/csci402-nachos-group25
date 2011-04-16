@@ -20,40 +20,40 @@ int main()
 	lock = 0;
 	/* Acquire a lock before creating */ 
 	Trace("Acquiring a lock I haven't created.\n", 0x9999);
-	ServerAcquire(lock);
+	ServerAcquire(lock, 0);
 	
 	/* Destroy a lock I don't own */ 
 	Trace("Destroy a lock I don't own.\n", 0x9999);
-	ServerDestroyLock(lock);
+	ServerDestroyLock(lock, 0);
 	
 	Trace("Creating a CV\n", 0x9999);
-	cv = ServerCreateCV("CV", sizeof("CV"));
+	cv = ServerCreateCV("CV", sizeof("CV"), 1);
 	
 	/* Waiting on a CV with a lock I don't own */
 	Trace("Waiting on a CV with a lock I don't own\n", 0x9999);
-	ServerWait(cv, lock);
+	ServerWait(cv, 0, lock, 0);
 	
 	/* Signalling a CV with a lock I don't own */
 	Trace("Signalling a CV with a lock I don't own\n", 0x9999);
-	ServerSignal(cv, lock);
+	ServerSignal(cv, 0, lock, 0);
 	
 	/* Broadcasting on a CV with a lock I don't own */
 	Trace("Broadcasting on a CV with a lock I don't own\n", 0x9999);
-	ServerBroadcast(cv, lock);
+	ServerBroadcast(cv, 0, lock, 0);
 	
-	lock = ServerCreateLock("lock", sizeof("lock"));
+	lock = ServerCreateLock("lock", sizeof("lock"), 1);
 	cv2 = 0;
 	/* Waiting on a CV I haven't created */
 	Trace("Waiting on a CV I haven't created\n", 0x9999);
-	ServerWait(cv2, lock);
+	ServerWait(cv2, 0, lock, 0);
 	
 	/* Signalling a CV I haven't created */
 	Trace("Signalling a CV I havne't created\n", 0x9999);
-	ServerSignal(cv2, lock);
+	ServerSignal(cv2, 0, lock, 0);
 	
 	/* Broadcasting on a CV I haven't created */
 	Trace("Broadcasting on a CV I haven't created\n", 0x9999);
-	ServerBroadcast(cv2, lock);
+	ServerBroadcast(cv2, 0, lock, 0);
 	
 	Trace("Done screwing around.\n", 0x9999);
 	
