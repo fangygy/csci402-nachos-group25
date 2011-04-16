@@ -1502,6 +1502,8 @@ void Exit_Syscall(int status) {
 void exec_thread() {
 	//printf("exec_thread running.\n");
 	memoryLock->Acquire();
+	currentThread->mailboxID = mailboxCounter;
+	mailboxCounter++;
 	//printf("Calling InitRegisters.\n");
 	currentThread->space->InitRegisters();
 	//printf("Calling RestoreState.\n");

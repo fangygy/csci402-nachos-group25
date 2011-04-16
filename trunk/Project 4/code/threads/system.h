@@ -38,6 +38,7 @@ extern Table processTable;
 extern int numProcesses;
 extern Lock* mainmemLock;
 extern BitMap bitMap;
+extern int mailboxCounter;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 
