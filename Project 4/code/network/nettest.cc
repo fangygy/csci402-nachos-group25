@@ -1165,6 +1165,7 @@ void CreateMV_RPC(char* name, int arraySize, int val, int machineID, int mailbox
 	for (int i = 0; i < MAX_MVS; i++) {
 		if(strcmp(serverMVs[i].name, "") == 0){
 			//serverMVs[i].name = name;
+			serverMVs[i].name = new char[strlen(name)+1];
 			strcpy(serverMVs[i].name, name);
 			if (val == 0x9999) {
 				printf("Server - CreateMV_Syscall: Cannot set MV to reserved \"uninitialized\" value.\n");
