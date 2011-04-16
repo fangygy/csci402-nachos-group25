@@ -47,8 +47,8 @@ struct Holder {
 	int mailboxID;
 	
 	Holder() {
-		machID = -1;
-		mailID = -1;
+		machineID = -1;
+		mailboxID = -1;
 	}
 };
 	
@@ -56,22 +56,28 @@ struct InnerLock {
 	bool exists;
 	Holder holder;
 	List *queue;
+	List *machineIDQueue;
+	List *mailboxIDQueue;
+	Holder clientID[MAX_CLIENTS];
+	int numClients;
 	
 	InnerLock() {
 		exists = false;
 		queue = new List;
+		machineIDQueue = new List;
+		mailboxIDQueue = new List;
+		numClients = 0;
 	}
 };
 
 struct ServerLock {
 	char* name;
+	bool exists;
 	InnerLock lock[ARRAY_MAX];
-	Holder clientID[MAX_CLIENTS];
-	int numClients;
 
 	ServerLock(){
 		name = "";
-		numClients = 0;
+		exists = false;
 	}
 };
 
@@ -80,24 +86,30 @@ struct InnerCV {
 	int waitingOuterLock;
 	int waitingInnerLock;
 	List* queue;
+	List *machineIDQueue;
+	List *mailboxIDQueue;
+	Holder clientID[MAX_CLIENTS];
+	int numClients;
 
 	InnerCV() {
 		exists = false;
 		waitingOuterLock = -1;
 		waitingInnerLock = -1;
 		queue = new List;
+		machineIDQueue = new List;
+		mailboxIDQueue = new List;
+		numClients = 0;
 	}
 };
 
 struct ServerCV {
 	char* name;
+	bool exists;
 	InnerCV cv[ARRAY_MAX];
-	Holder clientID[MAX_CLIENTS];
-	int numClients;
 
 	ServerCV() {
 		name = "";
-		numClients = 0;
+		exists = false;
 	}
 };
 
@@ -108,7 +120,7 @@ struct ServerMV {
 	ServerMV() {
 		name = "";
 		for (int i = 0; i < ARRAY_MAX; i++)
-			value = 0;
+			value[i] = 0;
 	}
 };
 
@@ -173,13 +185,14 @@ void CreateLock_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 	
 	for (int i = 0; i < MAX_LOCKS; i++) {
 		//Check if lock already exists
-		if ( strcmp(name, serverLocks[i].name) == 0) {
+		//printf("Lock%d name: %s\n", i, serverLocks[i].name);
+		if ( strcmp(name, serverLocks[i].name) == 0 && serverLocks[i].exists) {
 			
 			//printf("%s and %s\n", serverLocks[i].name, name);
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverLocks[i].clientID[j].machID == machineID &&
-					serverLocks[i].clientID[j].mailID == mailboxID) {
+				if (serverLocks[i].lock[0].clientID[j].machineID == machineID &&
+					serverLocks[i].lock[0].clientID[j].mailboxID == mailboxID) {
 					
 					printf("Server - CreateLock_RPC: Machine%d has already created this lock.\n", machineID);
 					
@@ -191,19 +204,26 @@ void CreateLock_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 			
 			//If this machine hasn't created it, add the ID to the lock's list
 			// and increment number of clients, then return the lock index
-			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverLocks[i].clientID[j].machID == -1 &&
-					serverLocks[i].clientID[j].mailID == -1){
-					
-					serverLocks[i].clientID[j].machID = machineID;
-					serverLocks[i].clientID[j].mailID = mailboxID;
-					serverLocks[i].numClients++;
-					
-					//SEND INDEX i IN MESSAGE BACK
-					ServerReply(machineID, mailboxID, i);
-					return;
+			for (int j = 0; j < arraySize; j++) {
+				for (int k = 0; k < MAX_CLIENTS; k++) {
+					if (serverLocks[i].lock[j].clientID[k].machineID == -1 &&
+						serverLocks[i].lock[j].clientID[k].mailboxID == -1){
+						
+						serverLocks[i].lock[j].clientID[k].machineID = machineID;
+						serverLocks[i].lock[j].clientID[k].mailboxID = mailboxID;
+						//serverLocks[i].lock[j].numClients++;
+						
+						//SEND INDEX i IN MESSAGE BACK
+						//ServerReply(machineID, mailboxID, i);
+						//return;
+						break;
+					}
 				}
+				serverLocks[i].lock[j].numClients++;
 			}
+			
+			ServerReply(machineID, mailboxID, i);
+			return;
 		}
 	}
 	
@@ -211,30 +231,63 @@ void CreateLock_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 	// Find an open space in the lock's client list, add this machine
 	// and return the lock index
 	for (int i = 0; i < MAX_LOCKS; i++) {
-		if ( strcmp( "", serverLocks[i].name) == 0) {
+		//printf("Lock%d name: %s\n", i, serverLocks[i].name);
+		if ( strcmp( "", serverLocks[i].name) == 0 || !serverLocks[i].exists) {
+			/*for (int p = 0; p < MAX_LOCKS; p++)
+				if (serverLocks[p].exists)
+					printf("Lock%d name: %s\n", p, serverLocks[p].name);*/
+			printf("Creating new lock\n");
+			serverLocks[i].exists = true;
 			numServerLocks++;
+			
+			/*for (int p = 0; p < 10; p++)
+				printf("Lock%d name: %s\n", p, serverLocks[p].name);
+			
+			for (int p = 0; p < 10; p++)
+				printf("Lock%d name: %s\n", p, serverLocks[p].name);*/
+			//serverLocks[i].name = tempName;
+			
+			serverLocks[i].name = new char[strlen(name)+1];
 			strcpy(serverLocks[i].name, name);
+			//serverLocks[i].name = name;
+			//strcpy(serverLocks[i].name, tempName);
+			
+			/*for (int p = 0; p < MAX_LOCKS; p++)
+				if ( strcmp( serverLocks[p].name, serverLocks[i].name) == 0 && p != i) {
+					serverLocks[p].name = "";
+				}*/
+			
+			/*for (int p = 0; p < 10; p++)
+				printf("Lock%d name: %s\n", p, serverLocks[p].name);*/
 			
 			for (int j = 0; j < arraySize; j++) {
 				serverLocks[i].lock[j].exists = true;
+				
+				for (int k = 0; k < MAX_CLIENTS; k++) {
+					if (serverLocks[i].lock[j].clientID[k].machineID == -1 &&
+						serverLocks[i].lock[j].clientID[k].mailboxID == -1) {
+						
+						serverLocks[i].lock[j].clientID[k].machineID = machineID;
+						serverLocks[i].lock[j].clientID[k].mailboxID = mailboxID;
+						//serverLocks[i].lock[j].numClients++;
+						break;
+					}
+				}
+				
+				serverLocks[i].lock[j].numClients++;
 			}
 			
-			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverLocks[i].clientID[j].machID == -1 &&
-					serverLocks[i].clientID[j].mailID == -1) {
-					
-					serverLocks[i].clientID[j].machID = machineID;
-					serverLocks[i].clientID[j].mailID = mailboxID;
-					serverLocks[i].numClients++;
-					
-					//SEND INDEX i IN MESSAGE
-					ServerReply(machineID, mailboxID, i);
-					return;
-				}
-			}
+			/*for (int p = 0; p < MAX_LOCKS; p++)
+				if (serverLocks[p].exists)
+					printf("Lock%d name: %s\n", p, serverLocks[p].name);*/
+			
+			ServerReply(machineID, mailboxID, i);
+			return;
+
 		}	 
 	}
 	
+	printf("Reached here?\n");
 	//Should never reach here
 	return;
 }
@@ -255,8 +308,8 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 		return;
 	}
 	//If this lock doesn't exist, return -1
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - Acquire_RPC: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - Acquire_RPC: Machine%d trying to acquire non-existant ServerLock%d\n", machineID, outerLockIndex);
 		
 		// SEND ERROR MESSAGE BACK
 		ServerReply(machineID, mailboxID, DELETED);
@@ -266,13 +319,14 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Acquire_RPC: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - Acquire_RPC: Machine%d trying to acquire ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -280,23 +334,33 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 	}
 	
 	//If already owner, return 0
-	if (serverLocks[lockIndex].holder == machineID) {
-		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d\n", machineID, lockIndex);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == machineID ||
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID == mailboxID) {
+		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d\n", machineID, outerLockIndex);
 		
 		//SEND MESSAGE BACK
 		ServerReply(machineID, mailboxID, 0);
 		return;
 	}
 	
-	if (serverLocks[lockIndex].holder == -1) {
-		serverLocks[lockIndex].holder = machineID;
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == -1 &&
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID == -1) {
+		
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID = machineID;
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID = mailboxID;
 		
 		//SEND MESSAGE BACK
 		ServerReply(machineID, mailboxID, 0);
 		return;
 	}
 	else {
-		serverLocks[lockIndex].queue->Append((void*)machineID);
+		
+		Holder queueHolder;
+		queueHolder.machineID = machineID;
+		queueHolder.mailboxID = mailboxID;
+		//serverLocks[outerLockIndex].lock[innerLockIndex].queue->Append((void*)queueHolder);
+		serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)queueHolder.machineID);
+		serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)queueHolder.mailboxID);
 		
 		//DONT SEND MESSAGE
 		
@@ -304,15 +368,15 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 	}
 }
 
-void Release_RPC(int lockIndex, int machineID) {
-	if (lockIndex < 0) {
+void Release_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mailboxID) {
+	if (outerLockIndex < 0 || innerLockIndex < 0) {
 		printf("Server - Release_RPC: Lock index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex >= MAX_LOCKS) {
+	if (outerLockIndex >= MAX_LOCKS || innerLockIndex >= ARRAY_MAX) {
 		printf("Server - Release_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -320,8 +384,8 @@ void Release_RPC(int lockIndex, int machineID) {
 		return;
 	}
 	//If this lock doesn't exist, return -1
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - Release_RPC: Machine%d trying to release non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - Release_RPC: Machine%d trying to release non-existant ServerLock%d\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -331,13 +395,14 @@ void Release_RPC(int lockIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Release_RPC: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - Release_RPC: Machine%d trying to release ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -345,8 +410,9 @@ void Release_RPC(int lockIndex, int machineID) {
 	}
 	
 	//If not owner, return -1
-	if (serverLocks[lockIndex].holder != machineID) {
-		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID != machineID ||
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID != mailboxID) {
+		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_OWNER);
@@ -356,30 +422,36 @@ void Release_RPC(int lockIndex, int machineID) {
 	//SEND ACTUAL MESSAGE BACK TO machineID
 	ServerReply(machineID, mailboxID, 0);
 	
-	if (serverLocks[lockIndex].queue->IsEmpty()) {
-		serverLocks[lockIndex].holder = -1;
-		ServerReply(machineID, mailboxID, 0);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->IsEmpty() &&
+		serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->IsEmpty()) {
+		
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID = -1;
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID = -1;
+		//ServerReply(machineID, mailboxID, 0);
 		return;
 	}
 	
-	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
+	//Holder nextToAcquire = (Holder)serverLocks[outerLockIndex].lock[innerLockIndex].queue->Remove();
+	Holder nextToAcquire;
+	nextToAcquire.machineID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Remove();
+	nextToAcquire.mailboxID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Remove();
 	
-	serverLocks[lockIndex].holder = nextToAcquire;
+	serverLocks[outerLockIndex].lock[innerLockIndex].holder = nextToAcquire;
 	
 	//SEND MESSAGE TO nextToAcquire
-	ServerReply(nextToAcquire, 0);
+	ServerReply(nextToAcquire.machineID, nextToAcquire.mailboxID, 0);
 	return;
 }
 
-void DestroyLock_RPC(int lockIndex, int machineID) {
-	if (lockIndex < 0) {
+void DestroyLock_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mailboxID) {
+	if (outerLockIndex < 0 || innerLockIndex < 0) {
 		printf("Server - DestroyLock_RPC: Lock index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex >= MAX_LOCKS) {
+	if (outerLockIndex >= MAX_LOCKS || innerLockIndex >= ARRAY_MAX) {
 		printf("Server - DestroyLock_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -387,8 +459,8 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		return;
 	}
 	//If this lock doesn't exist, return
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - DestroyLock_RPC: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - DestroyLock_RPC: Machine%d trying to destroy non-existant ServerLock%d\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK
 		ServerReply(machineID, mailboxID, DELETED);
@@ -398,13 +470,14 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - DestroyLock_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - DestroyLock_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 		
 		//SEND ERROR MESSAGE BACK
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -412,26 +485,42 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 	}
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
-			serverLocks[lockIndex].clientID[i] = 0;
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
+			
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID = 0;
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID = 0;
 			break;
 		}
 	}
-	serverLocks[lockIndex].numClients--;
+	serverLocks[outerLockIndex].lock[innerLockIndex].numClients--;
 	
 	//SEND MESSAGE BACK TO machineID
 	ServerReply(machineID, mailboxID, 0);
 	
 	//If no more clients, delete lock
-	if (serverLocks[lockIndex].numClients == 0) {
-		serverLocks[lockIndex].exists = false;
-		serverLocks[lockIndex].name = "";
-		numServerLocks--;
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].numClients == 0) {
+		
+		serverLocks[outerLockIndex].lock[innerLockIndex].exists = false;
+		
+		bool allEmpty = true;
+		for (int i = 0; i < ARRAY_MAX; i++) {
+			if (serverLocks[outerLockIndex].lock[i].exists) {
+				allEmpty = false;
+				break;
+			}
+		}
+		
+		if (allEmpty) {
+			serverLocks[outerLockIndex].name = "";
+			serverLocks[outerLockIndex].exists = false;
+			numServerLocks--;
+		}
 		return;
 	}
 	
 	//If this client is current owner, release it
-	if (serverLocks[lockIndex].holder == machineID) {
+	/*if (serverLocks[lockIndex].holder == machineID) {
 		if (serverLocks[lockIndex].queue->IsEmpty()) {
 			serverLocks[lockIndex].holder = -1;
 			return;
@@ -444,12 +533,12 @@ void DestroyLock_RPC(int lockIndex, int machineID) {
 		//SEND MESSAGE TO nextToAcquire
 		ServerReply(nextToAcquire, 0);
 		return;
-	}
+	}*/
 	
 	return;
 }
 
-void CreateCV_RPC(char* name, int machineID) {
+void CreateCV_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 	//If reached max cv capacity, return -1
 	if (numServerCVs >= MAX_CONDITIONS) {
 		printf("Server - CreateCV_RPC: Max server cv limit reached, cannot create.\n");
@@ -465,7 +554,8 @@ void CreateCV_RPC(char* name, int machineID) {
 			
 			//If it does, check to see if this machine has already created it
 			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverCVs[i].clientID[j] == machineID) {
+				if (serverCVs[i].cv[0].clientID[j].machineID == machineID &&
+					serverCVs[i].cv[0].clientID[j].mailboxID == mailboxID) {
 					printf("Server - CreateCV_RPC: Machine%d has already created this cv.\n", machineID);
 					
 					// SEND BACK MESSAGE
@@ -475,14 +565,19 @@ void CreateCV_RPC(char* name, int machineID) {
 			}
 			// If this machine hasn't created it, add the ID to the CV's list
 			// and increment number of clients, then return the CV index
-			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverCVs[i].clientID[j] == 0) {
-					serverCVs[i].clientID[j] = machineID;
-					serverCVs[i].numClients++;
-
-					// SEND i IN MESSAGE BACK
-					ServerReply(machineID, mailboxID, i);
-					return;
+			for (int j = 0; j < arraySize; j++) {
+				for (int k = 0; k < MAX_CLIENTS; k++) {
+					if (serverCVs[i].cv[j].clientID[k].machineID == -1 &&
+						serverCVs[i].cv[j].clientID[k].mailboxID == -1){
+						
+						serverCVs[i].cv[j].clientID[k].machineID = machineID;
+						serverCVs[i].cv[j].clientID[k].mailboxID = mailboxID;
+						serverCVs[i].cv[j].numClients++;
+						
+						//SEND INDEX i IN MESSAGE BACK
+						ServerReply(machineID, mailboxID, i);
+						return;
+					}
 				}
 			}
 		}
@@ -492,48 +587,57 @@ void CreateCV_RPC(char* name, int machineID) {
 	// Find an open space in the CV's client list, add this machine
 	// and return the CV index
 	for (int i = 0; i < MAX_CONDITIONS; i++) {
-		if (!serverCVs[i].exists) {
+		if ( strcmp( "", serverCVs[i].name) == 0 || !serverCVs[i].exists) {
 			numServerCVs++;
-			serverCVs[i].exists = true;
+			serverCVs[i].name = new char[strlen(name)+1];
 			strcpy(serverCVs[i].name, name);
+			serverCVs[i].exists = true;
 			//serverCVs[i].name = name;
 			
-			for (int j = 0; j < MAX_CLIENTS; j++) {
-				if (serverCVs[i].clientID[j] == 0) {
-					serverCVs[i].clientID[j] = machineID;
-					serverCVs[i].numClients++;
-					// SEND i IN MESSAGE BACK
-					ServerReply(machineID, mailboxID, i);
-					return;
+			for (int j = 0; j < arraySize; j++) {
+				serverCVs[i].cv[j].exists = true;
+				serverCVs[i].cv[j].numClients++;
+				
+				for (int k = 0; k < MAX_CLIENTS; k++) {
+					if (serverCVs[i].cv[j].clientID[k].machineID == -1 &&
+						serverCVs[i].cv[j].clientID[k].mailboxID == -1) {
+						
+						serverCVs[i].cv[j].clientID[k].machineID = machineID;
+						serverCVs[i].cv[j].clientID[k].mailboxID = mailboxID;
+						break;
+					}
 				}
 			}
+			
+			ServerReply(machineID, mailboxID, i);
+			return;
 		}	 
 	}
 }
 
-void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
-	if (conditionIndex < 0) {
+void Wait_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex, int machineID, int mailboxID) {
+	if (outerConditionIndex < 0 || innerConditionIndex < 0) {
 		printf("Server - Wait_RPC: CV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (conditionIndex >= MAX_CONDITIONS) {
+	if (outerConditionIndex >= MAX_CONDITIONS || innerConditionIndex >= ARRAY_MAX) {
 		printf("Server - Wait_RPC: CV index >= MAX_CVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex < 0) {
+	if (outerLockIndex < 0 || innerLockIndex < 0) {
 		printf("Server - Wait_RPC: Lock index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex >= MAX_LOCKS) {
+	if (outerLockIndex >= MAX_LOCKS || innerLockIndex >= ARRAY_MAX) {
 		printf("Server - Wait_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -542,8 +646,8 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 
 	//If this lock doesn't exist, return -1
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerLock%d\n", machineID, outerLockIndex);
 		ServerReply(machineID, mailboxID, DELETED);
 		// SEND BACK ERROR MESSAGE
 
@@ -551,8 +655,8 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//If condition doesn't exist, return -1
-	if (!serverCVs[conditionIndex].exists) {
-		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, conditionIndex);
+	if (!serverCVs[outerConditionIndex].cv[innerConditionIndex].exists) {
+		printf("Server - Wait_RPC: Machine%d trying to wait on non-existant ServerCV%d\n", machineID, outerConditionIndex);
 		ServerReply(machineID, mailboxID, DELETED);
 		// SEND BACK ERROR MESSAGE
 
@@ -562,13 +666,15 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Wait_RPC: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - Wait_RPC: Machine%d trying to wait on ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -578,13 +684,14 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Same for condition, make sure is client
 	isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+		if (serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID == machineID &&
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID == mailboxID) {
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Wait_RPC: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+		printf("Server - Wait_RPC: Machine%d trying to wait on ServerCV%d that has not been 'created'\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -593,11 +700,15 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	
 	// If waitingLock is -1, set it to the passed in lock
 	// Else if lock is wrong, return -1
-	if (serverCVs[conditionIndex].waitingLock == -1) {
-		serverCVs[conditionIndex].waitingLock = lockIndex;
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock == -1 &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock == -1) {
+		
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock = outerLockIndex;
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock = innerLockIndex;
 	}
-	else if (serverCVs[conditionIndex].waitingLock != lockIndex) {
-		printf("Server - Wait_RPC: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+	else if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock != outerLockIndex ||
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock != innerLockIndex) {
+		printf("Server - Wait_RPC: Machine%d trying to wait on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
@@ -605,8 +716,9 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//Needs to be the holder for the lock
-	if (serverLocks[lockIndex].holder != machineID) {
-		printf("Server - Wait_RPC: Machine%d is not the holder of ServerLock%d\n", machineID, lockIndex);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID != machineID ||
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID != mailboxID) {
+		printf("Server - Wait_RPC: Machine%d is not the holder of ServerLock%d\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_OWNER);
@@ -614,52 +726,63 @@ void Wait_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	// Actually wait now
-	serverCVs[conditionIndex].queue->Append((void*)machineID);
+	Holder waitingClient;
+	waitingClient.machineID = machineID;
+	waitingClient.mailboxID = mailboxID;
+	//serverCVs[outerConditionIndex].cv[innerConditionIndex].queue->Append((void*)waitingClient);
+	serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->Append((void*)waitingClient.machineID);
+	serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->Append((void*)waitingClient.mailboxID);
 	
 	// Return 0 if no locks are going to acquire the lock
 	// after this one releases it
-	if (serverLocks[lockIndex].queue->IsEmpty()) {
-		serverLocks[lockIndex].holder = -1;		
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->IsEmpty() &&
+		serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->IsEmpty() ) {
+		
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID = -1;	
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID = -1;		
 		//ServerReply(machineID, mailboxID, 0);
 		return;
 	}
 	
-	int nextToAcquire = (int)serverLocks[lockIndex].queue->Remove();
+	//Holder nextToAcquire = (Holder)serverLocks[outerLockIndex].lock[innerLockIndex].queue->Remove();
+	Holder nextToAcquire;
+	nextToAcquire.machineID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Remove();
+	nextToAcquire.mailboxID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Remove();
 	
-	serverLocks[lockIndex].holder = nextToAcquire;
+	serverLocks[outerLockIndex].lock[innerLockIndex].holder = nextToAcquire;
 	
 	//Otherwise return the new lock holder
 	//return serverLocks[lockIndex].holder;
 
 	// SEND MESSAGE TO nextToAcquire
-	ServerReply(nextToAcquire, 0);
+	ServerReply(nextToAcquire.machineID, nextToAcquire.mailboxID, 0);
 
 	return;
 }
 
-void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
-	if (conditionIndex < 0) {
+void Signal_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex, int machineID, int mailboxID) {
+	if (outerConditionIndex < 0 || innerConditionIndex < 0) {
 		printf("Server - Signal_RPC: CV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (conditionIndex >= MAX_CONDITIONS) {
+	if (outerConditionIndex >= MAX_CONDITIONS || innerConditionIndex >= ARRAY_MAX) {
 		printf("Server - Signal_RPC: CV index >= MAX_CVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex < 0) {
+	if (outerLockIndex < 0 || innerLockIndex < 0) {
 		printf("Server - Signal_RPC: Lock index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex >= MAX_LOCKS) {
+	if (outerLockIndex >= MAX_LOCKS || innerLockIndex >= ARRAY_MAX) {
 		printf("Server - Signal_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -668,8 +791,8 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 
 	//If this lock doesn't exist, return -1
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -677,8 +800,8 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//If condition doesn't exist, return -1
-	if (!serverCVs[conditionIndex].exists) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
+	if (!serverCVs[outerConditionIndex].cv[innerConditionIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -688,13 +811,15 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -704,23 +829,25 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Same for condition, make sure is client
 	isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+		if (serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID == machineID &&
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
 		return;
 	}	
 	
-	// If waitingLock is -1, set it to the passed in lock
-	// Else if lock is wrong, return -1
-	if (serverCVs[conditionIndex].waitingLock != lockIndex) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+	
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock != outerLockIndex ||
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock != innerLockIndex) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
@@ -728,8 +855,9 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//Needs to be the holder for the lock
-	if (serverLocks[lockIndex].holder != machineID) {
-		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID != machineID ||
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID != mailboxID) {
+		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_OWNER);
@@ -737,7 +865,8 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 
 	// Queue must not be empty
-	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->IsEmpty() &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->IsEmpty()) {
 		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -745,49 +874,60 @@ void Signal_RPC(int conditionIndex, int lockIndex, int machineID) {
 		return;
 	}
 
-	int nextWaiting = (int)serverCVs[conditionIndex].queue->Remove();
-
-	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+	//Holder nextWaiting = (Holder)serverCVs[outerConditionIndex].cv[innerConditionIndex].queue->Remove();
+	Holder nextWaiting;
+	nextWaiting.machineID = (int)serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->Remove();
+	nextWaiting.mailboxID = (int)serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->Remove();
+	
+	
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->IsEmpty() &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->IsEmpty()) {
 		printf("Server - Signal_RPC: Condition queue is now empty. Nothing waiting.\n");
-		serverCVs[conditionIndex].waitingLock = -1;	
+		
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock = -1;	
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock = -1;	
 	}
 	
-	if (serverLocks[lockIndex].holder == -1) {
-		serverLocks[lockIndex].holder = nextWaiting;
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == -1 &&
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID == -1) {
+		
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder = nextWaiting;
 
 		// SEND MESSAGE TO nextWaiting
-		ServerReply(0, nextWaiting);
+		ServerReply(nextWaiting.machineID, nextWaiting.mailboxID, 0);
 	}
 	else {
-		serverLocks[lockIndex].queue->Append((void*)nextWaiting);
+		//serverLocks[outerLockIndex].lock[innerLockIndex].queue->Append((void*)nextWaiting);
+		serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)nextWaiting.machineID);
+		serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Append((void*)nextWaiting.mailboxID);
 	}		
 	
 	ServerReply(machineID, mailboxID, 0);
 }
 
-void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
-	if (conditionIndex < 0) {
+void Broadcast_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockIndex, int innerLockIndex, int machineID, int mailboxID) {
+	if (outerConditionIndex < 0 || innerConditionIndex < 0) {
 		printf("Server - Broadcast_RPC: CV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (conditionIndex >= MAX_CONDITIONS) {
+	if (outerConditionIndex >= MAX_CONDITIONS || innerConditionIndex >= ARRAY_MAX) {
 		printf("Server - Broadcast_RPC: CV index >= MAX_CVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex < 0) {
+	if (outerLockIndex < 0 || innerLockIndex < 0) {
 		printf("Server - Broadcast_RPC: Lock index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (lockIndex >= MAX_LOCKS) {
+	if (outerLockIndex >= MAX_LOCKS || innerLockIndex >= ARRAY_MAX) {
 		printf("Server - Broadcast_RPC: Lock index >= MAX_LOCKS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -795,8 +935,8 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		return;
 	}
 	//If this lock doesn't exist, return -1
-	if (!serverLocks[lockIndex].exists) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, lockIndex);
+	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -804,8 +944,8 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//If condition doesn't exist, return -1
-	if (!serverCVs[conditionIndex].exists) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, conditionIndex);
+	if (!serverCVs[outerConditionIndex].cv[innerConditionIndex].exists) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerCV%d\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -815,13 +955,15 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverLocks[lockIndex].clientID[i] == machineID) {
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == machineID &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, lockIndex);
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerLock%d that has not been 'created'.\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -831,23 +973,25 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	//Same for condition, make sure is client
 	isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+		if (serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID == machineID &&
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, conditionIndex);
+		printf("Server - Signal_RPC: Machine%d trying to signal on ServerCV%d that has not been 'created'\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
 		return;
 	}	
 	
-	// If waitingLock is -1, set it to the passed in lock
-	// Else if lock is wrong, return -1
-	if (serverCVs[conditionIndex].waitingLock != lockIndex) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, lockIndex, conditionIndex);
+	
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock != outerLockIndex ||
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock != innerLockIndex) {
+		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
@@ -855,8 +999,9 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 	
 	//Needs to be the holder for the lock
-	if (serverLocks[lockIndex].holder != machineID) {
-		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, lockIndex);
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID != machineID ||
+		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID != mailboxID) {
+		printf("Server - Signal_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, outerLockIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_OWNER);
@@ -864,7 +1009,8 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 	}
 
 	// Queue must not be empty
-	if (serverCVs[conditionIndex].queue->IsEmpty()) {
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->IsEmpty() &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->IsEmpty()) {
 		printf("Server - Signal_RPC: Condition queue is empty. Nothing waiting.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -872,36 +1018,46 @@ void Broadcast_RPC(int conditionIndex, int lockIndex, int machineID) {
 		return;
 	}
 	
-	while (!serverCVs[conditionIndex].queue->IsEmpty()) {
+	while (!serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->IsEmpty() ||
+			!serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->IsEmpty()) {
 	
-		int nextWaiting = (int)serverCVs[conditionIndex].queue->Remove();
-		
-		if (serverLocks[lockIndex].holder == -1) {
-			serverLocks[lockIndex].holder = nextWaiting;
+		//Holder nextWaiting = (Holder)serverCVs[outerConditionIndex].cv[innerConditionIndex].queue->Remove();
+		Holder nextWaiting;
+		nextWaiting.machineID = (int)serverCVs[outerConditionIndex].cv[innerConditionIndex].machineIDQueue->Remove();
+		nextWaiting.mailboxID = (int)serverCVs[outerConditionIndex].cv[innerConditionIndex].mailboxIDQueue->Remove();
+	
+		if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == -1 &&
+			serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID == -1) {
+			
+			serverLocks[outerLockIndex].lock[innerLockIndex].holder = nextWaiting;
 
 			// SEND MESSAGE TO nextWaiting
-			ServerReply(0, nextWaiting);
+			ServerReply(nextWaiting.machineID, nextWaiting.mailboxID, 0);
 		}
 		else {
-			serverLocks[lockIndex].queue->Append((void*)nextWaiting);
+			//serverLocks[outerLockIndex].lock[innerLockIndex].queue->Append((void*)nextWaiting);
+			serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)nextWaiting.machineID);
+			serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Append((void*)nextWaiting.mailboxID);
+	
 		}		
 	}
 
 	// SEND MESSAGE BACK TO machineID
 	ServerReply(machineID, mailboxID, 0);
 	printf("Server - Signal_RPC: Condition queue is now empty. Nothing waiting.\n");
-	serverCVs[conditionIndex].waitingLock = -1;	
+	serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock = -1;
+	serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock = -1;
 }
 
-void DestroyCV_RPC(int conditionIndex, int machineID) {
-	if (conditionIndex < 0) {
+void DestroyCV_RPC(int outerConditionIndex, int innerConditionIndex, int machineID, int mailboxID) {
+	if (outerConditionIndex < 0 || innerConditionIndex < 0) {
 		printf("Server - DestroyCV_RPC: CV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (conditionIndex >= MAX_CONDITIONS) {
+	if (outerConditionIndex >= MAX_CONDITIONS || innerConditionIndex >= ARRAY_MAX) {
 		printf("Server - DestroyCV_RPC: CV index >= MAX_CVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -910,8 +1066,8 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 	}
 
 	//If this CV doesn't exist, return
-	if (!serverCVs[conditionIndex].exists) {
-		printf("Server - DestroyCV_RPC: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, conditionIndex);
+	if (!serverCVs[outerConditionIndex].cv[innerConditionIndex].exists) {
+		printf("Server - DestroyCV_RPC: Machine%d trying to destroy non-existant ServerCV%d\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);
@@ -921,13 +1077,15 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 	//Make sure this machine is a client of the lock
 	bool isClient = false;
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverCVs[conditionIndex].clientID[i] == machineID) {
+		if (serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID == machineID &&
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID == mailboxID) {
+			
 			isClient = true;
 			break;
 		}
 	}
 	if (!isClient) {
-		printf("Server - DestroyCV_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, conditionIndex);
+		printf("Server - DestroyCV_RPC: Machine%d trying to destroy ServerLock%d that has not been 'created'.\n", machineID, outerConditionIndex);
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
@@ -935,27 +1093,43 @@ void DestroyCV_RPC(int conditionIndex, int machineID) {
 	}
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (serverCVs[conditionIndex].clientID[i] == machineID) {
-			serverCVs[conditionIndex].clientID[i] = 0;
+		if (serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID == machineID &&
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID == mailboxID) {
+			
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].machineID = -1;
+			serverCVs[outerConditionIndex].cv[innerConditionIndex].clientID[i].mailboxID = -1;
 			break;
 		}
 	}
-	serverCVs[conditionIndex].numClients--;
+	serverCVs[outerConditionIndex].cv[innerConditionIndex].numClients--;
 	
 	// SEND BACK MESSAGE
 	ServerReply(machineID, mailboxID, 0);
 	
 	//If no more clients, delete lock
-	if (serverCVs[conditionIndex].numClients == 0) {
-		serverCVs[conditionIndex].exists = false;
-		serverCVs[conditionIndex].name = "";
-		numServerCVs--;
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].numClients == 0) {
+	
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].exists = false;
+		
+		bool allEmpty = true;
+		for (int i = 0; i < ARRAY_MAX; i++) {
+			if (serverCVs[outerConditionIndex].cv[i].exists) {
+				allEmpty = false;
+				break;
+			}
+		}
+		
+		if (allEmpty) {
+			serverCVs[outerConditionIndex].name = "";
+			numServerCVs--;
+			serverCVs[outerConditionIndex].exists = false;
+		}
 
 		return;
 	}
 }
 
-void CreateMV_RPC(char* name, int val, int machineID) {
+void CreateMV_RPC(char* name, int arraySize, int val, int machineID, int mailboxID) {
 	if (numMVs >= MAX_MVS) {
 		printf("Server - CreateMV__RPC: Error: Number of Monitor Vars exceeded maximum Monitor Vars limit.\n");
 
@@ -976,8 +1150,9 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 				return;
 			}
 			else{
-				serverMVs[i].value = val;
-
+				for (int j = 0; j < arraySize; j++) {
+					serverMVs[i].value[j] = val;
+				}
 				// SEND i BACK IN MESSAGE
 				ServerReply(machineID, mailboxID, i);
 				return;
@@ -999,7 +1174,9 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 				return;
 			}
 			else{
-				serverMVs[i].value = val;
+				for (int j = 0; j < arraySize; j++) {
+					serverMVs[i].value[j] = val;
+				}
 
 				// SEND i BACK IN MESSAGE
 				ServerReply(machineID, mailboxID, i);
@@ -1009,15 +1186,15 @@ void CreateMV_RPC(char* name, int val, int machineID) {
 	}	
 }
 
-void GetMV_RPC(int index, int machineID) {
-	if (index < 0) {
+void GetMV_RPC(int outerIndex, int innerIndex, int machineID, int mailboxID) {
+	if (outerIndex < 0 || innerIndex < 0) {
 		printf("Server - GetMV_RPC: MV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (index >= MAX_MVS) {
+	if (outerIndex >= MAX_MVS || innerIndex >= ARRAY_MAX) {
 		printf("Server - GetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -1025,21 +1202,21 @@ void GetMV_RPC(int index, int machineID) {
 		return;
 	}
 	
-	int val = serverMVs[index].value;
+	int val = serverMVs[outerIndex].value[innerIndex];
 	
 	// SEND BACK val IN MESSAGE
 	ServerReply(machineID, mailboxID, val);
 }
 
-void SetMV_RPC(int index, int val, int machineID) {
-	if (index < 0) {
+void SetMV_RPC(int outerIndex, int innerIndex, int val, int machineID, int mailboxID) {
+	if (outerIndex < 0 || innerIndex < 0) {
 		printf("Server - SetMV_RPC: MV index less than zero. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
 	}
-	if (index >= MAX_MVS) {
+	if (outerIndex >= MAX_MVS || innerIndex >= ARRAY_MAX) {
 		printf("Server - SetMV_RPC: MV index >= MAX_MVS. Invalid.\n");
 
 		// SEND BACK ERROR MESSAGE
@@ -1054,7 +1231,7 @@ void SetMV_RPC(int index, int val, int machineID) {
 		return;
 	}
 	
-	serverMVs[index].value = val;
+	serverMVs[outerIndex].value[innerIndex] = val;
 
 	// SEND BACK MESSAGE
 	ServerReply(machineID, mailboxID, 0);
@@ -1128,29 +1305,36 @@ void Server() {
 	
 	// Syscall Params that will be filled with client message data
 	int clientID;
+	int mailID;
 	int lockIndex;
+	int lockIndex2;
 	int cvIndex;
+	int cvIndex2;
 	int mvIndex;
+	int mvIndex2;
 	int length;
+	int arraySize;
 	int value;
 	int rv = -1;		// Return value from syscall
 	
 	// Need to add error handling for wrong # params
 	while (true) {
 		char buffer[MaxMailSize];
-		char* obj;
-		char* act;
-		char* param1;
-		char* param2;
-		char* param3;
+		char* obj = "";
+		char* act = "";
+		char* param1 = "";
+		char* param2 = "";
+		char* param3 = "";
+		char* param4 = "";
 		// Receive message from client (other machine)
 		postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
 		fflush(stdout);
 		
 		clientID = inPktHdr.from;
+		mailID = inMailHdr.from;
 		
-		char* data;
+		char* data = "";
 		data = strtok(buffer, " "); // Splits spaces between words in buffer
 		obj = data;
 		
@@ -1161,34 +1345,50 @@ void Server() {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				arraySize = atoi(param2);
+				
 				length = strlen(param1);
 				
 				printf("Server: Lock Create, machine = %d, name = %s\n", clientID, param1);
-				CreateLock_RPC(param1, clientID);
+				CreateLock_RPC(param1, arraySize, clientID, mailID);
 			} else if (strcmp(data, "acq") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				lockIndex = atoi(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				lockIndex2 = atoi(param2);
+				
 				printf("Server: Lock Acquire, machine = %d, index = %s\n", clientID, param1);
-				Acquire_RPC(lockIndex, clientID);
+				Acquire_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "rel") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				lockIndex = atoi(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				lockIndex2 = atoi(param2);
+				
 				printf("Server: Lock Release, machine = %d, index = %s\n", clientID, param1);
-				Release_RPC(lockIndex, clientID);
+				Release_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				lockIndex = atoi(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				lockIndex2 = atoi(param2);
+				
 				printf("Server: Lock Destroy, machine = %d, index = %s\n", clientID, param1);
-				DestroyLock_RPC(lockIndex, clientID);
+				DestroyLock_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else {
 				printf("Server: Bad request.\n");
-				ServerReply(clientID, BAD_FORMAT);
+				ServerReply(clientID, mailID, BAD_FORMAT);
 			}
 		} else if (strcmp(data, "con") == 0) {
 			data = strtok (NULL, " ,.-");
@@ -1198,8 +1398,12 @@ void Server() {
 				param1 = data;
 				length = strlen(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				arraySize = atoi(param2);
+				
 				printf("Server: Condition Create, machine = %d, name = %s\n", clientID, param1);
-				CreateCV_RPC(param1, clientID);
+				CreateCV_RPC(param1, arraySize, clientID, mailID);
 			} else if (strcmp(data, "wai") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1207,10 +1411,18 @@ void Server() {
 				
 				data = strtok (NULL, " ,.-");
 				param2 = data;
-				lockIndex = atoi(param2);
+				cvIndex2 = atoi(param2);
+				
+				data = strtok (NULL, " ,.-");
+				param3 = data;
+				lockIndex = atoi(param3);
+				
+				data = strtok (NULL, " ,.-");
+				param4 = data;
+				lockIndex2 = atoi(param4);
 				
 				printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				Wait_RPC(cvIndex, lockIndex, clientID);
+				Wait_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "sig") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1218,10 +1430,18 @@ void Server() {
 				
 				data = strtok (NULL, " ,.-");
 				param2 = data;
-				lockIndex = atoi(param2);
+				cvIndex2 = atoi(param2);
+				
+				data = strtok (NULL, " ,.-");
+				param3 = data;
+				lockIndex = atoi(param3);
+				
+				data = strtok (NULL, " ,.-");
+				param4 = data;
+				lockIndex2 = atoi(param4);
 				
 				printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				Signal_RPC(cvIndex, lockIndex, clientID);
+				Signal_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "bro") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1229,20 +1449,32 @@ void Server() {
 				
 				data = strtok (NULL, " ,.-");
 				param2 = data;
-				lockIndex = atoi(param2);
+				cvIndex2 = atoi(param2);
+				
+				data = strtok (NULL, " ,.-");
+				param3 = data;
+				lockIndex = atoi(param3);
+				
+				data = strtok (NULL, " ,.-");
+				param4 = data;
+				lockIndex2 = atoi(param4);
 				
 				printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
-				Broadcast_RPC(cvIndex, lockIndex, clientID);
+				Broadcast_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "del") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				cvIndex = atoi(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				cvIndex2 = atoi(param2);
+				
 				printf("Server: Condition Delete, machine = %d, cv = %s", clientID, param1);
-				DestroyCV_RPC(cvIndex, clientID);
+				DestroyCV_RPC(cvIndex, cvIndex2, clientID, mailID);
 			} else {
 				printf("Server: Bad request.\n");
-				ServerReply(clientID, BAD_FORMAT);
+				ServerReply(clientID, mailID, BAD_FORMAT);
 			}
 		} else if (strcmp(data, "mon") == 0) {
 			data = strtok (NULL, " ,.-");
@@ -1254,31 +1486,43 @@ void Server() {
 				
 				data = strtok (NULL, " ,.-");
 				param2 = data;
-				value = atoi(param2);
+				arraySize = atoi(param2);
+				
+				data = strtok (NULL, " ,.-");
+				param3 = data;
+				value = atoi(param3);
 				
 				printf("Server: MV Create, machine = %d, name = %s, val = %d\n", clientID, param1, value);
-				CreateMV_RPC(param1, value, clientID);
+				CreateMV_RPC(param1, arraySize, value, clientID, mailID);
 			} else if (strcmp(data, "get") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				mvIndex = atoi(param1);
 				
+				data = strtok (NULL, " ,.-");
+				param2 = data;
+				mvIndex2 = atoi(param2);
+				
 				printf("Server: MV Get, machine = %d, name = %s\n", clientID, param1);
-				GetMV_RPC(mvIndex, clientID);
+				GetMV_RPC(mvIndex, mvIndex2, clientID, mailID);
 			} else if (strcmp(data, "set") == 0) {
 				//printf("This farr\n");
 				data = strtok (NULL, " ,.-");
 				param1 = data;
 				mvIndex = atoi(param1);
 				
-				//printf("This farr\n");
 				data = strtok (NULL, " ,.-");
 				param2 = data;
-				value = atoi(param2);
+				mvIndex2 = atoi(param2);
+				
+				//printf("This farr\n");
+				data = strtok (NULL, " ,.-");
+				param3 = data;
+				value = atoi(param3);
 				
 				//printf("This farr\n");
 				printf("Server: MV Set, machine = %d, index = %d, value = %d\n", clientID, mvIndex, value);
-				SetMV_RPC(mvIndex, value, clientID);
+				SetMV_RPC(mvIndex, mvIndex2, value, clientID, mailID);
 			/*} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
 				param1 = data;
@@ -1288,11 +1532,11 @@ void Server() {
 				//rv = ServerDestroyMV(clientID, param1);*/
 			} else {
 				printf("Server: Bad request.\n");
-				ServerReply(clientID, BAD_FORMAT);
+				ServerReply(clientID, mailID, BAD_FORMAT);
 			}
 		} else {
 			printf("Server: Bad request.\n");
-			ServerReply(clientID, BAD_FORMAT);
+			ServerReply(clientID, mailID, BAD_FORMAT);
 		}
 	}
 }
