@@ -34,7 +34,7 @@ CFLAGS = -G 0 -c $(INCDIR)
 all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
 	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
 	passportTest1 passportTest2 passportTest3 execPassportTests2 Client Client1A Client1B Client2A Client2B Client2C ClientBad\
-	PassClerk
+	PassClerk AppClerk
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -226,6 +226,12 @@ PassClerk.o: PassClerk.c
 PassClerk: PassClerk.o start.o
 	$(LD) $(LDFLAGS) start.o PassClerk.o -o PassClerk.coff
 	../bin/coff2noff PassClerk.coff PassClerk
+
+AppClerk.o: AppClerk.c
+	$(CC) $(CFLAGS) -c AppClerk.c
+AppClerk: AppClerk.o start.o
+	$(LD) $(LDFLAGS) start.o AppClerk.o -o AppClerk.coff
+	../bin/coff2noff AppClerk.coff AppClerk
 	
 clean:
 	rm -f *.o *.coff

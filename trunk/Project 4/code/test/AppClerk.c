@@ -20,17 +20,12 @@ enum BOOLEAN{
 	true
 };
 
-void AppClerk() {
+int main() {
 	/* ------------------Local data -------------------------*/
 	int myIndex;
 
-	/* initializes myIndex */
 	int initIndex = CreateMV("AppIndex", sizeof("AppIndex"), 1, 0x9999);
 	int initIndexLock = ServerCreateLock("AppIndexLock", sizeof("AppIndexLock"), 1);
-	ServerAcquire(initIndexLock, 0);
-	myIndex = GetMV(initIndex, 0);
-	SetMV(initIndex, 0, GetMV(initIndex, 0) + 1);
-	ServerRelease(initIndexLock, 0);
 
 	int mySSN;
 	int i;
@@ -72,9 +67,14 @@ void AppClerk() {
 
 	/* Individual customer's file state, type, and its lock */
 	int fileLock = ServerCreateLock("fileLock", sizeof("fileLock"), NUM_CUSTOMERS + NUM_SENATORS);
-	int fileState = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999)
+	int fileState = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 	int fileType = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 
+	/* initializes myIndex */
+	ServerAcquire(initIndexLock, 0);
+	myIndex = GetMV(initIndex, 0);
+	SetMV(initIndex, 0, GetMV(initIndex, 0) + 1);
+	ServerRelease(initIndexLock, 0);
 
 	/* --------------------BEGIN APPCLERK STUFF----------------*/
 	while(loop == true){
@@ -103,9 +103,9 @@ void AppClerk() {
 		*  If there are privileged customers, do AppClerk tasks, then received $500
 		*/
 		if(GetMV(privACLineLength, 0) > 0){
-			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0)-1)
+			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0)-1);
 			ServerAcquire(senatorLock, 0);
-			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1)	/* shows customer that one clerk is waiting */
+			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1);	/* shows customer that one clerk is waiting */
 			ServerRelease(senatorLock, 0);
 
 			ServerAcquire(appLock, myIndex);
@@ -125,7 +125,7 @@ void AppClerk() {
 				cType = 1;	/* 1 = SENATOR */
 			}
 
-			if(GetMV(fileState, mySSN == 0){ /* 0 = NONE */
+			if(GetMV(fileState, mySSN) == 0){ /* 0 = NONE */
 				SetMV(fileState, mySSN, 2); /* 2 = APPDONE */
 				ServerRelease(fileLock, mySSN);
 			}
@@ -169,9 +169,9 @@ void AppClerk() {
 		* If there are regular customers, do AppClerk tasks 
 		*/
 		else if(GetMV(regACLineLength,0) > 0){
-			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0)-1)
+			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0)-1);
 			ServerAcquire(senatorLock, 0);
-			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1)	/* shows customer that one clerk is waiting */
+			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1);	/* shows customer that one clerk is waiting */
 			ServerRelease(senatorLock, 0);
 
 			ServerAcquire(appLock, myIndex);
@@ -191,7 +191,7 @@ void AppClerk() {
 				cType = 1;
 			}
 
-			if(GetMV(fileState, mySSN == 0){ /* 0 = NONE */
+			if(GetMV(fileState, mySSN) == 0){ /* 0 = NONE */
 				SetMV(fileState, mySSN, 2); /* 2 = APPDONE */
 				ServerRelease(fileLock, mySSN);
 			}
