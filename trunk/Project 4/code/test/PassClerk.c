@@ -112,7 +112,11 @@ int main() {
 	officeCustomerIndex = CreateMV("officeCustomer", sizeof("officeCustomer"), 1, 0x9999);
 	regPassLineLengthIndex = CreateMV("regPassLineLength", sizeof("regPassLineLength"), 1, 0x9999);
 	privPassLineLengthIndex = CreateMV("privPassLineLength", sizeof("privPassLineLength"), 1, 0x9999);
-
+	
+	ServerAcquire(passLock, myIndex);
+	SetMV(passStateIndex, myIndex, BUSY);
+	ServerRelease(passLock, myIndex);
+	
 	while(loop == TRUE){
 		shutdown = GetMV(shutdownIndex, 0);
 		if (shutdown == TRUE) {
