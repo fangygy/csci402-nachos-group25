@@ -39,6 +39,9 @@ int officeSenator;
 int privPassLineLength;
 int regPassLineLength;
 int fileState;
+int numPassWait;
+int passDataBool;
+int passMoney;
 
 int cType;
 int doPassport;
@@ -51,7 +54,14 @@ int officeCustomerIndex;
 int officeSenatorIndex;
 int regPassLineLengthIndex;
 int privPassLineLengthIndex;
+int numPassWaitIndex;
+int passStateIndex;
+int passDataIndex;
+int fileTypeIndex;
 int fileStateIndex;
+int shutdownIndex;
+int passMoneyIndex;
+int passDataBoolIndex;
 
 /* Locks */
 int initIndexLock;
@@ -60,6 +70,8 @@ int customerLock;
 int passLock;
 int passLineLock;
 int clerkWaitLock;
+int fileLock;
+int passMoneyLock;
 
 /* CVs */
 int clerkWaitCV;
@@ -67,7 +79,7 @@ int passCV;
 int regPassLineCV;
 int privPassLineCV;
 	
-void PassClerk() {
+int main() {
 	loop = TRUE;
 	/* Handle Creation Stuff */
 	
@@ -91,8 +103,8 @@ void PassClerk() {
 	/* CVs */
 	clerkWaitCV = ServerCreateCV("clerkWaitCV", sizeof("clerkWaitCV"), 1);
 	passCV = ServerCreateCV("passCV", sizeof("passCV"), NUM_CLERKS);
-	regPasslineCV = ServerCreateCV("regPassLineCV", sizeof("regPassLineCV"), 1);
-	privPasslineCV = ServerCreateCV("privPassLineCV", sizeof("privPassLineCV"), 1);
+	regPassLineCV = ServerCreateCV("regPassLineCV", sizeof("regPassLineCV"), 1);
+	privPassLineCV = ServerCreateCV("privPassLineCV", sizeof("privPassLineCV"), 1);
 	
 	/* MVs */
 	shutdownIndex = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
@@ -135,11 +147,11 @@ void PassClerk() {
 			privPassLineLength--;
 			SetMV(privPassLineLengthIndex, 0, privPassLineLength);
 			
-			ServerAcquire(senatorLock);
+			ServerAcquire(senatorLock, 0);
 			numPassWait = GetMV(numPassWaitIndex, 0);
 			numPassWait++;
 			SetMV(numPassWaitIndex, 0, numPassWait);
-			ServerRelease(senatorLock);
+			ServerRelease(senatorLock, 0);
 			
 			ServerAcquire(passLock, myIndex);
 			SetMV(passStateIndex, myIndex, AVAILABLE);
@@ -183,11 +195,11 @@ void PassClerk() {
 			ServerRelease(fileLock, mySSN);
 
 			/* add $500 to passClerk money amount for privileged fee */
-			ServerAcquire(passMoneyLock);
+			ServerAcquire(passMoneyLock, 0);
 			passMoney = GetMV(passMoneyIndex, 0);
 			passMoney += 500;
 			SetMV(passMoneyIndex, 0, passMoney);
-			ServerRelease(passMoneyLock);
+			ServerRelease(passMoneyLock, 0);
 
 			if(cType == CUSTOMER){
 				/*ClerkTrace("Pass", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
@@ -227,11 +239,11 @@ void PassClerk() {
 			regPassLineLength--;
 			SetMV(regPassLineLengthIndex, 0, regPassLineLength);
 			
-			ServerAcquire(senatorLock);
+			ServerAcquire(senatorLock, 0);
 			numPassWait = GetMV(numPassWaitIndex, 0);
 			numPassWait++;
 			SetMV(numPassWaitIndex, 0, numPassWait);
-			ServerRelease(senatorLock);
+			ServerRelease(senatorLock, 0);
 			
 			ServerAcquire(passLock, myIndex);
 			SetMV(passStateIndex,  myIndex, AVAILABLE);
@@ -247,7 +259,7 @@ void PassClerk() {
 			fileState = GetMV(fileStateIndex, mySSN);
 			
 			if(fileState == APPPICDONE){
-				setMV(passDataBoolIndex, myIndex, TRUE);
+				SetMV(passDataBoolIndex, myIndex, TRUE);
 				doPassport = TRUE;
 
 				if(cType == CUSTOMER){
@@ -257,7 +269,7 @@ void PassClerk() {
 					/*ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");*/
 				}
 			} else {
-				setMV(passDataBoolIndex, myIndex, FALSE);
+				SetMV(passDataBoolIndex, myIndex, FALSE);
 				doPassport = FALSE;
 				if(cType == CUSTOMER){
 					/*ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
