@@ -79,8 +79,8 @@ int main() {
 	/* --------------------BEGIN APPCLERK STUFF----------------*/
 	while(loop == true){
 		if (shutdown == true) {
-/*			ClerkTrace("App", myIndex, 0x00, 0, "Shutting down.\n"); */
-			Exit(0);
+/*			ClerkTrace("App", myIndex, 0x00, 0, "Shutting down.\n"); 
+*/			Exit(0);
 		}
 		ServerAcquire(senatorLock, 0);
 		ServerAcquire(customerLock, 0);
@@ -104,6 +104,7 @@ int main() {
 		*/
 		if(GetMV(privACLineLength, 0) > 0){
 			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0)-1);
+
 			ServerAcquire(senatorLock, 0);
 			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1);	/* shows customer that one clerk is waiting */
 			ServerRelease(senatorLock, 0);
@@ -170,6 +171,7 @@ int main() {
 		*/
 		else if(GetMV(regACLineLength,0) > 0){
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0)-1);
+
 			ServerAcquire(senatorLock, 0);
 			SetMV(numAppWait, 0, GetMV(numAppWait, 0)+1);	/* shows customer that one clerk is waiting */
 			ServerRelease(senatorLock, 0);
