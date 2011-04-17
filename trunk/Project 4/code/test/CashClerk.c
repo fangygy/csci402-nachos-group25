@@ -141,7 +141,7 @@ int main() {
 			ServerRelease(customerLock, 0);
 
 			ServerAcquire(clerkWaitLock, 0);
-			ServerWait(clerkWaitCV, myIndex, clerkWaitLock, myIndex);
+			ServerWait(clerkWaitCV, 0, clerkWaitLock, 0);
 			ServerRelease(clerkWaitLock, 0);
 		}
 		else{

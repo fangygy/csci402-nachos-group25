@@ -142,7 +142,7 @@ int main() {
 			ServerRelease(customerLock, 0);
 
 			ServerAcquire(clerkWaitLock, 0);
-			ServerWait(clerkWaitCV, myIndex, clerkWaitLock, myIndex);
+			ServerWait(clerkWaitCV, 0, clerkWaitLock, 0);
 			ServerRelease(clerkWaitLock, 0);
 		}
 		else{
@@ -182,7 +182,7 @@ int main() {
 			
 			fileState = GetMV(fileStateIndex, mySSN);
 			if(fileState == APPPICDONE){
-				SetMV(passDataBool, myIndex, TRUE);
+				SetMV(passDataBoolIndex, myIndex, TRUE);
 				
 				doPassport = TRUE;
 
@@ -193,7 +193,7 @@ int main() {
 					/*ClerkTrace("Pass", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");*/
 				}
 			} else {
-				SetMV(passDataBool, myIndex, FALSE);
+				SetMV(passDataBoolIndex, myIndex, FALSE);
 				doPassport = FALSE;
 				if(cType == CUSTOMER){
 					/*ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
@@ -283,6 +283,8 @@ int main() {
 			} else {
 				SetMV(passDataBoolIndex, myIndex, FALSE);
 				doPassport = FALSE;
+				Trace("CUSTOMER'S STATE WAS ", fileState);
+				Trace("\n", 0x9999);
 				if(cType == CUSTOMER){
 					/*ClerkTrace("Pass", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
 					ClerkTrace("Pass", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");*/	
