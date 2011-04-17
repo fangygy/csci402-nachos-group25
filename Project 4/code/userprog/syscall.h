@@ -236,7 +236,7 @@ void ServerRelease(int outerLockIndex, int innerLockIndex);
 
 /* Creates a Condition Variable for networking 
 */
-int ServerCreateCV(unsigned int vaddr, int length, int arraySize);
+int ServerCreateCV(char* name, int length, int arraySize);
 
 /* Waits on a condition variable for networking 
 */

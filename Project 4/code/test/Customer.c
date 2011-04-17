@@ -6,7 +6,7 @@
 *
 */
 
-#include syscall.h
+#include "syscall.h"
 #define NUM_CLERKS 5
 #define NUM_CUSTOMERS 30
 #define NUM_SENATORS 5
@@ -158,7 +158,7 @@ void TalkPicClerk(enum BOOLEAN privLine) {
 			/* Doesn't like */
 			
 			chanceToHate = Random(10);
-			if (chanceTohate < 2) {
+			if (chanceToHate < 2) {
 				hatePicture = true;
 			}
 			else {
@@ -311,7 +311,7 @@ void LineAppPicClerk() {
 				}
 			}
 		}
-		else if (GetMV(privACLineLength, 0) <= GetMV(privPCLineLength) {
+		else if (GetMV(privACLineLength, 0) <= GetMV(privPCLineLength, 0)) {
 		
 			while (visitedApp != true) {
 				/* "Entering privileged application line.\n" */
@@ -526,7 +526,7 @@ void TalkPassClerk(enum BOOLEAN privLine) {
 	ServerSignal(passCV, myClerk, passLock, myClerk);
 	ServerWait(passCV, myClerk, passLock, myClerk);
 	
-	if (GetMV(passDataBool, myClerk) == true) {
+	if (GetMV(passDataBool, myClerk) == 1) {
 		ServerRelease(passLock, myClerk);
 		visitedPass = true;
 		/* */
@@ -654,7 +654,7 @@ void LineTalkCashClerk() {
 		ServerWait(cashLineCV, 0, cashLineLock, 0);
 		ServerRelease(cashLineLock, 0);
 		
-		Acquire(senatorLock, 0);
+		ServerAcquire(senatorLock, 0);
 		if (GetMV(officeSenator, 0) > 0 && GetMV(numCashWait, 0) == 0) {
 			ServerRelease(senatorLock, 0);
 			

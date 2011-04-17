@@ -54,11 +54,11 @@ int main() {
 
 
 	/* Individual clerk locks, conditions, data, data booleans, and states */
-	int picLock = ServerCreateLock("appLock", sizeof("appLock"), NUM_CLERKS);
-	int picCV = ServerCreateCV("appCV", sizeof("appCV"), NUM_CLERKS);
+	int picLock = ServerCreateLock("picLock", sizeof("picLock"), NUM_CLERKS);
+	int picCV = ServerCreateCV("picCV", sizeof("picCV"), NUM_CLERKS);
 	int picDataBool = CreateMV("picDataBool", sizeof("picDataBool"), NUM_CLERKS, 0x9999);
-	int picState = CreateMV("appState", sizeof("appState"), NUM_CLERKS, 0x9999);
-	int picData = CreateMV("appData", sizeof("appData"), NUM_CLERKS, 0x9999);
+	int picState = CreateMV("picState", sizeof("picState"), NUM_CLERKS, 0x9999);
+	int picData = CreateMV("picData", sizeof("picData"), NUM_CLERKS, 0x9999);
 
 	/* Money data and locks for each clerk type */
 	int picMoney = CreateMV("picMoney", sizeof("picMoney"), 1, 0x9999);

@@ -73,8 +73,10 @@ int cashMoneyLock;
 /* CVs */
 int clerkWaitCV;
 int cashCV;
+/*
 int regCashLineCV;
-int privCashLineCV;
+int privCashLineCV;*/
+int cashLineCV;
 	
 int main() {
 	loop = TRUE;
@@ -96,18 +98,27 @@ int main() {
 	cashLineLock = ServerCreateLock("cashLineLock", sizeof("cashLineLock"), 1);
 	clerkWaitLock = ServerCreateLock("clerkWaitLock", sizeof("clerkWaitLock"), 1);
 	fileLock = ServerCreateLock("fileLock", sizeof("fileLock"), NUM_CUSTOMERS + NUM_SENATORS);
+	cashMoneyLock = ServerCreateLock("cashMoneyLock", sizeof("cashMoneyLock"), 1);
 	
 	/* CVs */
 	clerkWaitCV = ServerCreateCV("clerkWaitCV", sizeof("clerkWaitCV"), 1);
 	cashCV = ServerCreateCV("cashCV", sizeof("cashCV"), NUM_CLERKS);
-	regCashLineCV = ServerCreateCV("regCashLineCV", sizeof("regCashLineCV"), 1);
-	privCashLineCV = ServerCreateCV("privCashLineCV", sizeof("privCashLineCV"), 1);
+	/*regCashLineCV = ServerCreateCV("regCashLineCV", sizeof("regCashLineCV"), 1);
+	privCashLineCV = ServerCreateCV("privCashLineCV", sizeof("privCashLineCV"), 1);*/
+	cashLineCV = ServerCreateCV("cashLineCV", sizeof("cashLineCV"), 1);
 	
 	/* MVs */
 	shutdownIndex = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
 	officeSenatorIndex = CreateMV("officeSenator", sizeof("officeSenator"), 1, 0x9999);
 	officeCustomerIndex = CreateMV("officeCustomer", sizeof("officeCustomer"), 1, 0x9999);
 	cashLineLengthIndex = CreateMV("cashLineLength", sizeof("cashLineLength"), 1, 0x9999);
+	numCashWaitIndex = CreateMV("numCashWait", sizeof("numCashWait"), 1, 0x9999);
+	cashDataIndex = CreateMV("cashData", sizeof("cashData"), NUM_CLERKS, 0x9999);
+	cashDataBoolIndex = CreateMV("cashDataBool", sizeof("cashDataBool"), NUM_CLERKS, 0x9999);
+	cashStateIndex = CreateMV("cashState", sizeof("cashState"), NUM_CLERKS, 0x9999);
+	fileTypeIndex = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	fileStateIndex = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	cashMoneyIndex = CreateMV("cashMoney", sizeof("cashMoney"), 1, 0x9999);
 	
 	ServerAcquire(cashLock, myIndex);
 	SetMV(cashStateIndex, myIndex, BUSY);
@@ -154,7 +165,7 @@ int main() {
 			
 			ServerAcquire(cashLock, myIndex);
 			SetMV(cashStateIndex, myIndex, AVAILABLE);
-			ServerSignal(privCashLineCV, myIndex, cashLineLock, myIndex);
+			ServerSignal(cashLineCV, myIndex, cashLineLock, myIndex);
 			ServerRelease(cashLineLock, 0);
 			
 			/* wait for customer to signal me */
@@ -169,7 +180,7 @@ int main() {
 			
 			fileState = GetMV(fileStateIndex, mySSN);
 			if(fileState == PASSDONE){
-				SetMV(cashDataBool, myIndex, TRUE);
+				SetMV(cashDataBoolIndex, myIndex, TRUE);
 				
 				/* YIELD??? */
 				SetMV(fileStateIndex, mySSN, ALLDONE);
@@ -187,7 +198,7 @@ int main() {
 					/*ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");*/
 				}
 			} else {
-				SetMV(cashDataBool, myIndex, FALSE);
+				SetMV(cashDataBoolIndex, myIndex, FALSE);
 				if(cType == CUSTOMER){
 					/*ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
 					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");*/		
