@@ -34,7 +34,7 @@ CFLAGS = -G 0 -c $(INCDIR)
 all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
 	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
 	passportTest1 passportTest2 passportTest3 execPassportTests2 Client Client1A Client1B Client2A Client2B Client2C ClientBad\
-	PassClerk AppClerk PicClerk
+	AppClerk PicClerk PassClerk CashClerk
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -221,23 +221,29 @@ ClientBad: ClientBad.o start.o
 	$(LD) $(LDFLAGS) start.o ClientBad.o -o ClientBad.coff
 	../bin/coff2noff ClientBad.coff ClientBad
 
+AppClerk.o: AppClerk.c
+	$(CC) $(CFLAGS) -c AppClerk.c
+AppClerk: AppClerk.o start.o
+	$(LD) $(LDFLAGS) start.o AppClerk.o -o AppClerk.coff
+	../bin/coff2noff AppClerk.coff AppClerk
+
+PicClerk.o: PicClerk.c
+	$(CC) $(CFLAGS) -c PicClerk.c
+PicClerk: PicClerk.o start.o
+	$(LD) $(LDFLAGS) start.o PicClerk.o -o PicClerk.coff
+	../bin/coff2noff PicClerk.coff PicClerk
+
 PassClerk.o: PassClerk.c
 	$(CC) $(CFLAGS) -c PassClerk.c
 PassClerk: PassClerk.o start.o
 	$(LD) $(LDFLAGS) start.o PassClerk.o -o PassClerk.coff
 	../bin/coff2noff PassClerk.coff PassClerk
 
-AppClerk.o: AppClerk.c
-	$(CC) $(CFLAGS) -c AppClerk.c
-AppClerk: AppClerk.o start.o
-	$(LD) $(LDFLAGS) start.o AppClerk.o -o AppClerk.coff
-	../bin/coff2noff AppClerk.coff AppClerk
-	
-PicClerk.o: PicClerk.c
-	$(CC) $(CFLAGS) -c PicClerk.c
-PicClerk: PicClerk.o start.o
-	$(LD) $(LDFLAGS) start.o PicClerk.o -o PicClerk.coff
-	../bin/coff2noff PicClerk.coff PicClerk
+CashClerk.o: CashClerk.c
+	$(CC) $(CFLAGS) -c CashClerk.c
+CashClerk: CashClerk.o start.o
+	$(LD) $(LDFLAGS) start.o CashClerk.o -o CashClerk.coff
+	../bin/coff2noff CashClerk.coff CashClerk
 
 clean:
 	rm -f *.o *.coff
