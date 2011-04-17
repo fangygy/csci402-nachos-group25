@@ -32,7 +32,7 @@ int main() {
 	int cType = 0;
 
 	enum BOOLEAN loop = true;
-	enum BOOLEAN shutdown;
+	int shutdown = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
 	/* -----------------Shared Data------------------------*/
 
 	/* Number of customers/senators in office and thier locks */
@@ -75,10 +75,12 @@ int main() {
 	myIndex = GetMV(initIndex, 0);
 	SetMV(initIndex, 0, GetMV(initIndex, 0) + 1);
 	ServerRelease(initIndexLock, 0);
+	
+	SetMV(appState, myIndex, 1);
 
 	/* --------------------BEGIN APPCLERK STUFF----------------*/
 	while(loop == true){
-		if (shutdown == true) {
+		if (GetMV(shutdown, 0) == 1) {
 /*			ClerkTrace("App", myIndex, 0x00, 0, "Shutting down.\n"); 
 */			Exit(0);
 		}

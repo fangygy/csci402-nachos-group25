@@ -781,7 +781,7 @@ int ClientReceive() {
     MailHeader inMailHdr;
 	
 	char buffer[MaxMailSize];
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->mailboxID, &inPktHdr, &inMailHdr, buffer);
 	printf("Client: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
 	fflush(stdout);
 	

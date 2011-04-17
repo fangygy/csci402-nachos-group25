@@ -449,7 +449,7 @@ int main() {
 	
 	ServerAcquire(indexInitLock, 0);
 	myIndex = GetMV(indexInit, 0);
-	SetMV(indexInit, 0, myIndex);
+	SetMV(indexInit, 0, myIndex + 1);
 	ServerRelease(indexInitLock, 0);
 	
 	fileType = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
@@ -533,7 +533,7 @@ int main() {
 	}
 	/* "Entering Passport Office\n" */
 	
-	while (visitedApp != true || visitedPic != true || visitedPass != true || visitedPic != true) {
+	while (visitedApp != true || visitedPic != true || visitedPass != true || visitedCash != true) {
 		
 		if (Random(5) == 1) {
 			/* "Going directly to passport clerk like an idiot.\n" */
@@ -561,5 +561,6 @@ int main() {
 	ServerRelease(senatorLock, 0);
 	/* "Finished with Passport Office, now leaving.\n" */
 	
+	/*Halt();*/
 	Exit(0);
 }

@@ -216,6 +216,7 @@ void CreateLock_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 						//SEND INDEX i IN MESSAGE BACK
 						//ServerReply(machineID, mailboxID, i);
 						//return;
+						interrupt->Halt();
 						break;
 					}
 				}
@@ -568,6 +569,7 @@ void CreateCV_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 					
 					// SEND BACK MESSAGE
 					ServerReply(machineID, mailboxID, i);
+					interrupt->Halt();
 					return;
 				}
 			}
@@ -580,14 +582,18 @@ void CreateCV_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 						
 						serverCVs[i].cv[j].clientID[k].machineID = machineID;
 						serverCVs[i].cv[j].clientID[k].mailboxID = mailboxID;
-						serverCVs[i].cv[j].numClients++;
+						//serverCVs[i].cv[j].numClients++;
 						
 						//SEND INDEX i IN MESSAGE BACK
-						ServerReply(machineID, mailboxID, i);
-						return;
+						//interrupt->Halt();
+						break;
 					}
 				}
+				serverCVs[i].cv[j].numClients++;
 			}
+			
+			ServerReply(machineID, mailboxID, i);
+			return;
 		}
 	}
 	
@@ -679,6 +685,11 @@ void Wait_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockInd
 			
 			isClient = true;
 			break;
+		}
+		else if( serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID == -1 ||
+				serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID == -1) {
+				
+				printf("machine%d and mailbox%d\n", serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].machineID, serverLocks[outerLockIndex].lock[innerLockIndex].clientID[i].mailboxID);
 		}
 	}
 	if (!isClient) {
@@ -852,11 +863,20 @@ void Signal_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockI
 		return;
 	}	
 	
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock == -1 &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock == -1) {
+		
+		//printf("Server - Signal_RPC: 
+		ServerReply(machineID, mailboxID, 0);
+		return;
+	}
+	
 	
 	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock != outerLockIndex ||
 		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock != innerLockIndex) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
-
+		printf("Actual owners is %s\n", serverLocks[serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock].name);
+		printf("instead of %s\n", serverLocks[outerLockIndex].name);
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
@@ -996,11 +1016,19 @@ void Broadcast_RPC(int outerConditionIndex, int innerConditionIndex, int outerLo
 		return;
 	}	
 	
+	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock == -1 &&
+		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock == -1) {
+		
+		//printf("Server - Signal_RPC: 
+		ServerReply(machineID, mailboxID, 0);
+		return;
+	}
 	
 	if (serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock != outerLockIndex ||
 		serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingInnerLock != innerLockIndex) {
-		printf("Server - Signal_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
-
+		printf("Server - Broadcast_RPC: Machine%d trying to signal on wrong ServerLock%d in ServerCV%d\n", machineID, outerLockIndex, outerConditionIndex);
+		printf("Actual owners is %s\n", serverLocks[serverCVs[outerConditionIndex].cv[innerConditionIndex].waitingOuterLock].name);
+		printf("instead of %s\n", serverLocks[outerLockIndex].name);
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, BAD_INDEX);
 		return;
@@ -1371,7 +1399,7 @@ void Server() {
 				param2 = data;
 				lockIndex2 = atoi(param2);
 				
-				printf("Server: Lock Acquire, machine = %d, index = %s\n", clientID, param1);
+				printf("Server: Lock Acquire, machine = %d, index = %s\n", clientID, serverLocks[lockIndex].name);
 				Acquire_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "rel") == 0) {
 				data = strtok (NULL, " ,.-");
@@ -1382,7 +1410,7 @@ void Server() {
 				param2 = data;
 				lockIndex2 = atoi(param2);
 				
-				printf("Server: Lock Release, machine = %d, index = %s\n", clientID, param1);
+				printf("Server: Lock Release, machine = %d, index = %s\n", clientID, serverLocks[lockIndex].name);
 				Release_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
@@ -1393,7 +1421,7 @@ void Server() {
 				param2 = data;
 				lockIndex2 = atoi(param2);
 				
-				printf("Server: Lock Destroy, machine = %d, index = %s\n", clientID, param1);
+				printf("Server: Lock Destroy, machine = %d, index = %s\n", clientID, serverLocks[lockIndex].name);
 				DestroyLock_RPC(lockIndex, lockIndex2, clientID, mailID);
 			} else {
 				printf("Server: Bad request.\n");
@@ -1430,7 +1458,7 @@ void Server() {
 				param4 = data;
 				lockIndex2 = atoi(param4);
 				
-				printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
+				printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", clientID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 				Wait_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "sig") == 0) {
 				data = strtok (NULL, " ,.-");
@@ -1449,7 +1477,7 @@ void Server() {
 				param4 = data;
 				lockIndex2 = atoi(param4);
 				
-				printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
+				printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", clientID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 				Signal_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "bro") == 0) {
 				data = strtok (NULL, " ,.-");
@@ -1468,7 +1496,7 @@ void Server() {
 				param4 = data;
 				lockIndex2 = atoi(param4);
 				
-				printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", clientID, param1, param2);
+				printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", clientID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 				Broadcast_RPC(cvIndex, cvIndex2, lockIndex, lockIndex2, clientID, mailID);
 			} else if (strcmp(data, "del") == 0) {
 				data = strtok (NULL, " ,.-");
@@ -1512,7 +1540,7 @@ void Server() {
 				param2 = data;
 				mvIndex2 = atoi(param2);
 				
-				printf("Server: MV Get, machine = %d, name = %s\n", clientID, param1);
+				printf("Server: MV Get, machine = %d, name = %s\n", clientID, serverMVs[mvIndex].name);
 				GetMV_RPC(mvIndex, mvIndex2, clientID, mailID);
 			} else if (strcmp(data, "set") == 0) {
 				//printf("This farr\n");
@@ -1530,7 +1558,7 @@ void Server() {
 				value = atoi(param3);
 				
 				//printf("This farr\n");
-				printf("Server: MV Set, machine = %d, index = %d, value = %d\n", clientID, mvIndex, value);
+				printf("Server: MV Set, machine = %d, index = %s, value = %d\n", clientID, serverMVs[mvIndex].name, value);
 				SetMV_RPC(mvIndex, mvIndex2, value, clientID, mailID);
 			/*} else if (strcmp(data, "des") == 0) {
 				data = strtok (NULL, " ,.-");
