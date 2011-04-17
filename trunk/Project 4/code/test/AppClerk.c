@@ -103,6 +103,7 @@ int main() {
 		*  If there are privileged customers, do AppClerk tasks, then received $500
 		*/
 		if(GetMV(privACLineLength, 0) > 0){
+			Trace("Checking privLine\n", 0x9999);
 			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0)-1);
 
 			ServerAcquire(senatorLock, 0);
@@ -113,6 +114,7 @@ int main() {
 			SetMV(appState, myIndex, 0);	/* 0 = AVAILABLE */
 			ServerSignal(privACLineCV, 0, acpcLineLock, 0); /* Signals the next customer in priv line */
 			ServerRelease(acpcLineLock, 0);
+			Trace("Waiting privLine\n", 0x9999);
 			ServerWait(appCV, myIndex, appLock, myIndex); /* Waits for the next customer */
 
 			mySSN = GetMV(appData, myIndex);
@@ -170,6 +172,7 @@ int main() {
 		* If there are regular customers, do AppClerk tasks 
 		*/
 		else if(GetMV(regACLineLength,0) > 0){
+			Trace("Checking regLine\n", 0x9999);
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0)-1);
 
 			ServerAcquire(senatorLock, 0);
@@ -180,6 +183,7 @@ int main() {
 			SetMV(appState, myIndex, 0); /* 0 = AVAILABLE */
 			ServerSignal(regACLineCV, 0, acpcLineLock, 0); /* Signals the next customer in priv line */
 			ServerRelease(acpcLineLock, 0);
+			Trace("Waiting regLine\n", 0x9999);
 			ServerWait(appCV, myIndex, appLock, myIndex); /* Waits for the next customer */
 
 			mySSN = GetMV(appData, myIndex);
@@ -223,6 +227,7 @@ int main() {
 		}
 		/* If there are neither privileged or regular customers, go on break */
 		else{
+			Trace("Going on break\n", 0x9999);
 			ServerRelease(acpcLineLock, 0);
 			ServerAcquire(appLock, myIndex);
 			SetMV(appState, myIndex, 2); /* 2 = BREAK */

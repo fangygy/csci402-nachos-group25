@@ -148,7 +148,7 @@ void ServerReply(int clientID, int mailboxID, int rv) {
 	//sprintf(reply, "%d%d%d%d%d", neg, thousands, hundreds, tens, ones);
 	sprintf(reply, "%d", rv);
 	
-	printf("Server: reply array: %s\n", reply);
+	printf("Server: reply array: %s to clientID%d and mailID%d\n", reply, clientID, mailboxID);
 	
 	// construct packet, mail header for original message
 	// To: destination machine, mailbox clientID
@@ -334,9 +334,9 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 	}
 	
 	//If already owner, return 0
-	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == machineID ||
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID == machineID &&
 		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID == mailboxID) {
-		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d\n", machineID, outerLockIndex);
+		printf("Server - Acquire_RPC: Machine%d is already the owner of ServerLock%d %s\n", machineID, outerLockIndex, serverLocks[outerLockIndex].name);
 		
 		//SEND MESSAGE BACK
 		ServerReply(machineID, mailboxID, 0);
@@ -358,9 +358,10 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 		Holder queueHolder;
 		queueHolder.machineID = machineID;
 		queueHolder.mailboxID = mailboxID;
+		//printf("Server - Acquire_RPC: machineID%d and mailboxID%d\n", machineID, mailboxID);
 		//serverLocks[outerLockIndex].lock[innerLockIndex].queue->Append((void*)queueHolder);
 		serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)queueHolder.machineID);
-		serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Append((void*)queueHolder.mailboxID);
+		serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Append((void*)queueHolder.mailboxID);
 		
 		//DONT SEND MESSAGE
 		
@@ -412,7 +413,7 @@ void Release_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 	//If not owner, return -1
 	if (serverLocks[outerLockIndex].lock[innerLockIndex].holder.machineID != machineID ||
 		serverLocks[outerLockIndex].lock[innerLockIndex].holder.mailboxID != mailboxID) {
-		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d\n", machineID, outerLockIndex);
+		printf("Server - Release_RPC: Machine%d is not the owner of ServerLock%d %s\n", machineID, outerLockIndex, serverLocks[outerLockIndex].name);
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_OWNER);
@@ -431,11 +432,18 @@ void Release_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 		return;
 	}
 	
+	/*if (serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->IsEmpty()) {
+		printf("MACHINEIDQUEUE IS EMPTY\n");
+	}
+	if (serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->IsEmpty()) {
+		printf("MAILBOXIDQUEUE IS EMPTY\n");
+	}*/
+	
 	//Holder nextToAcquire = (Holder)serverLocks[outerLockIndex].lock[innerLockIndex].queue->Remove();
 	Holder nextToAcquire;
 	nextToAcquire.machineID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].machineIDQueue->Remove();
 	nextToAcquire.mailboxID = (int)serverLocks[outerLockIndex].lock[innerLockIndex].mailboxIDQueue->Remove();
-	
+	//printf("Server - Acquire_RPC: machineID%d and mailboxID%d\n", nextToAcquire.machineID, nextToAcquire.mailboxID);
 	serverLocks[outerLockIndex].lock[innerLockIndex].holder = nextToAcquire;
 	
 	//SEND MESSAGE TO nextToAcquire
