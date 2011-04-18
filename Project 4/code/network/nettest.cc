@@ -216,7 +216,7 @@ void CreateLock_RPC(char* name, int arraySize, int machineID, int mailboxID) {
 						//SEND INDEX i IN MESSAGE BACK
 						//ServerReply(machineID, mailboxID, i);
 						//return;
-						interrupt->Halt();
+						//interrupt->Halt();
 						break;
 					}
 				}
@@ -331,6 +331,7 @@ void Acquire_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 	
@@ -408,6 +409,7 @@ void Release_RPC(int outerLockIndex, int innerLockIndex, int machineID, int mail
 		
 		//SEND ERROR MESSAGE BACK HERE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 	
@@ -490,6 +492,7 @@ void DestroyLock_RPC(int outerLockIndex, int innerLockIndex, int machineID, int 
 		
 		//SEND ERROR MESSAGE BACK
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 	
@@ -697,6 +700,7 @@ void Wait_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockInd
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 	
@@ -714,6 +718,7 @@ void Wait_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockInd
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}	
 	
@@ -842,6 +847,7 @@ void Signal_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockI
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 
@@ -860,6 +866,7 @@ void Signal_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockI
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}	
 	
@@ -995,6 +1002,7 @@ void Broadcast_RPC(int outerConditionIndex, int innerConditionIndex, int outerLo
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 
@@ -1013,6 +1021,7 @@ void Broadcast_RPC(int outerConditionIndex, int innerConditionIndex, int outerLo
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}	
 	
@@ -1125,6 +1134,7 @@ void DestroyCV_RPC(int outerConditionIndex, int innerConditionIndex, int machine
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, NOT_CREATED);
+		interrupt->Halt();
 		return;
 	}
 	
