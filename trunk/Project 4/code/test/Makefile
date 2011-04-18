@@ -34,7 +34,7 @@ CFLAGS = -G 0 -c $(INCDIR)
 all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
 	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
 	passportTest1 passportTest2 passportTest3 execPassportTests2 Client Client1A Client1B Client2A Client2B Client2C ClientBad\
-	AppClerk PicClerk PassClerk CashClerk Customer Senator Manager SimpleServerPassport
+	AppClerk PicClerk PassClerk CashClerk Customer Senator Manager SimpleServerPassport 10PassportCustomers 2PassportClerks
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -268,6 +268,18 @@ SimpleServerPassport.o: SimpleServerPassport.c
 SimpleServerPassport: SimpleServerPassport.o start.o
 	$(LD) $(LDFLAGS) start.o SimpleServerPassport.o -o SimpleServerPassport.coff
 	../bin/coff2noff SimpleServerPassport.coff SimpleServerPassport
+	
+10PassportCustomers.o: 10PassportCustomers.c
+	$(CC) $(CFLAGS) -c 10PassportCustomers.c
+10PassportCustomers: 10PassportCustomers.o start.o
+	$(LD) $(LDFLAGS) start.o 10PassportCustomers.o -o 10PassportCustomers.coff
+	../bin/coff2noff 10PassportCustomers.coff 10PassportCustomers
+	
+2PassportClerks.o: 2PassportClerks.c
+	$(CC) $(CFLAGS) -c 2PassportClerks.c
+2PassportClerks: 2PassportClerks.o start.o
+	$(LD) $(LDFLAGS) start.o 2PassportClerks.o -o 2PassportClerks.coff
+	../bin/coff2noff 2PassportClerks.coff 2PassportClerks
 	
 clean:
 	rm -f *.o *.coff

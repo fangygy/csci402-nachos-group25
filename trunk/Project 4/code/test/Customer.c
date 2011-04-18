@@ -875,5 +875,11 @@ int main() {
 	ServerRelease(customerLock, 0);
 	/* "Finished with Passport Office, now leaving.\n" */
 	
+	Write("Leaving Office\n", sizeof("Leaving Office\n"), ConsoleOutput);
+	Trace("MyIndex:", myIndex);
+	Trace("\n", 0x9999);
+	Trace("Customers left in office:", GetMV(officeCustomer, 0));
+	Trace("\n", 0x9999);
+	
 	Exit(0);
 }
