@@ -19,6 +19,21 @@ enum BOOLEAN{
 	true
 };
 
+int traceLock;
+
+void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	/* Example */
+	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
+	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+	Trace(clerkType, myIndex);
+	if (custType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(custType, myCust);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+}
+
 int main() {
 	/* ------------------Local data -------------------------*/
 	int myIndex;
@@ -69,6 +84,8 @@ int main() {
 	int fileState = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 	int fileType = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 
+	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
+	
 	/* initializes myIndex */
 	ServerAcquire(initIndexLock, 0);
 	myIndex = GetMV(initIndex, 0);
@@ -80,8 +97,10 @@ int main() {
 	/* --------------------BEGIN PICCLERK STUFF----------------*/
 	while(loop == true){
 		if (GetMV(shutdown, 0) == 1) {
-/*			ClerkTrace("Pic", myIndex, 0x00, 0, "Shutting down.\n");
-*/			Exit(0);
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Shutting down.\n");
+			ServerRelease(traceLock, 0);
+			Exit(0);
 		}
 		ServerAcquire(senatorLock, 0);
 		ServerAcquire(customerLock, 0);
@@ -135,16 +154,20 @@ int main() {
 				ServerRelease(fileLock, mySSN);
 			}
 			else{
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN,
+				ServerAcquire(traceLock, 0);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN,
 					"ERROR: Customer does not have either an application or no application. What are you doing here?\n");
-*/				ServerRelease(fileLock, mySSN);
+				ServerRelease(traceLock, 0);
+				ServerRelease(fileLock, mySSN);
 			}
-/*
-			if (cType == CUSTOMER) {
+
+			ServerAcquire(traceLock, 0);
+			if (cType == 0) {
 				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer.\n");
 			} else {
 				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator.\n");
-			}*/
+			}
+			ServerRelease(traceLock, 0);
 
 			/* yield to take picture
 			* print statement: "Taking picture"
@@ -159,12 +182,14 @@ int main() {
 				ServerWait(picCV, myIndex, picLock, myIndex);	/* Shows the customer the picture */
 
 				if(GetMV(picDataBool, myIndex) == 0){
+					ServerAcquire(traceLock, 0);
 					if (cType == 0) {
-/*						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
-*/
+						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
+
 					} else {
-/*						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
-*/					}
+						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
+					}
+					ServerRelease(traceLock, 0);
 				}
 			}
 
@@ -175,21 +200,25 @@ int main() {
 			for(i = 0; i < 20; i++){
 				Yield();
 			}*/
+			ServerAcquire(traceLock, 0);
 			if (cType == 0) {
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
-*/			} else {
-/*				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
-*/			}
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
+			} else {
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
+			}
+			ServerRelease(traceLock, 0);
 
 			/* signal customer awake */
 			ServerAcquire(picMoneyLock, 0);
 			SetMV(picMoney, 0, GetMV(picMoney, 0) + 500);
 
+			ServerAcquire(traceLock, 0);
 			if (cType == 0) {
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
-*/			} else {
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Senator.\n");
-*/			}
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Customer.\n");
+			} else {
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Accepts $500 from Senator.\n");
+			}
+			ServerRelease(traceLock, 0);
 
 			ServerRelease(picMoneyLock, 0);
 
@@ -232,16 +261,21 @@ int main() {
 				ServerRelease(fileLock, mySSN);
 			}
 			else{
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN,
+				ServerAcquire(traceLock, 0);
+				ClerkTrace("Pic", myIndex, "Cust", mySSN,
 					"ERROR: Customer does not have either an application or no application. What are you doing here?\n");
-*/				ServerRelease(fileLock, mySSN);
+				ServerRelease(traceLock, 0);
+				ServerRelease(fileLock, mySSN);
 			}
 
+			ServerAcquire(traceLock, 0);
 			if (cType == 0) {
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer.\n");
-*/			} else {
-/*				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator.\n");
-*/			}
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer.\n");
+			} else {
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator.\n");
+			}
+			ServerRelease(traceLock, 0);
+			
 				/* yield to take picture
 				* print statement: "Taking picture"
 				* picCV->Signal then picCV->Wait to
@@ -255,11 +289,13 @@ int main() {
 				ServerWait(picCV, myIndex, picLock, myIndex);	/* Shows the customer the picture */
 
 				if(GetMV(picDataBool, myIndex) == 0){
+					ServerAcquire(traceLock, 0);
 					if (cType == 0) {
-/*						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
-*/					} else {
-/*						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
-*/					}
+						ClerkTrace("Pic", myIndex, "Cust", mySSN, "Takes picture of Customer again.\n");
+					} else {
+						ClerkTrace("Pic", myIndex, "Sen", mySSN, "Takes picture of Senator again.\n");
+					}
+					ServerRelease(traceLock, 0);
 				}
 			}
 
@@ -270,11 +306,13 @@ int main() {
 			for(i = 0; i < 20; i++){
 				Yield();
 			}*/
+			ServerAcquire(traceLock, 0);
 			if (cType == 0) {
-/*				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
-*/			} else {
-/*				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
-*/			}
+				ClerkTrace("Pic", myIndex, "Cust", mySSN, "Informs Customer that the picture has been completed.\n");
+			} else {
+				ClerkTrace("Pic", myIndex, "Sen", mySSN, "Informs Senator that the picture has been completed.\n");
+			}
+			ServerRelease(traceLock, 0);
 
 			SetMV(picDataBool, myIndex, 0);
 			ServerSignal(picCV, myIndex, picLock, myIndex); /* signal customer awake */
@@ -285,11 +323,18 @@ int main() {
 			ServerRelease(acpcLineLock, 0);
 			ServerAcquire(picLock, myIndex);
 			SetMV(picState, myIndex, 2); /* 2 = BREAK */
-/*			ClerkTrace("Pic", myIndex, 0x00, 0, "Going on break.\n");
-*/
+			
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Going on break.\n");
+			ServerRelease(traceLock, 0);
+
 			ServerWait(picCV, myIndex, picLock, myIndex);
-/*			ClerkTrace("Pic", myIndex, 0x00, 0, "Returning from break.\n");
-*/			ServerRelease(picLock, myIndex);
+			
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Pic", myIndex, 0x00, 0, "Returning from break.\n");
+			ServerRelease(traceLock, 0);
+			
+			ServerRelease(picLock, myIndex);
 		}
 	}
 }

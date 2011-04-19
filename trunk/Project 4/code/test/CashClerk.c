@@ -77,6 +77,21 @@ int cashCV;
 int regCashLineCV;
 int privCashLineCV;*/
 int cashLineCV;
+
+int traceLock;
+
+void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	/* Example */
+	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
+	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+	Trace(clerkType, myIndex);
+	if (custType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(custType, myCust);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+}
 	
 int main() {
 	loop = TRUE;
@@ -120,6 +135,8 @@ int main() {
 	fileStateIndex = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 	cashMoneyIndex = CreateMV("cashMoney", sizeof("cashMoney"), 1, 0x9999);
 	
+	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
+	
 	ServerAcquire(cashLock, myIndex);
 	SetMV(cashStateIndex, myIndex, BUSY);
 	ServerRelease(cashLock, myIndex);
@@ -127,7 +144,11 @@ int main() {
 	while(loop == TRUE){
 		shutdown = GetMV(shutdownIndex, 0);
 		if (shutdown == TRUE) {
-			/*ClerkTrace("Cash", myIndex, 0x00, 0, "Shutting down.\n");*/
+		
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Shutting down.\n");
+			ServerRelease(traceLock, 0);
+			
 			Exit(0);
 		}
 		ServerAcquire(senatorLock, 0);		/* only one ServerLock, so acquire index 0? */
@@ -165,7 +186,7 @@ int main() {
 			
 			ServerAcquire(cashLock, myIndex);
 			SetMV(cashStateIndex, myIndex, AVAILABLE);
-			ServerSignal(cashLineCV, myIndex, cashLineLock, myIndex);
+			ServerSignal(cashLineCV, 0, cashLineLock, 0);
 			ServerRelease(cashLineLock, 0);
 			
 			/* wait for customer to signal me */
@@ -191,22 +212,28 @@ int main() {
 				SetMV(cashMoneyIndex, 0, cashMoney);
 				ServerRelease(cashMoneyLock, 0);
 
+				ServerAcquire(traceLock, 0);
 				if(cType == CUSTOMER){
-					/*ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives valid certification to Customer.\n");*/
+					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives valid certification to Customer.\n");
 				}
 				else{
-					/*ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");*/
+					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives valid certification to Senator.\n");
 				}
+				ServerRelease(traceLock, 0);
+				
 			} else {
 				SetMV(cashDataBoolIndex, myIndex, FALSE);
+				
+				ServerAcquire(traceLock, 0);
 				if(cType == CUSTOMER){
-					/*ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
-					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");*/		
+					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Gives invalid certification to Customer.\n");
+					ClerkTrace("Cash", myIndex, "Cust", mySSN, "Punishes Customer to wait.\n");		
 				}
 				else{
-					/*ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives invalid certification to Senator.\n");
-					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Punishes Senator to wait.\n");*/
+					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Gives invalid certification to Senator.\n");
+					ClerkTrace("Cash", myIndex, "Sen", mySSN, "Punishes Senator to wait.\n");
 				}
+				ServerRelease(traceLock, 0);
 			}
 			ServerRelease(fileLock, mySSN);
 			
@@ -219,11 +246,18 @@ int main() {
 			/* No one in line...take a break */
 			ServerRelease(cashLineLock, 0);
 			ServerAcquire(cashLock, myIndex);
-			/*ClerkTrace("Cash", myIndex, 0x00, 0, "Goin on break.\n");*/
+			
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Goin on break.\n");
+			ServerRelease(traceLock, 0);
+			
 			SetMV(cashStateIndex, myIndex, BREAK);
 			ServerWait(cashCV, myIndex, cashLock, myIndex);
 			
-			/*ClerkTrace("Cash", myIndex, 0x00, 0, "Returning from break.\n");*/
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Cash", myIndex, 0x00, 0, "Returning from break.\n");
+			ServerRelease(traceLock, 0);
+			
 			ServerRelease(cashLock, myIndex);
 		}
 	}

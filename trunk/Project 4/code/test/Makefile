@@ -34,7 +34,8 @@ CFLAGS = -G 0 -c $(INCDIR)
 all: halt matmult sort testfiles yieldTest lockTest forkTest execTest CVTest execCVTest multiExecTest\
 	destroyCVTest writeTest traceTest randTest PassportOffice ExecPassportOffice ExecTwoPassportOffice execPassportTests\
 	passportTest1 passportTest2 passportTest3 execPassportTests2 Client Client1A Client1B Client2A Client2B Client2C ClientBad\
-	AppClerk PicClerk PassClerk CashClerk Customer Senator Manager SimpleServerPassport 10PassportCustomers 2PassportClerks
+	AppClerk PicClerk PassClerk CashClerk Customer Senator Manager SimpleServerPassport 10PassportCustomers 2PassportClerks\
+	10Customers 5AppPicClerks 5PassCashClerks 1ManagerSenators
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -280,6 +281,30 @@ SimpleServerPassport: SimpleServerPassport.o start.o
 2PassportClerks: 2PassportClerks.o start.o
 	$(LD) $(LDFLAGS) start.o 2PassportClerks.o -o 2PassportClerks.coff
 	../bin/coff2noff 2PassportClerks.coff 2PassportClerks
+	
+10Customers.o: 10Customers.c
+	$(CC) $(CFLAGS) -c 10Customers.c
+10Customers: 10Customers.o start.o
+	$(LD) $(LDFLAGS) start.o 10Customers.o -o 10Customers.coff
+	../bin/coff2noff 10Customers.coff 10Customers
+	
+5AppPicClerks.o: 5AppPicClerks.c
+	$(CC) $(CFLAGS) -c 5AppPicClerks.c
+5AppPicClerks: 5AppPicClerks.o start.o
+	$(LD) $(LDFLAGS) start.o 5AppPicClerks.o -o 5AppPicClerks.coff
+	../bin/coff2noff 5AppPicClerks.coff 5AppPicClerks
+	
+5PassCashClerks.o: 5PassCashClerks.c
+	$(CC) $(CFLAGS) -c 5PassCashClerks.c
+5PassCashClerks: 5PassCashClerks.o start.o
+	$(LD) $(LDFLAGS) start.o 5PassCashClerks.o -o 5PassCashClerks.coff
+	../bin/coff2noff 5PassCashClerks.coff 5PassCashClerks
+	
+1ManagerSenators.o: 1ManagerSenators.c
+	$(CC) $(CFLAGS) -c 1ManagerSenators.c
+1ManagerSenators: 1ManagerSenators.o start.o
+	$(LD) $(LDFLAGS) start.o 1ManagerSenators.o -o 1ManagerSenators.coff
+	../bin/coff2noff 1ManagerSenators.coff 1ManagerSenators
 	
 clean:
 	rm -f *.o *.coff

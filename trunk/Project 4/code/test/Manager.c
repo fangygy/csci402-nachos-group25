@@ -10,6 +10,7 @@
 #define NUM_CLERKS 5
 #define NUM_CUSTOMERS 30
 #define NUM_SENATORS 5
+#define NV 0x9999
 
 enum BOOLEAN {
 	false,
@@ -22,6 +23,7 @@ int acpcLineLock, passLineLock, cashLineLock;
 int senWaitLock, clerkWaitLock, custWaitLock;
 int appLock, picLock, passLock, cashLock;
 int appMoneyLock, picMoneyLock, passMoneyLock, cashMoneyLock;
+int traceLock;
 
 /* CVs */
 int regACLineCV, regPCLineCV, regPassLineCV, cashLineCV;
@@ -37,6 +39,20 @@ int cashLineLength;
 int appState, picState, passState, cashState;
 int appMoney, picMoney, passMoney, cashMoney;
 int shutdown;
+
+void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* msg) {
+	/* Example */
+	/* ClerkTrace("App", myIndex, "Sen", myClerk, "Here is mah message to a Senator.\n") */
+	/* ClerkTrace("App", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+
+	Trace(clerkType, myIndex);
+	if (custType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(custType, myCust);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+}
 
 int main() {
 	int totalMoney;
@@ -60,6 +76,7 @@ int main() {
 	picMoneyLock = ServerCreateLock("picMoneyLock", sizeof("picMoneyLock"), 1);
 	passMoneyLock = ServerCreateLock("passMoneyLock", sizeof("passMoneyLock"), 1);
 	cashMoneyLock = ServerCreateLock("cashMoneyLock", sizeof("cashMoneyLock"), 1);
+	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
 	
 	/* CVs */
 	regACLineCV = ServerCreateCV("regACLineCV", sizeof("regACLineCV"), 1);
@@ -128,6 +145,9 @@ int main() {
 				Yield();
 				ServerAcquire(customerLock, 0);
 				/* */
+				ServerAcquire(traceLock, 0);
+				ClerkTrace("Mgr", 0, 0x00, 0, "Waking up customers loop.\n");
+				ServerRelease(traceLock, 0);
 			}
 			ServerRelease(customerLock, 0);
 			
@@ -170,6 +190,9 @@ int main() {
 					SetMV(appState, i, 1);
 					ServerRelease(appLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 				}
 				else {
 					ServerRelease(appLock, i);
@@ -185,6 +208,9 @@ int main() {
 					SetMV(appState, i, 1);
 					ServerRelease(appLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an AppClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 					break;
 				}
 				else {
@@ -206,6 +232,9 @@ int main() {
 					SetMV(picState, i, 1);
 					ServerRelease(picLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an PicClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 				}
 				else {
 					ServerRelease(picLock, i);
@@ -221,6 +250,9 @@ int main() {
 					SetMV(picState, i, 1);
 					ServerRelease(picLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an PicClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 					break;
 				}
 				else {
@@ -243,6 +275,9 @@ int main() {
 					SetMV(passState, i, 1);
 					ServerRelease(passLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an PassClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 				}
 				else {
 					ServerRelease(passLock, i);
@@ -259,6 +294,9 @@ int main() {
 					SetMV(passState, i, 1);
 					ServerRelease(passLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an PassClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 					break;
 				}
 				else {
@@ -281,6 +319,9 @@ int main() {
 					SetMV(cashState, i, 1);
 					ServerRelease(cashLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an CashClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 				}
 				else {
 					ServerRelease(cashLock, i);
@@ -297,6 +338,9 @@ int main() {
 					SetMV(cashState, i, 1);
 					ServerRelease(cashLock, i);
 					/* */
+					ServerAcquire(traceLock, 0);
+					ClerkTrace("Mgr", 0, 0x00, 0, "Calling an CashClerk back from break.\n");
+					ServerRelease(traceLock, 0);
 					break;
 				}
 				else {
@@ -314,35 +358,56 @@ int main() {
 			ServerRelease(senatorLock, 0);
 			ServerRelease(customerLock, 0);
 			
+			ServerAcquire(traceLock, 0);
+			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
 			ServerAcquire(appMoneyLock, 0);
 			/* */
 			/* */
+			Trace("Total money received from ApplicationClerk = ", GetMV(appMoney, 0));
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			totalMoney += GetMV(appMoney, 0);
 			ServerRelease(appMoneyLock, 0);
 			
 			ServerAcquire(picMoneyLock, 0);
 			/* */
 			/* */
+			Trace("Total money received from PictureClerk = ", GetMV(picMoney, 0));
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			totalMoney += GetMV(picMoney, 0);
 			ServerRelease(picMoneyLock, 0);
 			
 			ServerAcquire(passMoneyLock, 0);
 			/* */
 			/* */
+			Trace("Total money received from PassportClerk = ", GetMV(passMoney, 0));
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			totalMoney += GetMV(passMoney, 0);
 			ServerRelease(passMoneyLock, 0);
 			
 			ServerAcquire(cashMoneyLock, 0);
 			/* */
 			/* */
+			Trace("Total money received from Cashier = ", GetMV(cashMoney, 0));
+			Write("\n", sizeof("\n"), ConsoleOutput);
 			totalMoney += GetMV(cashMoney, 0);
 			ServerRelease(cashMoneyLock, 0);
 			
 			/* */
 			/* */
+			Trace("Total money made by office = ", totalMoney);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			Write("\n============================================================\n", sizeof("\n============================================================\n"), ConsoleOutput);
+			
+			Write("No more customers in passport office, ending simulation.\n", sizeof("No more customers in passport office, ending simulation.\n"), ConsoleOutput);
+			Write("\n", sizeof("\n"), ConsoleOutput);
+			ServerRelease(traceLock, 0);
+			
 			SetMV(shutdown, 0, 1);
 			
 			/* */
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Mgr", 0, 0x00, 0, "Notifying everyone that Passport Office is closing.\n");
+			ServerRelease(traceLock, 0);
 			for (i = 0; i < NUM_CLERKS; i++) {
 				ServerAcquire(appLock, i);
 				if (GetMV(appState, i) == 2) {
@@ -376,6 +441,9 @@ int main() {
 				}
 			}
 			/* */
+			ServerAcquire(traceLock, 0);
+			ClerkTrace("Mgr", 0, 0x00, 0, "Notified all clerks. Shutting down.\n");
+			ServerRelease(traceLock, 0);
 			Exit(0);
 		}
 		ServerRelease(senatorLock, 0);
