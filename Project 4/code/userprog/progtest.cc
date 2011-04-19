@@ -49,8 +49,8 @@ StartProcess(char *filename)
 	process->numThreads = 1;
 	currentThread->myProcess = process;
 	
-	currentThread->mailboxID = mailboxCounter;
-	mailboxCounter++;
+	//currentThread->mailboxID = mailboxCounter;
+	//mailboxCounter++;
 	//machine->WriteRegister(2, process->processId); /*Crowley said we don't need this...*/
 	
 	/* */

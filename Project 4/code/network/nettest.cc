@@ -817,6 +817,8 @@ void Signal_RPC(int outerConditionIndex, int innerConditionIndex, int outerLockI
 	//If this lock doesn't exist, return -1
 	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, outerLockIndex);
+		printf("MachineID:%d, MailboxID:%d, lockName:%s, conName:%s\n", machineID, mailboxID, serverLocks[outerLockIndex].name, serverCVs[outerLockIndex].name);
+		interrupt->Halt();
 
 		// SEND BACK ERROR MESSAGE
 		ServerReply(machineID, mailboxID, DELETED);

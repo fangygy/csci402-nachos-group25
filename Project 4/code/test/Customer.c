@@ -937,7 +937,7 @@ int main() {
 	/* Getting a unique index */
 	indexInitLock = ServerCreateLock("CustomerIndexLock", sizeof("CustomerIndexLock"), 1);
 	indexInit = CreateMV("CustomerIndex", sizeof("CustomerIndex"), 1, 0x9999);
-	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1, 0x9999);
+	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
 	
 	ServerAcquire(indexInitLock, 0);
 	myIndex = GetMV(indexInit, 0);
@@ -1045,7 +1045,7 @@ int main() {
 	
 	while (visitedApp != true || visitedPic != true || visitedPass != true || visitedCash != true) {
 		
-		/*if (Random(5) == 1) {
+		if (Random(5) == 1) {
 			ServerAcquire(senatorLock, 0);
 			if (GetMV(officeSenator, 0) > 0) {
 				ServerRelease(senatorLock, 0);
@@ -1053,14 +1053,14 @@ int main() {
 			}
 			else {
 				ServerRelease(senatorLock, 0);
-			}*/
+			}
 			/* "Going directly to passport clerk like an idiot.\n" */
-			/*ServerAcquire(traceLock, 0);
+			ServerAcquire(traceLock, 0);
 			CustTrace("Cust", myIndex, 0x00, 0, "Going directly to passport clerk like an idiot.\n");
-			ServerRelease(traceLock, 0); */
+			ServerRelease(traceLock, 0); 
 			
-			/*LinePassClerk();
-		}*/
+			LinePassClerk();
+		}
 		
 		while (visitedApp != true || visitedPic != true) {
 		
@@ -1113,11 +1113,6 @@ int main() {
 	ServerAcquire(traceLock, 0);
 	CustTrace("Cust", myIndex, 0x00, 0, "Finished with Passport Office, leaving.\n");
 	ServerRelease(traceLock, 0);
-	Write("Leaving Office\n", sizeof("Leaving Office\n"), ConsoleOutput);
-	Trace("MyIndex:", myIndex);
-	Trace("\n", 0x9999);
-	Trace("Customers left in office:", GetMV(officeCustomer, 0));
-	Trace("\n", 0x9999);
 	
 	Exit(0);
 }

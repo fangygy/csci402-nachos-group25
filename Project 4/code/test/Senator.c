@@ -10,6 +10,7 @@
 #define NUM_CLERKS 5
 #define NUM_CUSTOMERS 30
 #define NUM_SENATORS 5
+#define NV 0x9999
 
 enum BOOLEAN {
 	false,
@@ -19,6 +20,7 @@ enum BOOLEAN {
 int myIndex;
 int indexInit, indexInitLock;
 int fileType;
+int traceLock;
 
 int myMoney;
 enum BOOLEAN visitedApp, visitedPic, visitedPass, visitedCash;
@@ -42,6 +44,19 @@ int appCV, picCV, passCV, cashCV;
 int appData, picData, passData, cashData;
 int picDataBool, passDataBool, cashDataBool;
 int appState, picState, passState, cashState;
+
+void CustTrace(char* custType, int myIndex, char*  clerkType, int myClerk, char* msg) {
+	/* Example */
+	/* CustTrace("Cust", myIndex, "Pass", myClerk, "Here is mah message to the PassClerk.\n") */
+	/* CustTrace("Cust", myIndex, 0x00, 0, "Here is mah message to no one in particular.\n") */
+	Trace(custType, myIndex);
+	if (clerkType != 0x00) {
+		Trace(" -> ", NV);
+		Trace(clerkType, myClerk);
+	}
+	Trace(": ", NV);
+	Trace(msg, NV);
+}
 
 void RandomMoney() {
 	int random = Random(4);
@@ -78,12 +93,14 @@ void TalkAppClerk(enum BOOLEAN privLine) {
 	
 	ServerAcquire(appLock, myClerk);
 	SetMV(appData, myClerk, myIndex);
+	
+	ServerAcquire(traceLock, 0);
 	if (privLine == true) {
 		/* "Willing to pay 500 to move ahead of line.\n" */
+		CustTrace("Sen", myIndex, "App", myClerk, "Willing to pay 500 to move ahead in line.\n");
 	}
-	else {
-	
-	}
+	CustTrace("Sen", myIndex, "App", myClerk, "Gives application to clerk.\n");
+	ServerRelease(traceLock, 0);
 	/* Gives application to */
 	
 	ServerSignal(appCV, myClerk, appLock, myClerk);
@@ -91,6 +108,9 @@ void TalkAppClerk(enum BOOLEAN privLine) {
 	ServerRelease(appLock, myClerk);
 	
 	/* informed */
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, "App", myClerk, "Informed that application is filed.\n");
+	ServerRelease(traceLock, 0);
 	
 	visitedApp = true;
 }
@@ -124,10 +144,9 @@ void TalkPicClerk(enum BOOLEAN privLine) {
 	
 	SetMV(picData, myClerk, myIndex);
 	if (privLine == true) {
-	
-	}
-	else {
-	
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Pic", myClerk, "Willing to pay 500 to move ahead in line.\n");
+		ServerRelease(traceLock, 0);
 	}
 	
 	ServerSignal(picCV, myClerk, picLock, myClerk);
@@ -137,6 +156,10 @@ void TalkPicClerk(enum BOOLEAN privLine) {
 		if (hatePicture == true) {
 			SetMV(picDataBool, myClerk, 0);
 			/* Doesn't like */
+			
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, "Pic", myClerk, "Hates the picture.\n");
+			ServerRelease(traceLock, 0);
 			
 			chanceToHate = Random(10);
 			if (chanceToHate < 2) {
@@ -153,6 +176,10 @@ void TalkPicClerk(enum BOOLEAN privLine) {
 			SetMV(picDataBool, myClerk, 1);
 			/* Likes picture */
 			
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, "Pic", myClerk, "Likes the picture.\n");
+			ServerRelease(traceLock, 0);
+			
 			ServerSignal(picCV, myClerk, picLock, myClerk);
 			ServerWait(picCV, myClerk, picLock, myClerk);
 			break;
@@ -161,6 +188,10 @@ void TalkPicClerk(enum BOOLEAN privLine) {
 	
 	ServerRelease(picLock, myClerk);
 	/* Told by */
+	
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, "Pic", myClerk, "Told that procedure is done.\n");
+	ServerRelease(traceLock, 0);
 	
 	visitedPic = true;
 }
@@ -172,6 +203,9 @@ void LineAppPicClerk() {
 		
 		if (GetMV(regACLineLength, 0) == 0 && GetMV(privACLineLength, 0) == 0 && visitedApp != true) {
 		
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular application line.\n");
+			ServerRelease(traceLock, 0);
 			/* "Entering empty regular application line.\n" */
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0) + 1);
 			ServerWait(regACLineCV, 0, acpcLineLock, 0);
@@ -185,6 +219,10 @@ void LineAppPicClerk() {
 		else if (GetMV(regPCLineLength, 0) == 0 && GetMV(privPCLineLength, 0) == 0 && visitedPic != true) {
 		
 			/* "Entering empty regular picture line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular picture line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(regPCLineLength, 0, GetMV(regPCLineLength, 0) + 1);
 			ServerWait(regPCLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -197,6 +235,10 @@ void LineAppPicClerk() {
 		else if (visitedPic == true) {
 		
 			/* "Entering privileged application line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged application line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0) + 1);
 			ServerWait(privACLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -210,6 +252,10 @@ void LineAppPicClerk() {
 		else if (visitedApp == true) {
 			
 			/* "Entering privileged picture line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged picture line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(privPCLineLength, 0, GetMV(privPCLineLength, 0) + 1);
 			ServerWait(privPCLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -223,6 +269,10 @@ void LineAppPicClerk() {
 		else if (GetMV(privACLineLength, 0) <= GetMV(privPCLineLength, 0)) {
 		
 			/* "Entering privileged application line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged application line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0) + 1);
 			ServerWait(privACLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -237,6 +287,10 @@ void LineAppPicClerk() {
 		else {
 		
 			/* "Entering privileged picture line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged picture line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(privPCLineLength, 0, GetMV(privPCLineLength, 0) + 1);
 			ServerWait(privPCLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -253,6 +307,10 @@ void LineAppPicClerk() {
 		if (visitedPic == true) {
 		
 			/* Entering regular application line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering reuglar application line.\n");
+			ServerRelease(traceLock, 0);
+			
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0) + 1);
 			ServerWait(regACLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -265,6 +323,10 @@ void LineAppPicClerk() {
 		else if (visitedApp == true) {
 		
 			/* Entering regular picture line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular picture line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(regPCLineLength, 0, GetMV(regPCLineLength, 0) + 1);
 			ServerWait(regPCLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -277,6 +339,10 @@ void LineAppPicClerk() {
 		else if (GetMV(regACLineLength, 0) <= GetMV(regPCLineLength, 0)) {
 			
 			/* "Entering regular application line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular application line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0) + 1);
 			ServerWait(regACLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -289,6 +355,10 @@ void LineAppPicClerk() {
 		else {
 		
 			/* "Entering regular picture line.\n" */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering regular picture line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(regPCLineLength, 0, GetMV(regPCLineLength, 0) + 1);
 			ServerWait(regPCLineCV, 0, acpcLineLock, 0);
 			ServerRelease(acpcLineLock, 0);
@@ -323,6 +393,11 @@ void TalkPassClerk(enum BOOLEAN privLine) {
 	SetMV(passData, myClerk, myIndex);
 
 	/* */
+	if (privLine == true) {
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Pass", myClerk, "Willing to pay 500 to move ahead in line.\n");
+		ServerRelease(traceLock, 0);
+	}
 	
 	ServerSignal(passCV, myClerk, passLock, myClerk);
 	ServerWait(passCV, myClerk, passLock, myClerk);
@@ -331,10 +406,17 @@ void TalkPassClerk(enum BOOLEAN privLine) {
 		ServerRelease(passLock, myClerk);
 		visitedPass = true;
 		/* */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Pass", myClerk, "Certified by PassportClerk.\n");
+		ServerRelease(traceLock, 0);
 	}
 	else {
 		ServerRelease(passLock, myClerk);
 		/* */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Pass", myClerk, "Not certified by PassportClerk.\n");	
+		ServerRelease(traceLock, 0);
+		
 		randYield = Random(900) + 100;
 		for (i = 0; i < randYield; i++) {
 			Yield();
@@ -350,6 +432,10 @@ void LinePassClerk() {
 		if (GetMV(regPassLineLength, 0) == 0 && GetMV(privPassLineLength, 0) == 0) {
 			
 			/* Entering passport line */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering empty regular passport line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(regPassLineLength, 0, GetMV(regPassLineLength, 0) + 1);
 			ServerWait(regPassLineCV, 0, passLineLock, 0);
 			ServerRelease(passLineLock, 0);
@@ -363,6 +449,10 @@ void LinePassClerk() {
 		else {
 		
 			/* Entering passport line */
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Entering privileged passport line.\n");
+			ServerRelease(traceLock, 0);
+				
 			SetMV(privPassLineLength, 0, GetMV(privPassLineLength, 0) + 1);
 			ServerWait(privPassLineCV, 0, passLineLock, 0);
 			ServerRelease(passLineLock, 0);
@@ -378,6 +468,10 @@ void LinePassClerk() {
 	else {
 	
 		/* Entering passport line */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, 0x00, 0, "Entering regular passport line.\n");
+		ServerRelease(traceLock, 0);
+			
 		SetMV(regPassLineLength, 0, GetMV(regPassLineLength, 0) + 1);
 		ServerWait(regPassLineCV, 0, passLineLock, 0);
 		ServerRelease(passLineLock, 0);
@@ -396,6 +490,10 @@ void LineTalkCashClerk() {
 	
 	ServerAcquire(cashLineLock, 0);
 	/* */
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, 0x00, 0, "Entering Cashier line.\n");
+	ServerRelease(traceLock, 0);
+		
 	SetMV(cashLineLength, 0, GetMV(cashLineLength, 0) + 1);
 	ServerWait(cashLineCV, 0, cashLineLock, 0);
 	ServerRelease(cashLineLock, 0);
@@ -428,11 +526,21 @@ void LineTalkCashClerk() {
 		visitedCash = true;
 		
 		/* */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Got valid certification.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Pays $100 for passport.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Passport is now recorded by Cashier.\n");
+		ServerRelease(traceLock, 0);
+		
 		myMoney -= 100;
 	}
 	else {
 		ServerRelease(cashLock, myClerk);
 		/* */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Not certified by Cashier.\n");
+		CustTrace("Sen", myIndex, "Cash", myClerk, "Punished to wait.\n");
+		ServerRelease(traceLock, 0);
 		
 		randYield = Random(900) + 100;
 		for (i = 0; i < randYield; i++) {
@@ -518,24 +626,43 @@ int main() {
 	SetMV(officeSenator, 0, GetMV(officeSenator, 0) + 1);
 	ServerRelease(senatorLock, 0);
 	
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, 0x00, 0, "Entering Passport Office.\n");
+	ServerRelease(traceLock, 0);
+	
 	ServerAcquire(customerLock, 0);
 	if (GetMV(officeCustomer, 0) > 0) {
 		ServerRelease(customerLock, 0);
 		
 		ServerAcquire(senWaitLock, 0);
 		/* Waiting for customers to leave */
+		
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, 0x00, 0, "Waiting for customers to leave.\n");
+		ServerRelease(traceLock, 0);
+		
 		ServerWait(senWaitCV, 0, senWaitLock, 0);
 		/* Has stopped waiting */
+		ServerAcquire(traceLock, 0);
+		CustTrace("Sen", myIndex, 0x00, 0, "Has stopped waiting\n");
+		ServerRelease(traceLock, 0);
+		
 		ServerRelease(senWaitLock, 0);
 	}
 	else {
 		ServerRelease(customerLock, 0);
 	}
 	/* "Entering Passport Office\n" */
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, 0x00, 0, "Has entered.\n");
+	ServerRelease(traceLock, 0);
 	
 	while (visitedApp != true || visitedPic != true || visitedPass != true || visitedCash != true) {
 		
 		if (Random(5) == 1) {
+			ServerAcquire(traceLock, 0);
+			CustTrace("Sen", myIndex, 0x00, 0, "Going directly to passport clerk like an idiot.\n");
+			ServerRelease(traceLock, 0);
 			/* "Going directly to passport clerk like an idiot.\n" */
 			LinePassClerk();
 		}
@@ -560,6 +687,9 @@ int main() {
 	SetMV(officeSenator, 0, GetMV(officeSenator, 0) - 1);
 	ServerRelease(senatorLock, 0);
 	/* "Finished with Passport Office, now leaving.\n" */
+	ServerAcquire(traceLock, 0);
+	CustTrace("Sen", myIndex, 0x00, 0, "Finished with Passport Office, leaving.\n");
+	ServerRelease(traceLock, 0);
 	
 	/*Halt();*/
 	Exit(0);
