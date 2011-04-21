@@ -63,6 +63,8 @@ extern int NOT_CREATED;
 extern int DELETED;
 extern int NOT_OWNER;
 
+extern int NUM_SERVERS;
+
 extern PostOffice* postOffice;
 #endif
 
