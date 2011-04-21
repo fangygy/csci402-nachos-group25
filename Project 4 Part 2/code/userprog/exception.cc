@@ -26,6 +26,7 @@
 #include "syscall.h"
 #include "synch.h"
 #include "process.h"
+#include <time.h>
 #include "../machine/network.h"
 #include "../network/post.h"
 #include <stdio.h>
@@ -816,6 +817,10 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	int mvIndex;
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "mon cre %s %d %d", name, arraySize, value);
@@ -871,6 +876,10 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	char buffer[MaxMailSize];
 	
 	int mvValue;
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "mon get %d %d", outerIndex, innerIndex);
@@ -922,6 +931,10 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "mon set %d %d %d", outerIndex, innerIndex, val);
@@ -985,6 +998,10 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	char buffer[MaxMailSize];
 	int lockIndex;
 	
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
+
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "loc cre %s %d", name, arraySize);
 	
@@ -1038,7 +1055,11 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 	
 	char data [MaxMailSize];
 	char buffer[MaxMailSize];
-	
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);	
+
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "loc des %d %d", outerLockIndex, innerLockIndex);
 	
@@ -1088,7 +1109,11 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
-	
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
+
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "loc acq %d %d", outerLockIndex, innerLockIndex);
 	
@@ -1142,7 +1167,11 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
-	
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
+
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "loc rel %d %d", outerLockIndex, innerLockIndex);
 	
@@ -1208,7 +1237,11 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 	char buffer[MaxMailSize];
 	
 	int condIndex;
-	
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
+
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
 	sprintf(request, "con cre %s %d", name, arraySize);
@@ -1261,6 +1294,10 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con del %d %d", outerConditionIndex, innerConditionIndex);
@@ -1312,6 +1349,10 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con wai %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
@@ -1366,6 +1407,10 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con sig %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
@@ -1414,6 +1459,10 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
+
+	time_t currTime;
+	time (&currTime);
+	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "con bro %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
