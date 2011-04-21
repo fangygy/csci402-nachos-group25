@@ -47,6 +47,8 @@ int NOT_CREATED;
 int DELETED;
 int NOT_OWNER;
 
+int NUM_SERVERS;
+
 PostOffice *postOffice;
 #endif
 
@@ -114,6 +116,8 @@ Initialize(int argc, char **argv)
 	NOT_CREATED = 9993;
 	DELETED = 9994;
 	NOT_OWNER = 9995;
+	
+	NUM_SERVERS = 2;
 	
 #endif
     

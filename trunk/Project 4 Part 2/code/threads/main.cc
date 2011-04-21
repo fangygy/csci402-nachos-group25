@@ -162,7 +162,7 @@ main(int argc, char **argv)
             argCount = 2;
         }*/
 		
-		if (netname == 0) {		// This is a server
+		if (netname < NUM_SERVERS) {		// This is a server
 			Server();
 		}
 #endif // NETWORK

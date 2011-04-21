@@ -823,7 +823,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon cre %s %d %d", name, arraySize, value);
+	sprintf(data, "%s mon cre %s %d %d", timestamp, name, arraySize, value);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -882,7 +882,7 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon get %d %d", outerIndex, innerIndex);
+	sprintf(data, "%s mon get %d %d", timestamp, outerIndex, innerIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -937,7 +937,7 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "mon set %d %d %d", outerIndex, innerIndex, val);
+	sprintf(data, "%s mon set %d %d %d", timestamp, outerIndex, innerIndex, val);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1003,7 +1003,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	char* timestamp = ctime(&currTime);
 
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc cre %s %d", name, arraySize);
+	sprintf(data, "%s loc cre %s %d", timestamp, name, arraySize);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1061,7 +1061,7 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 	char* timestamp = ctime(&currTime);	
 
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc des %d %d", outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc des %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1115,7 +1115,7 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 	char* timestamp = ctime(&currTime);
 
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc acq %d %d", outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc acq %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1173,7 +1173,7 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 	char* timestamp = ctime(&currTime);
 
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "loc rel %d %d", outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc rel %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1244,7 +1244,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
-	sprintf(request, "con cre %s %d", name, arraySize);
+	sprintf(request, "%s con cre %s %d", timestamp, name, arraySize);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1300,7 +1300,7 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con del %d %d", outerConditionIndex, innerConditionIndex);
+	sprintf(data, "%s con del %d %d", timestamp, outerConditionIndex, innerConditionIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1355,7 +1355,7 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con wai %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con wai %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
 	
 	// Check following if this will actually work?
@@ -1413,7 +1413,7 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con sig %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con sig %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
 	outPktHdr.to = 0;		
@@ -1465,11 +1465,11 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 	char* timestamp = ctime(&currTime);
 	
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "con bro %d %d %d %d", outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con bro %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
-    outMailHdr.to = 0; 
+	outPktHdr.to = 0;
+    outMailHdr.to = 0;
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 

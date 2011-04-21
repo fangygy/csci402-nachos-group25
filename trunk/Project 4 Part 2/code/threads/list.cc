@@ -27,11 +27,13 @@
 //	"sortKey" is the priority of the item, if any.
 //----------------------------------------------------------------------
 
-ListElement::ListElement(void *itemPtr, int64_t sortKey)
+ListElement::ListElement(void *itemPtr, int64_t sortKey, int64_t sortKey2)
 {
-     item = itemPtr;
-     key = sortKey;
-     next = NULL;	// assume we'll put it at the end of the list 
+	item = itemPtr;
+	key = sortKey;
+	key2 = sortKey2;
+	next = NULL;	// assume we'll put it at the end of the list 
+	prev = NULL;
 }
 
 //----------------------------------------------------------------------
@@ -76,13 +78,14 @@ List::~List()
 void
 List::Append(void *item)
 {
-    ListElement *element = new ListElement(item, 0);
+    ListElement *element = new ListElement(item, 0, 0);
 
     if (IsEmpty()) {		// list is empty
 	first = element;
 	last = element;
     } else {			// else put it after last
 	last->next = element;
+	element->prev = last;		//new
 	last = element;
     }
 }
@@ -102,13 +105,14 @@ List::Append(void *item)
 void
 List::Prepend(void *item)
 {
-    ListElement *element = new ListElement(item, 0);
+    ListElement *element = new ListElement(item, 0, 0);
 
     if (IsEmpty()) {		// list is empty
 	first = element;
 	last = element;
     } else {			// else put it before first
 	element->next = first;
+	first->prev = element;		// new
 	first = element;
     }
 }
@@ -178,7 +182,7 @@ List::IsEmpty()
 void
 List::SortedInsert(void *item, int64_t sortKey)
 {
-    ListElement *element = new ListElement(item, sortKey);
+    ListElement *element = new ListElement(item, sortKey, 0);
     ListElement *ptr;		// keep track
 
     if (IsEmpty()) {	// if list is empty, put
@@ -186,18 +190,75 @@ List::SortedInsert(void *item, int64_t sortKey)
         last = element;
     } else if (sortKey < first->key) {	
 		// item goes on front of list
-	element->next = first;
-	first = element;
+		element->next = first;
+		first->prev = element;		//new
+		first = element;
     } else {		// look for first elt in list bigger than item
         for (ptr = first; ptr->next != NULL; ptr = ptr->next) {
             if (sortKey < ptr->next->key) {
-		element->next = ptr->next;
-	        ptr->next = element;
-		return;
-	    }
-	}
-	last->next = element;		// item goes at end of list
-	last = element;
+				element->next = ptr->next;
+				element->prev = ptr;			//new
+				ptr->next->prev = element;		//new
+				ptr->next = element;
+				return;
+			}
+		}
+		last->next = element;		// item goes at end of list
+		element->prev = last;		//new
+		last = element;
+    }
+}
+
+//----------------------------------------------------------------------
+// List::SortedInsertTwo
+//      Insert an "item" into a list, so that the list elements are
+//	sorted in increasing order by "sortKey".
+//      
+//	Allocate a ListElement to keep track of the item.
+//      If the list is empty, then this will be the only element.
+//	Otherwise, walk through the list, one element at a time,
+//	to find where the new item should be placed.
+//
+//	"item" is the thing to put on the list, it can be a pointer to 
+//		anything.
+//	"sortKey" is the priority of the item.
+//----------------------------------------------------------------------
+
+void
+List::SortedInsertTwo(void *item, int64_t sortKey, int64_t sortKey2)
+{
+    ListElement *element = new ListElement(item, sortKey, sortKey2);
+    ListElement *ptr;		// keep track
+
+    if (IsEmpty()) {	// if list is empty, put
+        first = element;
+        last = element;
+    } else if (sortKey < first->key) {	
+		// item goes on front of list
+		element->next = first;
+		first->prev = element;		//new
+		first = element;
+    } else {		// look for first elt in list bigger than item
+        for (ptr = first; ptr->next != NULL; ptr = ptr->next) {
+            if (sortKey < ptr->next->key) {
+				element->next = ptr->next;
+				element->prev = ptr;			//new
+				ptr->next->prev = element;		//new
+				ptr->next = element;
+				return;
+			} else if (sortKey == ptr->next->key) {
+				if (sortKey2 < ptr->next->key2) {
+					element->next = ptr->next;
+					element->prev = ptr;			//new
+					ptr->next->prev = element;		//new
+					ptr->next = element;
+					return;
+				}
+			}
+		}
+		last->next = element;		// item goes at end of list
+		element->prev = last;		//new
+		last = element;
     }
 }
 
@@ -226,12 +287,14 @@ List::SortedRemove(int64_t *keyPtr)
     thing = first->item;
     if (first == last) {	// list had one item, now has none 
         first = NULL;
-	last = NULL;
+		last = NULL;
     } else {
         first = element->next;
+		first->prev = NULL;		//new
     }
-    if (keyPtr != NULL)
+    if (keyPtr != NULL) {
         *keyPtr = element->key;
+	}
     delete element;
     return thing;
 }

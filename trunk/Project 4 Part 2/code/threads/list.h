@@ -26,12 +26,14 @@
 
 class ListElement {
    public:
-     ListElement(void *itemPtr, int64_t sortKey);	// initialize a list element
+    ListElement(void *itemPtr, int64_t sortKey, int64_t sortKey2);	// initialize a list element
 
-     ListElement *next;		// next element on list, 
+	ListElement *prev;		// previous element on list
+    ListElement *next;		// next element on list, 
 				// NULL if this is the last
-     int64_t key;		    	// priority, for a sorted list
-     void *item; 	    	// pointer to item on the list
+    int64_t key;		    	// priority, for a sorted list
+	int64_t key2;		    	// priority 2, for a doubly-sorted list
+    void *item; 	    	// pointer to item on the list
 };
 
 // The following class defines a "list" -- a singly linked list of
@@ -43,7 +45,7 @@ class ListElement {
 class List {
   public:
     List();			// initialize the list
-    ~List();			// de-allocate the list
+    ~List();			// initialize the list
 
     void Prepend(void *item); 	// Put item at the beginning of the list
     void Append(void *item); 	// Put item at the end of the list
@@ -55,10 +57,11 @@ class List {
     
 
     // Routines to put/get items on/off list in order (sorted by key)
-    void SortedInsert(void *item, int64_t sortKey);	// Put item into list
+	void SortedInsert(void *item, int64_t sortKey);	// Put item into list
+    void SortedInsertTwo(void *item, int64_t sortKey, int64_t sortKey2);	// Put item into list
     void *SortedRemove(int64_t *keyPtr); 	  	// Remove first item from list
 
-  private:
+//  private:
     ListElement *first;  	// Head of the list, NULL if list is empty
     ListElement *last;		// Last element of list
 };
