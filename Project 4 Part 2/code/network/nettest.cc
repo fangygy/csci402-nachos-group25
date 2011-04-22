@@ -141,10 +141,17 @@ struct Message {
 		timestamp = -1;
 		message = "";
 	}
-}
+	
+	Message(int machID, int mailID, int time, char* mess) {
+		clientMachineID = machID;
+		clientMailboxID = mailID;
+		timestamp = time;
+		strcpy(message, mess);
+	}
+};
 
-List *Message messageQ;			// Message Queue
-int LTR[NUM_SERVERS];			// Last Timestamp Received Table
+List *messageQ;			// Message Queue
+int LTR[2];			// Last Timestamp Received Table
 
 void ServerReply(int clientID, int mailboxID, int rv) {
 	PacketHeader outPktHdr;
@@ -1353,7 +1360,7 @@ void GetMV_RPC(bool sender, int outerIndex, int innerIndex, int machineID, int m
 		ServerReply(machineID, mailboxID, val);
 }
 
-void SetMV_RPC(int outerIndex, int innerIndex, int val, int machineID, int mailboxID) {
+void SetMV_RPC(bool sender, int outerIndex, int innerIndex, int val, int machineID, int mailboxID) {
 	if (outerIndex < 0 || innerIndex < 0) {
 		printf("Server - SetMV_RPC: MV index less than zero. Invalid.\n");
 
@@ -1437,7 +1444,7 @@ void MailTest(int farAddr) {
     interrupt->Halt();
 }
 
-void TransServer(int i) {
+void TransServer() {
 	PacketHeader inPktHdr;
     MailHeader inMailHdr;
 	
@@ -1456,9 +1463,9 @@ void TransServer(int i) {
 		
 		char* fwdmsg = "";
 		char* msgData = "";
-		char* msg = "";
+		/*char* msg = "";*/
 		
-		masData = strtok(msg, " "); // Splits spaces between words in buffer
+		msgData = strtok(msg, " "); // Splits spaces between words in buffer
 		
 		// extract timestamp
 		timestamp = atoi(msgData);
@@ -1491,7 +1498,7 @@ void SendTimestamp(int timestamp) {
 	
 	sprintf(reply, "%d ts", timestamp);
 	
-	printf("Server: reply array: %s to clientID%d and clientMailboxID%d\n", reply, clientID, mailboxID);
+	/*printf("Server: reply array: %s to clientID%d and clientMailboxID%d\n", reply, clientID, mailboxID);*/
 	
 	// construct packet, mail header for original message
 	// To: destination machine, mailbox clientID
@@ -1519,7 +1526,7 @@ void SendTimestamp(int timestamp) {
 void Server() {
 	Thread *t;
 	t = new Thread("TransServer");
-	t->Fork((VoidFunctionPtr) TransServer, i);
+	t->Fork((VoidFunctionPtr) TransServer, 0);
 	currentThread->Yield();
 	
 	printf("Starting Server.\n");
@@ -1559,7 +1566,6 @@ void Server() {
 	int smallestTimestamp;
 	int smallestMachineID;
 	
-	int currentTime;
 	Message* head;
 	
 	bool sender = false;
@@ -1637,8 +1643,9 @@ void Server() {
 		if (strcmp(msg, "ts") != 0) {
 			time_t currTime;
 			time (&currTime);
-			char* currentTime = ctime(&currTime);
-			SendTimestamp(currentTime);
+			char *currentTime = ctime(&currTime);
+			int intCurrTime = atoi(currentTime);
+			SendTimestamp(intCurrTime);
 		}
 		
 		// Need while loop here: while (head ID & timestamp <= smallest ID & timestamp)
