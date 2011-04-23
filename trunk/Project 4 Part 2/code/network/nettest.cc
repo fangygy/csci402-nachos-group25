@@ -39,11 +39,11 @@
 #define MAX_CLIENTS 512
 #define ARRAY_MAX 64
 
-struct timeval tv; 
-struct timezone tz; 
-struct tm *tm; 
-gettimeofday(&tv, &tz); 
-tm=localtime(&tv.tv_sec); 
+//struct timeval tv; 
+//struct timezone tz; 
+//struct tm *tm; 
+//gettimeofday(&tv, &tz); 
+//tm = localtime(&tv.tv_sec); 
 
 int numServerLocks = 0;
 int numServerCVs = 0;
@@ -1497,12 +1497,12 @@ void TransServer() {
 	}
 }
 
-void SendTimestamp(int timestamp) {
+void SendTimestamp(unsigned int timestamp) {
 	PacketHeader outPktHdr;
     MailHeader outMailHdr;
 	char reply[MaxMailSize];
 	
-	sprintf(reply, "%d ts", timestamp);
+	sprintf(reply, "%u ts", timestamp);
 	
 	/*printf("Server: reply array: %s to clientID%d and clientMailboxID%d\n", reply, clientID, mailboxID);*/
 	
@@ -1647,11 +1647,12 @@ void Server() {
 		
 		// Step 7.) If not a TS msg, tell trans-server to fwd TS msg to all other Servers
 		if (strcmp(msg, "ts") != 0) {
-			time_t currTime;
-			time (&currTime);
-			char *currentTime = ctime(&currTime);
-			int intCurrTime = atoi(currentTime);
-			SendTimestamp(intCurrTime);
+			//time_t currTime;
+			//time (&currTime);
+			//char *currentTime = ctime(&currTime);
+			unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000));
+			//int intCurrTime = atoi(currentTime);
+			SendTimestamp(myTimestamp);
 		}
 		
 		// Need while loop here: while (head ID & timestamp <= smallest ID & timestamp)

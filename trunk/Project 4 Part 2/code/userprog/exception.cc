@@ -41,11 +41,11 @@ using namespace std;
 #define MAX_MVS 512
 #define MAX_CLIENTS 512
 
-struct timeval tv; 
-struct timezone tz; 
-struct tm *tm; 
-gettimeofday(&tv, &tz); 
-tm=localtime(&tv.tv_sec); 
+//struct timeval tv; 
+//struct timezone tz; 
+//struct tm *tm;
+//gettimeofday(&tv, &tz); 
+//tm = localtime(&tv.tv_sec); 
 
 int numLocks = 0;
 int numConditions = 0;
