@@ -39,6 +39,12 @@
 #define MAX_CLIENTS 512
 #define ARRAY_MAX 64
 
+struct timeval tv; 
+struct timezone tz; 
+struct tm *tm; 
+gettimeofday(&tv, &tz); 
+tm=localtime(&tv.tv_sec); 
+
 int numServerLocks = 0;
 int numServerCVs = 0;
 int numMVs = 0;
