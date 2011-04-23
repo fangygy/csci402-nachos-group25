@@ -49,7 +49,7 @@ int NOT_OWNER;
 
 int NUM_SERVERS;
 
-struct timeval tv;
+//struct timeval tv;
 
 PostOffice *postOffice;
 #endif
