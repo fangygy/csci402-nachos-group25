@@ -89,6 +89,17 @@ struct KernelCondition {
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
 
+unsigned int GetTimestamp() {
+	struct timeval tv; 
+	struct timezone tz; 
+	struct tm *tm; 
+	gettimeofday(&tv, &tz); 
+	tm=localtime(&tv.tv_sec); 
+	unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	
+	return myTimestamp;
+}
+
 int copyin(unsigned int vaddr, int len, char *buf) {
     // Copy len bytes from the current thread's virtual address vaddr.
     // Return the number of bytes so read, or -1 if an error occors.
@@ -824,8 +835,8 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	char buffer[MaxMailSize];
 	int mvIndex;
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u mon cre %s %d %d", timestamp, name, arraySize, value);
 	
@@ -882,8 +893,8 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	
 	int mvValue;
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u mon get %d %d", timestamp, outerIndex, innerIndex);
 	
@@ -936,8 +947,8 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u mon set %d %d %d", timestamp, outerIndex, innerIndex, val);
 	
@@ -1001,8 +1012,8 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	char buffer[MaxMailSize];
 	int lockIndex;
 	
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u loc cre %s %d", timestamp, name, arraySize);
 	
@@ -1058,8 +1069,8 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 	char data [MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u loc des %d %d", timestamp, outerLockIndex, innerLockIndex);
 
@@ -1110,8 +1121,8 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u loc acq %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
@@ -1167,8 +1178,8 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u loc rel %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
@@ -1236,8 +1247,8 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 	
 	int condIndex;
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
 	sprintf(request, "%u con cre %s %d", timestamp, name, arraySize);
@@ -1292,8 +1303,8 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u con del %d %d", timestamp, outerConditionIndex, innerConditionIndex);
 	
@@ -1346,8 +1357,8 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u con wai %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
@@ -1403,8 +1414,8 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u con sig %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
@@ -1454,8 +1465,8 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 
-	unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
-	
+	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%u con bro %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	

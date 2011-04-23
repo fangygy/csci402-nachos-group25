@@ -159,6 +159,17 @@ struct Message {
 List *messageQ;			// Message Queue
 int LTR[2];			// Last Timestamp Received Table
 
+unsigned int getTimestamp() {
+	struct timeval tv; 
+	struct timezone tz; 
+	struct tm *tm; 
+	gettimeofday(&tv, &tz); 
+	tm=localtime(&tv.tv_sec); 
+	unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	
+	return myTimestamp;
+}
+
 void ServerReply(int clientID, int mailboxID, int rv) {
 	PacketHeader outPktHdr;
     MailHeader outMailHdr;
@@ -1650,7 +1661,8 @@ void Server() {
 			//time_t currTime;
 			//time (&currTime);
 			//char *currentTime = ctime(&currTime);
-			unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000));
+			//unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000));
+			unsigned int myTimestamp = getTimestamp();
 			//int intCurrTime = atoi(currentTime);
 			SendTimestamp(myTimestamp);
 		}

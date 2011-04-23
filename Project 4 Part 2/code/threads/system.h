@@ -66,7 +66,7 @@ extern int NOT_OWNER;
 
 extern int NUM_SERVERS;
 
-extern struct timeval tv;
+//extern struct timeval tv;
 
 extern PostOffice* postOffice;
 #endif
