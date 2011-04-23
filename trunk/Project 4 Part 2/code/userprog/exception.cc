@@ -825,13 +825,14 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon cre %s %d %d", timestamp, name, arraySize, value);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -884,13 +885,14 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon get %d %d", timestamp, outerIndex, innerIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -939,13 +941,14 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon set %d %d %d", timestamp, outerIndex, innerIndex, val);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1005,13 +1008,14 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc cre %s %d", timestamp, name, arraySize);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
 
@@ -1062,14 +1066,14 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc des %d %d", timestamp, outerLockIndex, innerLockIndex);
-	
+
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "loc des %d", outerLockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1117,13 +1121,14 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc acq %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 	
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "loc acq %d", outerLockIndex);
 	//char* tdata = "lock acq 0";
@@ -1175,13 +1180,14 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc rel %d %d", timestamp, outerLockIndex, innerLockIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "loc rel %d", outerLockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1246,13 +1252,14 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 	char request[MaxMailSize];
 	sprintf(request, "%s con cre %s %d", timestamp, name, arraySize);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(request) + 1;
 	
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
     bool success = postOffice->Send(outPktHdr, outMailHdr, request); 
 
@@ -1302,13 +1309,14 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con del %d %d", timestamp, outerConditionIndex, innerConditionIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con del %d", outerConditionIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1358,14 +1366,15 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 	sprintf(data, "%s con wai %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 	//printf("Segmentation?\n");
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con wai %d %d", outerConditionIndex, outerLockIndex);
     bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
@@ -1415,13 +1424,14 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con sig %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;		
+	outPktHdr.to = rand() % NUM_SERVERS;		
     outMailHdr.to = 0; 
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con sig %d %d", outerConditionIndex, outerLockIndex);
 	//printf("Signalling Condition: %d with Lock: %d\n", outerConditionIndex, outerLockIndex);
@@ -1467,13 +1477,14 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con bro %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
+	#ifdef NETWORK
 	// Check following if this will actually work?
-	outPktHdr.to = 0;
+	outPktHdr.to = rand() % NUM_SERVERS;
     outMailHdr.to = 0;
     outMailHdr.from = currentThread->mailboxID;
     outMailHdr.length = strlen(data) + 1;
 
-	#ifdef NETWORK
+	//#ifdef NETWORK
     // Send the first message
 	//sprintf(data, "con bro %d", outerConditionIndex, outerLockIndex);
 	//printf("Broadcasting Condition: %d with Lock: %d\n", outerConditionIndex, outerLockIndex);
