@@ -16,7 +16,7 @@
 #include "stats.h"
 #include "timer.h"
 #include "list.h"
-#include <time.h>
+#include <sys/time.h>
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
