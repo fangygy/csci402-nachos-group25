@@ -41,11 +41,11 @@ using namespace std;
 #define MAX_MVS 512
 #define MAX_CLIENTS 512
 
-//struct timeval tv; 
-//struct timezone tz; 
+//struct timeval tv;
+//struct timezone tz;
 //struct tm *tm;
-//gettimeofday(&tv, &tz); 
-//tm = localtime(&tv.tv_sec); 
+//gettimeofday(&tv, &tz);
+//tm = localtime(&tv.tv_sec);
 
 int numLocks = 0;
 int numConditions = 0;
@@ -94,7 +94,7 @@ unsigned int GetTimestamp() {
 	struct timezone tz; 
 	struct tm *tm; 
 	gettimeofday(&tv, &tz); 
-	tm=localtime(&tv.tv_sec); 
+	tm = localtime(&tv.tv_sec); 
 	unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	
 	return myTimestamp;
@@ -834,7 +834,8 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
 	int mvIndex;
-
+	
+	struct timeval tv;
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
@@ -892,7 +893,7 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	char buffer[MaxMailSize];
 	
 	int mvValue;
-
+	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later
@@ -946,7 +947,7 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	
 	char data[MaxMailSize];
 	char buffer[MaxMailSize];
-
+	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
 	//Create the correct message to send here? Ask Antonio later

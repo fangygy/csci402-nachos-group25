@@ -152,6 +152,7 @@ struct Message {
 		clientMachineID = machID;
 		clientMailboxID = mailID;
 		timestamp = time;
+		message = new char[strlen(mess)+1];
 		strcpy(message, mess);
 	}
 };
@@ -1609,6 +1610,8 @@ void Server() {
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
 		fflush(stdout);
 		
+		printf("Server: Starting to parse message.\n");
+		
 		char* fwdData = "";
 		fwdData = strtok(buffer, " "); // Splits spaces between words in buffer
 		
@@ -1630,19 +1633,26 @@ void Server() {
 		
 		msg = fwdData;
 		
+		
+		
 		// if my machineID == forwarder's machineID, then I send reply to the client
 		if (netname == fwdMachineID)
 			sender = true;
 		
+		printf("Server: Starting Step 2: Message Q.\n");
 		// Step 2.) If not a TS msg, put msg into messageQ
 		if (strcmp(msg, "ts") != 0) {
+			printf("Server: Step 2 Not a TS message. Append to Message Q.\n");
 			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg);
+			printf("Made the message object, Appending to Message Q.\n");
 			messageQ->SortedInsertTwo((void*)newMessage, timestamp, clientMachineID);
 		}
 		
+		printf("Server: Starting Step 3: Update LTP.\n");
 		// Step 3.) Update LTR Table
 		LTR[fwdMachineID] = timestamp;
 		
+		printf("Server: Starting Step 4: Smallest TS.\n");
 		// Step 4.) Scan LTR Table and extract smallest TS
 		smallestMachineID = 0;
 		smallestTimestamp = LTR[0];
@@ -1653,9 +1663,11 @@ void Server() {
 			}
 		}
 		
+		printf("Server: Starting Step 6: Get 1st TS in Message Q.\n");
 		// Step 6.) Get TS and machineID from 1st msg in messageQ
 		head = (Message*)messageQ->Remove();
 		
+		printf("Server: Starting Step 6: Deciding whether or not to send TS msg.\n");
 		// Step 7.) If not a TS msg, tell trans-server to fwd TS msg to all other Servers
 		if (strcmp(msg, "ts") != 0) {
 			//time_t currTime;
@@ -1667,6 +1679,7 @@ void Server() {
 			SendTimestamp(myTimestamp);
 		}
 		
+		printf("Server: Starting Request Parsing while loop.\n");
 		// Need while loop here: while (head ID & timestamp <= smallest ID & timestamp)
 		while (head->timestamp <= smallestTimestamp) {
 			char* currentMsg = head->message;
