@@ -52,6 +52,9 @@ extern FileSystem  *fileSystem;
 extern SynchDisk   *synchDisk;
 #endif
 
+extern int NUM_OFFSET;
+extern int CHAR_OFFSET;
+
 #ifdef NETWORK
 #include "../network/post.h"
 
@@ -65,6 +68,8 @@ extern int DELETED;
 extern int NOT_OWNER;
 
 extern int NUM_SERVERS;
+
+extern unsigned int lastServerSeconds;
 
 //extern struct timeval tv;
 

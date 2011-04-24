@@ -89,25 +89,62 @@ struct KernelCondition {
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
 
-char* ConvertBase(unsigned int number, int base) {
-	int num = number;
+char* kernelReverseString(char* myWord) {
+	int len = strlen(myWord);
+	char* newWord = new char[len];
+
+	for (int i = 0; i < len; i++) {
+		newWord[i] = myWord[len - i - 1];
+	}
+
+	newWord[len] = '\0';
+	return newWord;
+}
+
+char* kernelConvertDecToBase(unsigned int num, int base) {
+	// can go up to base-72
+	//ASCII 126 = '~', 127 = 'DEL'
+	if (base <= 10) {
+		printf("convertDecToBase only converts base-10 to base greater than 10.\n");
+		return NULL;
+	}
+	if (num == 0) {
+		char* buffer = new char[1];
+		buffer[0] = (char)(NUM_OFFSET);
+		buffer[1] = '\0';
+		return buffer;
+	}
+	
 	int index = 0;
 	int remainder;
 	
-	char* buffer = new char[10];
+	char* buffer = new char[11];
 	
 	while (num != 0) {
 		remainder = num % base;
 		num = num / base;
-		buffer[index] = remainder;
+
+		if (remainder < 10) {
+			buffer[index] = (char)(NUM_OFFSET + remainder);//(remainder);
+		} else {
+			buffer[index] = (char)(CHAR_OFFSET + remainder - 10);//(remainder);
+		}
 		index++;
 		
-		if (index > 10) {
+		// It's MATHEMATICALLY IMPOSSIBLE to get more digits when converting from (base 10) to (base > 10).
+		// But, since one of our members is so anal about it...
+		if (index > 9) {
 			printf("Told you we shoulda made it bigger than 10.\n");
 		}
 	}
 
-	return buffer;
+	// cutoff char array with null terminator
+	buffer[index] = '\0';
+
+	char* newBuffer = kernelReverseString(buffer);
+	delete buffer;
+
+	return newBuffer;
 }
 
 
@@ -860,7 +897,7 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	struct timeval tv;
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon cre %s %d %d", timechar, name, arraySize, value);
 	
@@ -919,7 +956,7 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon get %d %d", timechar, outerIndex, innerIndex);
 	
@@ -974,7 +1011,7 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s mon set %d %d %d", timechar, outerIndex, innerIndex, val);
 	
@@ -1040,7 +1077,7 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc cre %s %d", timechar, name, arraySize);
 	
@@ -1098,7 +1135,7 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc des %d %d", timechar, outerLockIndex, innerLockIndex);
 
@@ -1151,7 +1188,7 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc acq %d %d", timechar, outerLockIndex, innerLockIndex);
 	
@@ -1209,7 +1246,7 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s loc rel %d %d", timechar, outerLockIndex, innerLockIndex);
 	
@@ -1279,7 +1316,7 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
 	sprintf(request, "%s con cre %s %d", timechar, name, arraySize);
@@ -1336,7 +1373,7 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con del %d %d", timechar, outerConditionIndex, innerConditionIndex);
 	
@@ -1391,7 +1428,7 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con wai %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
@@ -1449,7 +1486,7 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con sig %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
@@ -1501,7 +1538,7 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
-	char* timechar = ConvertBase(timestamp, 36);
+	char* timechar = kernelConvertDecToBase(timestamp, 72);
 	//Create the correct message to send here? Ask Antonio later
 	sprintf(data, "%s con bro %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	

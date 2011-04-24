@@ -36,6 +36,9 @@ Lock* mainmemLock;
 int mailboxCounter = 0;
 #endif
 
+int NUM_OFFSET;
+int CHAR_OFFSET;
+
 #ifdef NETWORK
 
 int netname = -1;		// default value for non-network programs
@@ -48,6 +51,8 @@ int DELETED;
 int NOT_OWNER;
 
 int NUM_SERVERS;
+
+unsigned int lastServerSeconds;
 
 //struct timeval tv;
 
@@ -106,6 +111,10 @@ Initialize(int argc, char **argv)
 #ifdef FILESYS_NEEDED
     bool format = FALSE;	// format disk
 #endif
+
+NUM_OFFSET = 48;
+CHAR_OFFSET = 65;
+
 #ifdef NETWORK
     double rely = 1;		// network reliability
 	netname = 0;		// UNIX socket name
@@ -120,6 +129,8 @@ Initialize(int argc, char **argv)
 	NOT_OWNER = 9995;
 	
 	NUM_SERVERS = 2;
+	
+	lastServerSeconds = 0;
 	
 #endif
     
