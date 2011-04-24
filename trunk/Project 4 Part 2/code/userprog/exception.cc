@@ -89,6 +89,28 @@ struct KernelCondition {
 KernelLock locks[MAX_LOCKS];
 KernelCondition conditions[MAX_CONDITIONS];
 
+char* ConvertBase(unsigned int number, int base) {
+	int num = number;
+	int index = 0;
+	int remainder;
+	
+	char* buffer = new char[10];
+	
+	while (num != 0) {
+		remainder = num % base;
+		num = num / base;
+		buffer[index] = remainder;
+		index++;
+		
+		if (index > 10) {
+			printf("Told you we shoulda made it bigger than 10.\n");
+		}
+	}
+
+	return buffer;
+}
+
+
 unsigned int GetTimestamp() {
 	struct timeval tv; 
 	struct timezone tz; 
@@ -838,8 +860,9 @@ int CreateMV_Syscall(unsigned int vaddr, int length, int arraySize, int value) {
 	struct timeval tv;
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u mon cre %s %d %d", timestamp, name, arraySize, value);
+	sprintf(data, "%s mon cre %s %d %d", timechar, name, arraySize, value);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -896,8 +919,9 @@ int GetMV_Syscall(int outerIndex, int innerIndex) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u mon get %d %d", timestamp, outerIndex, innerIndex);
+	sprintf(data, "%s mon get %d %d", timechar, outerIndex, innerIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -950,8 +974,9 @@ void SetMV_Syscall(int outerIndex, int innerIndex, int val) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u mon set %d %d %d", timestamp, outerIndex, innerIndex, val);
+	sprintf(data, "%s mon set %d %d %d", timechar, outerIndex, innerIndex, val);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1015,8 +1040,9 @@ int ServerCreateLock_Syscall(unsigned int vaddr, int length, int arraySize) {
 	
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u loc cre %s %d", timestamp, name, arraySize);
+	sprintf(data, "%s loc cre %s %d", timechar, name, arraySize);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1072,8 +1098,9 @@ void ServerDestroyLock_Syscall(int outerLockIndex, int innerLockIndex){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u loc des %d %d", timestamp, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc des %d %d", timechar, outerLockIndex, innerLockIndex);
 
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1124,8 +1151,9 @@ void ServerAcquire_Syscall(int outerLockIndex, int innerLockIndex) {
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u loc acq %d %d", timestamp, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc acq %d %d", timechar, outerLockIndex, innerLockIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1181,8 +1209,9 @@ void ServerRelease_Syscall(int outerLockIndex, int innerLockIndex) {
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u loc rel %d %d", timestamp, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s loc rel %d %d", timechar, outerLockIndex, innerLockIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1250,9 +1279,10 @@ int ServerCreateCV_Syscall(unsigned int vaddr, int length, int arraySize){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
 	char request[MaxMailSize];
-	sprintf(request, "%u con cre %s %d", timestamp, name, arraySize);
+	sprintf(request, "%s con cre %s %d", timechar, name, arraySize);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1306,8 +1336,9 @@ void ServerDestroyCV_Syscall(int outerConditionIndex, int innerConditionIndex){
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u con del %d %d", timestamp, outerConditionIndex, innerConditionIndex);
+	sprintf(data, "%s con del %d %d", timechar, outerConditionIndex, innerConditionIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1360,8 +1391,9 @@ void ServerWait_Syscall(int outerConditionIndex, int innerConditionIndex, int ou
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u con wai %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con wai %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	//printf("Segmentation?\n");
 	
 	#ifdef NETWORK
@@ -1417,8 +1449,9 @@ void ServerSignal_Syscall(int outerConditionIndex, int innerConditionIndex, int 
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u con sig %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con sig %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
@@ -1468,8 +1501,9 @@ void ServerBroadcast_Syscall(int outerConditionIndex, int innerConditionIndex, i
 
 	//unsigned int timestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
 	unsigned int timestamp = GetTimestamp();
+	char* timechar = ConvertBase(timestamp, 36);
 	//Create the correct message to send here? Ask Antonio later
-	sprintf(data, "%u con bro %d %d %d %d", timestamp, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
+	sprintf(data, "%s con bro %d %d %d %d", timechar, outerConditionIndex, innerConditionIndex, outerLockIndex, innerLockIndex);
 	
 	#ifdef NETWORK
 	// Check following if this will actually work?
