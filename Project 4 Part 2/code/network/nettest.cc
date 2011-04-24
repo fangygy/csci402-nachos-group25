@@ -25,6 +25,7 @@
 #include "syscall.h"
 #include "list.h"
 #include <time.h>
+#include <cmath>
 
 // Test out message delivery, by doing the following:
 //	1. send a message to the machine with ID "farAddr", at mail box #0
@@ -159,6 +160,38 @@ struct Message {
 
 List *messageQ;			// Message Queue
 int LTR[2];			// Last Timestamp Received Table
+
+char* convertBase(unsigned int number, int base) {
+	int num = number;
+	int index = 0;
+	int remainder;
+	
+	char* buffer = new char[10];
+	
+	while (num != 0) {
+		remainder = num % base;
+		num = num / base;
+		buffer[index] = remainder;
+		index++;
+		
+		if (index > 10) {
+			printf("Told you we shoulda made it bigger than 10.\n");
+		}
+	}
+
+	return buffer;
+}
+
+int convertBaseToDec(char* array, int base) {
+	int decimal = 0;
+	float baseC = base;
+	
+	for (int i = 0; i < 5; i++) {
+		decimal += array[i] * pow(baseC, (4-i));
+	}
+	
+	return decimal;
+}
 
 unsigned int getTimestamp() {
 	struct timeval tv; 
@@ -1514,7 +1547,8 @@ void SendTimestamp(unsigned int timestamp) {
     MailHeader outMailHdr;
 	char reply[MaxMailSize];
 	
-	sprintf(reply, "%u ts", timestamp);
+	char* timechar = convertBase(timestamp, 36);
+	sprintf(reply, "%s ts", timechar);
 	
 	/*printf("Server: reply array: %s to clientID%d and clientMailboxID%d\n", reply, clientID, mailboxID);*/
 	
@@ -1586,8 +1620,6 @@ void Server() {
 	
 	Message* head;
 	
-	bool sender = false;
-	
 	// Initialize LTR Table
 	for(int i = 0; i < NUM_SERVERS; i++) {
 		LTR[i] = -1;
@@ -1605,6 +1637,7 @@ void Server() {
 		char* param3 = "";
 		char* param4 = "";
 		char* msg = "";
+		bool sender = false;
 		// Receive message from client (other machine)
 		postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
@@ -1629,7 +1662,7 @@ void Server() {
 		fwdData = strtok(NULL, " ");
 		
 		clientMailboxID = atoi(fwdData);
-		fwdData = strtok(NULL, " ");
+		fwdData = strtok(NULL, "");
 		
 		msg = fwdData;
 		
@@ -1643,7 +1676,9 @@ void Server() {
 		// Step 2.) If not a TS msg, put msg into messageQ
 		if (strcmp(msg, "ts") != 0) {
 			printf("Server: Step 2 Not a TS message. Append to Message Q.\n");
+			printf("Server: msg: %s\n", msg);
 			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg);
+			printf("Server: msg: %s\n", newMessage->message);
 			printf("Made the message object, Appending to Message Q.\n");
 			messageQ->SortedInsertTwo((void*)newMessage, timestamp, clientMachineID);
 		}
@@ -1682,12 +1717,19 @@ void Server() {
 		printf("Server: Starting Request Parsing while loop.\n");
 		// Need while loop here: while (head ID & timestamp <= smallest ID & timestamp)
 		while (head->timestamp <= smallestTimestamp) {
-			char* currentMsg = head->message;
+			char* currentMsg = new char[strlen(head->message) + 1];
+			strcpy(currentMsg, head->message);
+			printf("Server: currentMsg: %s\n", currentMsg);
+			
+			printf("Server: Before splitting in Parsing\n");
+
 		
 			char* data = "";
 			data = strtok(currentMsg, " "); // Splits spaces between words in currentMsg
 			obj = data;
 			
+			printf("Server: Before 'if' checking\n");
+			printf("Server: currentMsg: %s\n", currentMsg);
 			if (strcmp(data, "loc") == 0) {
 				data = strtok (NULL, " ,.-");
 				act = data;
@@ -1887,6 +1929,8 @@ void Server() {
 			}
 			
 			// Step 6 Again.) Get TS and machineID from 1st msg in messageQ
+			if (messageQ->IsEmpty())
+				break;
 			head = (Message*)messageQ->Remove();
 		}
 	}
