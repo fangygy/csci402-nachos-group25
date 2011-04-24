@@ -139,17 +139,17 @@ ServerMV serverMVs[MAX_MVS];
 struct Message {
 	int clientMachineID;
 	int clientMailboxID;
-	int timestamp;
+	unsigned int timestamp;
 	char* message;
 	
 	Message() {
 		clientMachineID = -1;
 		clientMailboxID = -1;
-		timestamp = -1;
+		timestamp = 0;
 		message = "";
 	}
 	
-	Message(int machID, int mailID, int time, char* mess) {
+	Message(int machID, int mailID, unsigned int time, char* mess) {
 		clientMachineID = machID;
 		clientMailboxID = mailID;
 		timestamp = time;
@@ -161,37 +161,85 @@ struct Message {
 List *messageQ;			// Message Queue
 int LTR[2];			// Last Timestamp Received Table
 
-char* convertBase(unsigned int number, int base) {
-	int num = number;
+char* reverseString(char* myWord) {
+	int len = strlen(myWord);
+	char* newWord = new char[len];
+
+	for (int i = 0; i < len; i++) {
+		newWord[i] = myWord[len - i - 1];
+	}
+
+	newWord[len] = '\0';
+	return newWord;
+}
+
+char* convertDecToBase(unsigned int num, int base) {
+	// can go up to base-72
+	//ASCII 126 = '~', 127 = 'DEL'
+	if (base <= 10) {
+		printf("convertDecToBase only converts base-10 to base greater than 10.\n");
+		return NULL;
+	}
+	if (num == 0) {
+		char* buffer = new char[1];
+		buffer[0] = (char)(NUM_OFFSET);
+		buffer[1] = '\0';
+		return buffer;
+	}
+	
 	int index = 0;
 	int remainder;
 	
-	char* buffer = new char[10];
+	char* buffer = new char[11];
 	
 	while (num != 0) {
 		remainder = num % base;
 		num = num / base;
-		buffer[index] = remainder;
+
+		if (remainder < 10) {
+			buffer[index] = (char)(NUM_OFFSET + remainder);//(remainder);
+		} else {
+			buffer[index] = (char)(CHAR_OFFSET + remainder - 10);//(remainder);
+		}
 		index++;
 		
-		if (index > 10) {
+		// It's MATHEMATICALLY IMPOSSIBLE to get more digits when converting from (base 10) to (base > 10).
+		// But, since one of our members is so anal about it...
+		if (index > 9) {
 			printf("Told you we shoulda made it bigger than 10.\n");
 		}
 	}
 
-	return buffer;
+	// cutoff char array with null terminator
+	buffer[index] = '\0';
+
+	char* newBuffer = reverseString(buffer);
+	delete buffer;
+
+	return newBuffer;
 }
 
-int convertBaseToDec(char* array, int base) {
-	int decimal = 0;
-	float baseC = base;
+unsigned int convertBaseToDec(char* numArray, float base) {
+	unsigned int decimal = 0;
+	int len = strlen(numArray);
+	int actual;
 	
-	for (int i = 0; i < 5; i++) {
-		decimal += array[i] * pow(baseC, (4-i));
+	for (int i = 0; i < len; i++) {
+		actual = numArray[i];
+		if (actual <= (NUM_OFFSSET + 9)) {
+			actual -= NUM_OFFSET;
+		} else {
+			actual -= CHAR_OFFSET;
+			actual += 10;
+		}
+
+		decimal += actual * pow(base, (len-i - 1));
+		printf("actual: %d, exp: %d\n", actual, (len - i - 1));
 	}
 	
 	return decimal;
 }
+
 
 unsigned int getTimestamp() {
 	struct timeval tv; 
@@ -199,7 +247,7 @@ unsigned int getTimestamp() {
 	struct tm *tm; 
 	gettimeofday(&tv, &tz); 
 	tm=localtime(&tv.tv_sec); 
-	unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + tv.tv_sec*1000000)); 
+	unsigned int myTimestamp = ((unsigned int)(tv.tv_usec + (tv.tv_sec - lastServerSeconds)*1000000)); 
 	
 	return myTimestamp;
 }
@@ -251,6 +299,8 @@ void ServerReply(int clientID, int mailboxID, int rv) {
 
 void CreateLock_RPC(bool sender, char* name, int arraySize, int machineID, int mailboxID) {
 	//If reached max lock capacity, return -1
+	printf("Server - CreateLock_RPC: name = %s\n", name);
+	
 	if (numServerLocks >= MAX_LOCKS) {
 		printf("Server - CreateLock_RPC: Max server lock limit reached, cannot create.\n");
 		
@@ -1499,7 +1549,7 @@ void TransServer() {
 	PacketHeader inPktHdr;
     MailHeader inMailHdr;
 	
-	int timestamp;
+	unsigned int timestamp;
 	int fwdMachineID;
 	int fwdMailboxID;
 	int clientMachineID;
@@ -1513,31 +1563,41 @@ void TransServer() {
 		fflush(stdout);
 		
 		char* fwdmsg = "";
+		char* timechar = "";
 		char* msgData = "";
 		/*char* msg = "";*/
 		
-		msgData = strtok(msg, " "); // Splits spaces between words in buffer
-		
 		// extract timestamp
-		timestamp = atoi(msgData);
+		printf("TransServer: Extracting Timestamp.\n");
+		timechar = strtok(msg, " "); // Splits spaces between words in buffer
+		timestamp = convertBaseToDec(timechar, 72);
+		
 		msgData = strtok(NULL, "");		// Get the rest of the msg string, don't split it
 		
-		fwdMachineID = netname;
-		fwdMailboxID = 0;
-		clientMachineID = inPktHdr.from;
-		clientMailboxID = inMailHdr.from;
+		printf("TransServer: Checking for Server Update message.\n");
 		
-		sprintf(fwdmsg, "%d %d %d %d %d %s",
-			timestamp, fwdMachineID, fwdMailboxID, clientMachineID, clientMailboxID, msgData);
-		
-		// fowward the message to all servers
-		for (int i = 0; i < NUM_SERVERS; i++) {
-			outPktHdr.to = i;
-			outMailHdr.to = 1;
-			outMailHdr.from = 0;
-			outMailHdr.length = strlen(fwdmsg) + 1;
+		if (strcmp(msgData, "su") == 0) {
+			// If the incoming message was just an UPDATE SERVER SECONDS message,
+			// Just update my lastServerSeconds
+			lastServerSeconds = timestamp;
+			printf("TransServer: UPDATED Last Server Second: %u\n", lastServerSeconds);
+		} else {
+			// forward the message to all servers
+			fwdMachineID = netname;
+			fwdMailboxID = 0;
+			clientMachineID = inPktHdr.from;
+			clientMailboxID = inMailHdr.from;
 			
-			postOffice->Send(outPktHdr, outMailHdr, fwdmsg);
+			sprintf(fwdmsg, "%s %d %d %s", timechar, clientMachineID, clientMailboxID, msgData);
+			
+			for (int i = 0; i < NUM_SERVERS; i++) {
+				outPktHdr.to = i;
+				outMailHdr.to = 1;
+				outMailHdr.from = 0;
+				outMailHdr.length = strlen(fwdmsg) + 1;
+				
+				postOffice->Send(outPktHdr, outMailHdr, fwdmsg);
+			}
 		}
 	}
 }
@@ -1547,7 +1607,7 @@ void SendTimestamp(unsigned int timestamp) {
     MailHeader outMailHdr;
 	char reply[MaxMailSize];
 	
-	char* timechar = convertBase(timestamp, 36);
+	char* timechar = convertDecToBase(timestamp, 72);
 	sprintf(reply, "%s ts", timechar);
 	
 	/*printf("Server: reply array: %s to clientID%d and clientMailboxID%d\n", reply, clientID, mailboxID);*/
@@ -1575,11 +1635,66 @@ void SendTimestamp(unsigned int timestamp) {
 	}
 }
 
+void UpdateServerSeconds() {
+	PacketHeader outPktHdr;
+    MailHeader outMailHdr;
+	char reply[30];
+	
+	outPktHdr.from = netname;
+	outMailHdr.from = 1;
+	
+	outMailHdr.length = strlen(reply) + 1;
+	
+	struct timeval tv;
+	lastServerSeconds = tv.tv_sec;
+	
+	sprintf(reply, "%u su", lastServerSeconds);
+	printf("Server: NEWLY CREATED lastServerSeconds: %u\n",
+		lastServerSeconds);
+	
+	// Send this lastServerSeconds value to all preceding Servers
+	for (int i = 0; i < netname; i++) {
+		outPktHdr.to = i;
+		outMailHdr.to = 0;
+		
+		bool success = postOffice->Send(outPktHdr, outMailHdr, reply); 
+	
+		printf("Server: Server Seconds Update msg to MachID: %d.\n", i);
+	
+		if ( !success ) {
+			printf("Server: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+			interrupt->Halt();
+		}
+	}
+}
+
 void Server() {
+	
+	/*
+	printf("Server: HEX TEST\n");
+	char* derp = new char[32];
+	sprintf(derp, "%x\0", "1111111111111111111111111111111111111111");
+	
+	printf("Server: derp char*: %s\n", derp);
+	
+	int derpint = atoi(derp);
+	printf("Server: derp int: %d\n", derpint);
+	
+	printf("Server: END HEX TEST\n");
+	*/
+	
 	Thread *t;
 	t = new Thread("TransServer");
 	t->Fork((VoidFunctionPtr) TransServer, 0);
 	currentThread->Yield();
+	
+	for (int i = 0; i < 20; i++) {
+		unsigned int myTimestamp = getTimestamp();
+		printf("Server: Test: current timestamp: %u\n", myTimestamp);
+	}
+	
+	
+	UpdateServerSeconds();
 	
 	printf("Starting Server.\n");
 	int farAddr;
@@ -1608,14 +1723,14 @@ void Server() {
 	int rv = -1;		// Return value from syscall
 	
 	// Total Ordering Algorithm data
-	int timestamp;
+	unsigned int timestamp;
 	int fwdMachineID;
 	int fwdMailboxID;
 	
 	int clientMailboxID;
 	int clientMachineID;
 	
-	int smallestTimestamp;
+	unsigned int smallestTimestamp;
 	int smallestMachineID;
 	
 	Message* head;
@@ -1649,14 +1764,12 @@ void Server() {
 		fwdData = strtok(buffer, " "); // Splits spaces between words in buffer
 		
 		// Step 1.) Extract TS & forwarding server machineID
-		timestamp = atoi(fwdData);
+		timestamp = convertBaseToDec(fwdData);//atoi(fwdData);
 		fwdData = strtok(NULL, " ");
 		
-		fwdMachineID = atoi(fwdData);
-		fwdData = strtok(NULL, " ");
+		fwdMachineID = inPktHdr.to;
 		
-		fwdMailboxID = atoi(fwdData);
-		fwdData = strtok(NULL, " ");
+		fwdMailboxID = inMailHdr.to;
 		
 		clientMachineID = atoi(fwdData);
 		fwdData = strtok(NULL, " ");
@@ -1664,7 +1777,8 @@ void Server() {
 		clientMailboxID = atoi(fwdData);
 		fwdData = strtok(NULL, "");
 		
-		msg = fwdData;
+		//msg = fwdData;
+		strcpy(msg, fwdData);
 		
 		
 		
@@ -1679,11 +1793,11 @@ void Server() {
 			printf("Server: msg: %s\n", msg);
 			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg);
 			printf("Server: msg: %s\n", newMessage->message);
-			printf("Made the message object, Appending to Message Q.\n");
+			printf("Server: Made the message object, Appending to Message Q.\n");
 			messageQ->SortedInsertTwo((void*)newMessage, timestamp, clientMachineID);
 		}
 		
-		printf("Server: Starting Step 3: Update LTP.\n");
+		printf("Server: Starting Step 3: Update LTR.\n");
 		// Step 3.) Update LTR Table
 		LTR[fwdMachineID] = timestamp;
 		
@@ -1702,7 +1816,7 @@ void Server() {
 		// Step 6.) Get TS and machineID from 1st msg in messageQ
 		head = (Message*)messageQ->Remove();
 		
-		printf("Server: Starting Step 6: Deciding whether or not to send TS msg.\n");
+		printf("Server: Starting Step 7: Deciding whether or not to send TS msg.\n");
 		// Step 7.) If not a TS msg, tell trans-server to fwd TS msg to all other Servers
 		if (strcmp(msg, "ts") != 0) {
 			//time_t currTime;
@@ -1714,7 +1828,6 @@ void Server() {
 			SendTimestamp(myTimestamp);
 		}
 		
-		printf("Server: Starting Request Parsing while loop.\n");
 		// Need while loop here: while (head ID & timestamp <= smallest ID & timestamp)
 		while (head->timestamp <= smallestTimestamp) {
 			char* currentMsg = new char[strlen(head->message) + 1];
@@ -1937,41 +2050,6 @@ void Server() {
 }
 
 void Client(int farAddr) {
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-    char *data = "lac acq 3 8";
-    char *ack = "Client: Got it!";
-    char buffer[MaxMailSize];
-
-    // construct packet, mail header for original message
-    // To: destination machine, mailbox 0
-    // From: our machine, reply to: mailbox 1
-    outPktHdr.to = 0;
-    outMailHdr.to = 0;
-    outMailHdr.from = 0;
-    outMailHdr.length = strlen(data) + 1;
-	
-    // Send the first message
-    bool success = postOffice->Send(outPktHdr, outMailHdr, data); 
-	
-    if ( !success ) {
-      printf("Client: The postOffice Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
-	
-	// Wait for server reply
-	// Wait for the first message from the other machine
-    postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
-    fflush(stdout);
-	
-	int rv = 0;
-	
-	rv = atoi(buffer);
-	printf("Client: rv = %d\n", rv);
-	
-    // Then we're done!
-    interrupt->Halt();
 }
 
 void LockTest (int farAddr) {
@@ -1983,16 +2061,4 @@ void LockTest (int farAddr) {
 }
 
 void parseServerFunction(){
-	/*int farAddr;
-	PacketHeader outPktHdr, inPktHdr;
-    MailHeader outMailHdr, inMailHdr;
-    char *data = "Server: Hello thar! How can I help you?";
-    char *ack = "Server: Okay, I'll be right with you!";
-    char buffer[MaxMailSize];
-	
-	//put parsing here for server
-	// Receive message from client (other machine)
-	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-	printf("Server: Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
-	fflush(stdout);*/
 }
