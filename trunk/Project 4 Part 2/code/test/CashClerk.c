@@ -98,8 +98,8 @@ int main() {
 	/* Handle Creation Stuff */
 	
 	/* gettin mah Clerk Index */
-	initIndex = CreateMV("cashIndex", sizeof("cashIndex"), 1, 0x9999);
-	initIndexLock = ServerCreateLock("cashIndexLock", sizeof("cashIndexLock"), 1);
+	initIndex = CreateMV("CaIn", sizeof("CaIn"), 1, 0x9999);
+	initIndexLock = ServerCreateLock("CaInLk", sizeof("CaInLk"), 1);
 	
 	ServerAcquire(initIndexLock, 0);
 	myIndex = GetMV(initIndex, 0);
@@ -107,35 +107,35 @@ int main() {
 	ServerRelease(initIndexLock, 0);
 	
 	/* Locks */
-	cashLock = ServerCreateLock("cashLock", sizeof("cashLock"), NUM_CLERKS);
-	senatorLock = ServerCreateLock("senatorLock", sizeof("senatorLock"), 1);
-	customerLock = ServerCreateLock("customerLock", sizeof("customerLock"), 1);
-	cashLineLock = ServerCreateLock("cashLineLock", sizeof("cashLineLock"), 1);
-	clerkWaitLock = ServerCreateLock("clerkWaitLock", sizeof("clerkWaitLock"), 1);
-	fileLock = ServerCreateLock("fileLock", sizeof("fileLock"), NUM_CUSTOMERS + NUM_SENATORS);
-	cashMoneyLock = ServerCreateLock("cashMoneyLock", sizeof("cashMoneyLock"), 1);
+	cashLock = ServerCreateLock("CaLk", sizeof("CaLk"), NUM_CLERKS);
+	senatorLock = ServerCreateLock("SeLk", sizeof("SeLk"), 1);
+	customerLock = ServerCreateLock("CuLk", sizeof("CuLk"), 1);
+	cashLineLock = ServerCreateLock("CaLiLk", sizeof("CaLiLk"), 1);
+	clerkWaitLock = ServerCreateLock("ClWaLk", sizeof("ClWaLk"), 1);
+	fileLock = ServerCreateLock("FiLk", sizeof("FiLk"), NUM_CUSTOMERS + NUM_SENATORS);
+	cashMoneyLock = ServerCreateLock("CaMnLk", sizeof("CaMnLk"), 1);
 	
 	/* CVs */
-	clerkWaitCV = ServerCreateCV("clerkWaitCV", sizeof("clerkWaitCV"), 1);
-	cashCV = ServerCreateCV("cashCV", sizeof("cashCV"), NUM_CLERKS);
+	clerkWaitCV = ServerCreateCV("ClWaCV", sizeof("ClWaCV"), 1);
+	cashCV = ServerCreateCV("CaCV", sizeof("CaCV"), NUM_CLERKS);
 	/*regCashLineCV = ServerCreateCV("regCashLineCV", sizeof("regCashLineCV"), 1);
 	privCashLineCV = ServerCreateCV("privCashLineCV", sizeof("privCashLineCV"), 1);*/
-	cashLineCV = ServerCreateCV("cashLineCV", sizeof("cashLineCV"), 1);
+	cashLineCV = ServerCreateCV("CaLiCV", sizeof("CaLiCV"), 1);
 	
 	/* MVs */
-	shutdownIndex = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
-	officeSenatorIndex = CreateMV("officeSenator", sizeof("officeSenator"), 1, 0x9999);
-	officeCustomerIndex = CreateMV("officeCustomer", sizeof("officeCustomer"), 1, 0x9999);
-	cashLineLengthIndex = CreateMV("cashLineLength", sizeof("cashLineLength"), 1, 0x9999);
-	numCashWaitIndex = CreateMV("numCashWait", sizeof("numCashWait"), 1, 0x9999);
-	cashDataIndex = CreateMV("cashData", sizeof("cashData"), NUM_CLERKS, 0x9999);
-	cashDataBoolIndex = CreateMV("cashDataBool", sizeof("cashDataBool"), NUM_CLERKS, 0x9999);
-	cashStateIndex = CreateMV("cashState", sizeof("cashState"), NUM_CLERKS, 0x9999);
-	fileTypeIndex = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
-	fileStateIndex = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
-	cashMoneyIndex = CreateMV("cashMoney", sizeof("cashMoney"), 1, 0x9999);
+	shutdownIndex = CreateMV("shut", sizeof("shut"), 1, 0x9999);
+	officeSenatorIndex = CreateMV("OfSe", sizeof("OfSe"), 1, 0x9999);
+	officeCustomerIndex = CreateMV("OfCu", sizeof("OfCu"), 1, 0x9999);
+	cashLineLengthIndex = CreateMV("CaLn", sizeof("CaLn"), 1, 0x9999);
+	numCashWaitIndex = CreateMV("NuCaWa", sizeof("NuCaWa"), 1, 0x9999);
+	cashDataIndex = CreateMV("CaDa", sizeof("CaDa"), NUM_CLERKS, 0x9999);
+	cashDataBoolIndex = CreateMV("CaDaBo", sizeof("CaDaBo"), NUM_CLERKS, 0x9999);
+	cashStateIndex = CreateMV("CaSt", sizeof("CaSt"), NUM_CLERKS, 0x9999);
+	fileTypeIndex = CreateMV("FiTp", sizeof("FiTp"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	fileStateIndex = CreateMV("FiSt", sizeof("FiSt"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	cashMoneyIndex = CreateMV("CaMn", sizeof("CaMn"), 1, 0x9999);
 	
-	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
+	traceLock = ServerCreateLock("trace", sizeof("trace"), 1);
 	
 	ServerAcquire(cashLock, myIndex);
 	SetMV(cashStateIndex, myIndex, BUSY);

@@ -100,8 +100,8 @@ int main() {
 	/* Handle Creation Stuff */
 	
 	/* gettin mah Clerk Index */
-	initIndex = CreateMV("passIndex", sizeof("passIndex"), 1, 0x9999);
-	initIndexLock = ServerCreateLock("passIndexLock", sizeof("passIndexLock"), 1);
+	initIndex = CreateMV("PaIn", sizeof("PaIn"), 1, 0x9999);
+	initIndexLock = ServerCreateLock("PaInLk", sizeof("PaInLk"), 1);
 	
 	ServerAcquire(initIndexLock, 0);
 	myIndex = GetMV(initIndex, 0);
@@ -109,35 +109,35 @@ int main() {
 	ServerRelease(initIndexLock, 0);
 	
 	/* Locks */
-	passLock = ServerCreateLock("passLock", sizeof("passLock"), NUM_CLERKS);
-	senatorLock = ServerCreateLock("senatorLock", sizeof("senatorLock"), 1);
-	customerLock = ServerCreateLock("customerLock", sizeof("customerLock"), 1);
-	passLineLock = ServerCreateLock("passLineLock", sizeof("passLineLock"), 1);
-	clerkWaitLock = ServerCreateLock("clerkWaitLock", sizeof("clerkWaitLock"), 1);
-	fileLock = ServerCreateLock("fileLock", sizeof("fileLock"), NUM_CUSTOMERS + NUM_SENATORS);
-	passMoneyLock = ServerCreateLock("passMoneyLock", sizeof("passMoneyLock"), 1);
+	passLock = ServerCreateLock("PaLk", sizeof("PaLk"), NUM_CLERKS);
+	senatorLock = ServerCreateLock("SeLk", sizeof("SeLk"), 1);
+	customerLock = ServerCreateLock("CuLk", sizeof("CuLk"), 1);
+	passLineLock = ServerCreateLock("PaLiLk", sizeof("PaLiLk"), 1);
+	clerkWaitLock = ServerCreateLock("ClWaLk", sizeof("ClWaLk"), 1);
+	fileLock = ServerCreateLock("FiLk", sizeof("FiLk"), NUM_CUSTOMERS + NUM_SENATORS);
+	passMoneyLock = ServerCreateLock("PaMnLk", sizeof("PaMnLk"), 1);
 	
 	/* CVs */
-	clerkWaitCV = ServerCreateCV("clerkWaitCV", sizeof("clerkWaitCV"), 1);
-	passCV = ServerCreateCV("passCV", sizeof("passCV"), NUM_CLERKS);
-	regPassLineCV = ServerCreateCV("regPassLineCV", sizeof("regPassLineCV"), 1);
-	privPassLineCV = ServerCreateCV("privPassLineCV", sizeof("privPassLineCV"), 1);
+	clerkWaitCV = ServerCreateCV("ClWaCV", sizeof("ClWaCV"), 1);
+	passCV = ServerCreateCV("PaCV", sizeof("PaCV"), NUM_CLERKS);
+	regPassLineCV = ServerCreateCV("RgPaCV", sizeof("RgPaCV"), 1);
+	privPassLineCV = ServerCreateCV("PrPaCV", sizeof("PrPaCV"), 1);
 	
 	/* MVs */
-	shutdownIndex = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
-	officeSenatorIndex = CreateMV("officeSenator", sizeof("officeSenator"), 1, 0x9999);
-	officeCustomerIndex = CreateMV("officeCustomer", sizeof("officeCustomer"), 1, 0x9999);
-	regPassLineLengthIndex = CreateMV("regPassLineLength", sizeof("regPassLineLength"), 1, 0x9999);
-	privPassLineLengthIndex = CreateMV("privPassLineLength", sizeof("privPassLineLength"), 1, 0x9999);
-	numPassWaitIndex = CreateMV("numPassWait", sizeof("numPassWait"), 1, 0x9999);
-	passDataIndex = CreateMV("passData", sizeof("passData"), NUM_CLERKS, 0x9999);
-	passDataBoolIndex = CreateMV("passDataBool", sizeof("passDataBool"), NUM_CLERKS, 0x9999);
-	passStateIndex = CreateMV("passState", sizeof("passState"), NUM_CLERKS, 0x9999);
-	fileTypeIndex = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
-	fileStateIndex = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
-	passMoneyIndex = CreateMV("passMoney", sizeof("passMoney"), 1, 0x9999);
+	shutdownIndex = CreateMV("shut", sizeof("shut"), 1, 0x9999);
+	officeSenatorIndex = CreateMV("OfSe", sizeof("OfSe"), 1, 0x9999);
+	officeCustomerIndex = CreateMV("OfCu", sizeof("OfCu"), 1, 0x9999);
+	regPassLineLengthIndex = CreateMV("RgPaLn", sizeof("RgPaLn"), 1, 0x9999);
+	privPassLineLengthIndex = CreateMV("PrPaLn", sizeof("PrPaLn"), 1, 0x9999);
+	numPassWaitIndex = CreateMV("NuPaWa", sizeof("NuPaWa"), 1, 0x9999);
+	passDataIndex = CreateMV("PaDa", sizeof("PaDa"), NUM_CLERKS, 0x9999);
+	passDataBoolIndex = CreateMV("PaDaBo", sizeof("PaDaBo"), NUM_CLERKS, 0x9999);
+	passStateIndex = CreateMV("PaSt", sizeof("PaSt"), NUM_CLERKS, 0x9999);
+	fileTypeIndex = CreateMV("FiTp", sizeof("FiTp"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	fileStateIndex = CreateMV("FiSt", sizeof("FiSt"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	passMoneyIndex = CreateMV("PaMn", sizeof("PaMn"), 1, 0x9999);
 	
-	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
+	traceLock = ServerCreateLock("trace", sizeof("trace"), 1);
 	
 	ServerAcquire(passLock, myIndex);
 	SetMV(passStateIndex, myIndex, BUSY);
