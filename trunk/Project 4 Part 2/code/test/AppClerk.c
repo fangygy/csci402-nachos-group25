@@ -94,9 +94,15 @@ int main() {
 	ServerRelease(initIndexLock, 0);
 	
 	SetMV(appState, myIndex, 1);
+	Write("AppClerk starting up\n", sizeof("AppClerk starting up\n"), ConsoleOutput);
+
+	Write("AppClerk about to loop forever\n", sizeof("AppClerk about to loop forever\n"), ConsoleOutput);
 
 	/* --------------------BEGIN APPCLERK STUFF----------------*/
 	while(loop == true){
+
+		Write("AppClerk starting loop\n", sizeof("AppClerk starting loop\n"), ConsoleOutput);
+
 		if (GetMV(shutdown, 0) == 1) {
 			ServerAcquire(traceLock, 0);
 			ClerkTrace("App", myIndex, 0x00, 0, "Shutting down.\n"); 
@@ -124,6 +130,7 @@ int main() {
 		*  If there are privileged customers, do AppClerk tasks, then received $500
 		*/
 		if(GetMV(privACLineLength, 0) > 0){
+			Write("AppClerk checking priv line\n", sizeof("AppClerk checking priv line\n"), ConsoleOutput);
 			/*Trace("Checking privLine\n", 0x9999);*/
 			SetMV(privACLineLength, 0, GetMV(privACLineLength, 0)-1);
 
@@ -140,6 +147,7 @@ int main() {
 
 			mySSN = GetMV(appData, myIndex);
 			ServerAcquire(fileLock, mySSN);
+			Write("AppClerk gotten SSN from priv customer\n", sizeof("AppClerk gotten SSN from priv customer\n"), ConsoleOutput);
 
 			/* check the customer type */
 			if(GetMV(fileType, mySSN) == 0){ /* 0 = CUSTOMER */
@@ -193,12 +201,14 @@ int main() {
 			ServerRelease(appMoneyLock, 0);
 			ServerSignal(appCV, myIndex, appLock, myIndex); /* signal customer awake */
 			ServerRelease(appLock, myIndex);	/* Release clerk lock */
+			Write("AppClerk done with priv customer\n", sizeof("AppClerk done with priv customer\n"), ConsoleOutput);
 
 		}	
 		/* Check for regular customer line next.
 		* If there are regular customers, do AppClerk tasks 
 		*/
 		else if(GetMV(regACLineLength,0) > 0){
+			Write("AppClerk checking reg line\n", sizeof("AppClerk checking reg line\n"), ConsoleOutput);
 			/*Trace("Checking regLine\n", 0x9999);*/
 			SetMV(regACLineLength, 0, GetMV(regACLineLength, 0)-1);
 
@@ -215,6 +225,7 @@ int main() {
 
 			mySSN = GetMV(appData, myIndex);
 			ServerAcquire(fileLock, mySSN);
+			Write("AppClerk gotten SSN from reg customer\n", sizeof("AppClerk gotten SSN from reg customer\n"), ConsoleOutput);
 
 			/* check the customer type */
 			if(GetMV(fileType, mySSN) == 0){
@@ -255,9 +266,11 @@ int main() {
 
 			ServerSignal(appCV, myIndex, appLock, myIndex); /* signal customer awake */
 			ServerRelease(appLock, myIndex);	/* Release clerk lock */
+			Write("AppClerk done with reg customer\n", sizeof("AppClerk done with reg customer\n"), ConsoleOutput);
 		}
 		/* If there are neither privileged or regular customers, go on break */
 		else{
+			Write("AppClerk going on break\n", sizeof("AppClerk going on break\n"), ConsoleOutput);
 			/*Trace("Going on break\n", 0x9999);*/
 			ServerRelease(acpcLineLock, 0);
 			ServerAcquire(appLock, myIndex);

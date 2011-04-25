@@ -35,6 +35,7 @@ void ClerkTrace(char* clerkType, int myIndex, char* custType, int myCust, char* 
 }
 
 int main() {
+
 	/* ------------------Local data -------------------------*/
 	int myIndex;
 
@@ -93,9 +94,12 @@ int main() {
 	ServerRelease(initIndexLock, 0);
 	
 	SetMV(picState, myIndex, 1);
-
+	Write("PicClerk starting up\n", sizeof("PicClerk starting up\n"), ConsoleOutput);
+	Write("PicClerk about to loop forever\n", sizeof("PicClerk about to loop forever\n"), ConsoleOutput);
 	/* --------------------BEGIN PICCLERK STUFF----------------*/
 	while(loop == true){
+		Write("PicClerk starting loop\n", sizeof("PicClerk starting loop\n"), ConsoleOutput);
+
 		if (GetMV(shutdown, 0) == 1) {
 			ServerAcquire(traceLock, 0);
 			ClerkTrace("Pic", myIndex, 0x00, 0, "Shutting down.\n");
@@ -123,6 +127,7 @@ int main() {
 		* If there are privileged customers, do PicClerk tasks, then receive $500
 		*/
 		if(GetMV(privPCLineLength, 0) > 0){
+			Write("PicClerk checking priv line\n", sizeof("PicClerk checking priv line\n"), ConsoleOutput);
 			SetMV(privPCLineLength, 0, GetMV(privPCLineLength, 0)-1);
 			
 			ServerAcquire(senatorLock, 0);
@@ -137,6 +142,7 @@ int main() {
 			ServerWait(picCV, myIndex, picLock, myIndex);	/* Waits for the next customer */
 
 			mySSN = GetMV(picData, myIndex);
+			Write("PicClerk gotten SSN from priv customer\n", sizeof("PicClerk gotten SSN from priv customer\n"), ConsoleOutput);
 			/* check the customer type */
 			ServerAcquire(fileLock, mySSN);
 			if (GetMV(fileType, mySSN) == 0) { /* 0 = CUSTOMER */
@@ -225,11 +231,13 @@ int main() {
 			SetMV(picDataBool, myIndex, 0);
 			ServerSignal(picCV, myIndex, picLock, myIndex); /* signal customer awake */
 			ServerRelease(picLock, myIndex); /* release clerk lock */
+			Write("PicClerk done with priv customer\n", sizeof("PicClerk done with priv customer\n"), ConsoleOutput);
 		}
 		/* Check for regular customer line next
 		* If there are regular customers, do PicClerk tasks
 		*/
 		else if(GetMV(regPCLineLength,0) > 0){
+			Write("PicClerk checking reg line\n", sizeof("PicClerk checking reg line\n"), ConsoleOutput);
 			SetMV(regPCLineLength, 0, GetMV(regPCLineLength, 0)-1);
 
 			ServerAcquire(senatorLock, 0);
@@ -244,6 +252,7 @@ int main() {
 			ServerWait(picCV, myIndex, picLock, myIndex);	/* Waits for the next customer */
 
 			mySSN = GetMV(picData, myIndex);
+			Write("PicClerk gotten SSN from reg customer\n", sizeof("PicClerk gotten SSN from reg customer\n"), ConsoleOutput);
 			/* check the customer type */
 			ServerAcquire(fileLock, mySSN);
 			if (GetMV(fileType, mySSN) == 0) {
@@ -317,9 +326,11 @@ int main() {
 			SetMV(picDataBool, myIndex, 0);
 			ServerSignal(picCV, myIndex, picLock, myIndex); /* signal customer awake */
 			ServerRelease(picLock, myIndex); /* release clerk lock */
+			Write("PicClerk done with reg customer\n", sizeof("PicClerk done with reg customer\n"), ConsoleOutput);
 		}		
 		/* If there are neither privileged or regular customers, go on break */
 		else{
+			Write("PicClerk going on break\n", sizeof("PicClerk going on break\n"), ConsoleOutput);
 			ServerRelease(acpcLineLock, 0);
 			ServerAcquire(picLock, myIndex);
 			SetMV(picState, myIndex, 2); /* 2 = BREAK */
