@@ -18,6 +18,7 @@
 
 #include "copyright.h"
 #include "post.h"
+#include <unistd.h>
 
 extern "C" {
 	int bcopy(char *, char *, int);
@@ -291,6 +292,7 @@ PostOffice::Send(PacketHeader pktHdr, MailHeader mailHdr, char* data)
 
     delete [] buffer;			// we've sent the message, so
 					// we can delete our buffer
+	usleep(20);
     return success;
 }
 
