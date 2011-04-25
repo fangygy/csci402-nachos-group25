@@ -933,7 +933,8 @@ void LineTalkCashClerk() {
 }
 
 int main() {
-	
+	Write("Customer starting up\n", sizeof("Customer starting up\n"), ConsoleOutput);
+
 	/* Getting a unique index */
 	indexInitLock = ServerCreateLock("CustomerIndexLock", sizeof("CustomerIndexLock"), 1);
 	indexInit = CreateMV("CustomerIndex", sizeof("CustomerIndex"), 1, 0x9999);
