@@ -141,25 +141,28 @@ struct Message {
 	int clientMailboxID;
 	unsigned int timestamp;
 	char* message;
+	bool sender;
 	
 	Message() {
 		clientMachineID = -1;
 		clientMailboxID = -1;
 		timestamp = 0;
 		message = "";
+		sender = false;
 	}
 	
-	Message(int machID, int mailID, unsigned int time, char* mess) {
+	Message(int machID, int mailID, unsigned int time, char* mess, bool send) {
 		clientMachineID = machID;
 		clientMailboxID = mailID;
 		timestamp = time;
 		message = new char[strlen(mess)+1];
 		strcpy(message, mess);
+		sender = send;
 	}
 };
 
 List *messageQ;			// Message Queue
-int LTR[2];			// Last Timestamp Received Table
+unsigned int LTR[2];			// Last Timestamp Received Table
 
 char* reverseString(char* myWord) {
 	int len = strlen(myWord);
@@ -1739,7 +1742,7 @@ void Server() {
 	
 	// Initialize LTR Table
 	for(int i = 0; i < NUM_SERVERS; i++) {
-		LTR[i] = -1;
+		LTR[i] = 0;
 	}
 	
 	// Initialize Message Queue
@@ -1769,9 +1772,9 @@ void Server() {
 		timestamp = convertBaseToDec(fwdData, 72);//atoi(fwdData);
 		fwdData = strtok(NULL, " ");
 		
-		fwdMachineID = inPktHdr.to;
+		fwdMachineID = inPktHdr.from;
 		
-		fwdMailboxID = inMailHdr.to;
+		fwdMailboxID = inMailHdr.from;
 		
 		clientMachineID = atoi(fwdData);
 		fwdData = strtok(NULL, " ");
@@ -1787,14 +1790,16 @@ void Server() {
 		// if my machineID == forwarder's machineID, then I send reply to the client
 		if (netname == fwdMachineID)
 			sender = true;
+		else 
+			sender = false;
 		
 		printf("Server: Starting Step 2: Message Q.\n");
 		// Step 2.) If not a TS msg, put msg into messageQ
 		if (strcmp(msg, "ts") != 0) {
 			printf("Server: Step 2 Not a TS message. Append to Message Q.\n");
-			printf("Server: msg: %s\n", msg);
-			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg);
-			printf("Server: msg: %s\n", newMessage->message);
+			//printf("Server: msg: %s\n", msg);
+			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg, sender);
+			//printf("Server: msg: %s\n", newMessage->message);
 			printf("Server: Made the message object, Appending to Message Q.\n");
 			messageQ->SortedInsertTwo((void*)newMessage, timestamp, clientMachineID);
 		}
@@ -1816,11 +1821,17 @@ void Server() {
 		
 		printf("Server: Starting Step 6: Get 1st TS in Message Q.\n");
 		// Step 6.) Get TS and machineID from 1st msg in messageQ
-		head = (Message*)messageQ->Remove();
+		if (!messageQ->IsEmpty()) {
+			head = (Message*)messageQ->Remove();
+		}
+		else {
+			head = NULL;
+		}
 		
 		printf("Server: Starting Step 7: Deciding whether or not to send TS msg.\n");
 		// Step 7.) If not a TS msg, tell trans-server to fwd TS msg to all other Servers
 		if (strcmp(msg, "ts") != 0) {
+			printf("Did not segfault1\n");
 			//time_t currTime;
 			//time (&currTime);
 			//char *currentTime = ctime(&currTime);
@@ -1829,7 +1840,12 @@ void Server() {
 			//int intCurrTime = atoi(currentTime);
 			SendTimestamp(myTimestamp);
 		}
-		
+		printf("Did not segfault2\n");
+	
+		if (head == NULL) {
+			continue;
+		}
+		printf("Server: Comparing timestamps, head:%u and smallest:%u\n", head->timestamp, smallestTimestamp);
 		if (head->timestamp > smallestTimestamp) {
 			messageQ->Prepend((void*)head);
 		}
@@ -1862,7 +1878,7 @@ void Server() {
 					length = strlen(param1);
 					
 					printf("Server: Lock Create, machine = %d, name = %s\n", head->clientMachineID, param1);
-					CreateLock_RPC(sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
+					CreateLock_RPC(head->sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "acq") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1873,7 +1889,7 @@ void Server() {
 					lockIndex2 = atoi(param2);
 					
 					printf("Server: Lock Acquire, machine = %d, index = %s\n", head->clientMachineID, serverLocks[lockIndex].name);
-					Acquire_RPC(sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					Acquire_RPC(head->sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "rel") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1884,7 +1900,7 @@ void Server() {
 					lockIndex2 = atoi(param2);
 					
 					printf("Server: Lock Release, machine = %d, index = %s\n", head->clientMachineID, serverLocks[lockIndex].name);
-					Release_RPC(sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					Release_RPC(head->sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "des") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1895,10 +1911,10 @@ void Server() {
 					lockIndex2 = atoi(param2);
 					
 					printf("Server: Lock Destroy, machine = %d, index = %s\n", head->clientMachineID, serverLocks[lockIndex].name);
-					DestroyLock_RPC(sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					DestroyLock_RPC(head->sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else {
 					printf("Server: Bad request.\n");
-					if (sender)
+					if (head->sender)
 						ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 				}
 			} else if (strcmp(data, "con") == 0) {
@@ -1914,7 +1930,7 @@ void Server() {
 					arraySize = atoi(param2);
 					
 					printf("Server: Condition Create, machine = %d, name = %s\n", head->clientMachineID, param1);
-					CreateCV_RPC(sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
+					CreateCV_RPC(head->sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "wai") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1933,7 +1949,7 @@ void Server() {
 					lockIndex2 = atoi(param4);
 					
 					printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
-					Wait_RPC(sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					Wait_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "sig") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1952,7 +1968,7 @@ void Server() {
 					lockIndex2 = atoi(param4);
 					
 					printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
-					Signal_RPC(sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					Signal_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "bro") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1971,7 +1987,7 @@ void Server() {
 					lockIndex2 = atoi(param4);
 					
 					printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
-					Broadcast_RPC(sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
+					Broadcast_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "del") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -1982,10 +1998,10 @@ void Server() {
 					cvIndex2 = atoi(param2);
 					
 					printf("Server: Condition Delete, machine = %d, cv = %s", head->clientMachineID, param1);
-					DestroyCV_RPC(sender, cvIndex, cvIndex2, head->clientMachineID, head->clientMailboxID);
+					DestroyCV_RPC(head->sender, cvIndex, cvIndex2, head->clientMachineID, head->clientMailboxID);
 				} else {
 					printf("Server: Bad request.\n");
-					if (sender)
+					if (head->sender)
 						ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 				}
 			} else if (strcmp(data, "mon") == 0) {
@@ -2005,7 +2021,7 @@ void Server() {
 					value = atoi(param3);
 					
 					printf("Server: MV Create, machine = %d, name = %s, val = %d\n", head->clientMachineID, param1, value);
-					CreateMV_RPC(sender, param1, arraySize, value, head->clientMachineID, head->clientMailboxID);
+					CreateMV_RPC(head->sender, param1, arraySize, value, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "get") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
@@ -2016,7 +2032,7 @@ void Server() {
 					mvIndex2 = atoi(param2);
 					
 					printf("Server: MV Get, machine = %d, name = %s\n", head->clientMachineID, serverMVs[mvIndex].name);
-					GetMV_RPC(sender, mvIndex, mvIndex2, head->clientMachineID, head->clientMailboxID);
+					GetMV_RPC(head->sender, mvIndex, mvIndex2, head->clientMachineID, head->clientMailboxID);
 				} else if (strcmp(data, "set") == 0) {
 					//printf("This farr\n");
 					data = strtok (NULL, " ,.-");
@@ -2034,15 +2050,15 @@ void Server() {
 					
 					//printf("This farr\n");
 					printf("Server: MV Set, machine = %d, index = %s, value = %d\n", head->clientMachineID, serverMVs[mvIndex].name, value);
-					SetMV_RPC(sender, mvIndex, mvIndex2, value, head->clientMachineID, head->clientMailboxID);
+					SetMV_RPC(head->sender, mvIndex, mvIndex2, value, head->clientMachineID, head->clientMailboxID);
 				} else {
 					printf("Server: Bad request.\n");
-					if (sender)
+					if (head->sender)
 						ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 				}
 			} else {
 				printf("Server: Bad request.\n");
-				if (sender)
+				if (head->sender)
 					ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 			}
 			
