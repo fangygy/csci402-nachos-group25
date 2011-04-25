@@ -39,53 +39,53 @@ int main() {
 	/* ------------------Local data -------------------------*/
 	int myIndex;
 
-	int initIndex = CreateMV("PicIndex", sizeof("PicIndex"), 1, 0x9999);
-	int initIndexLock = ServerCreateLock("PicIndexLock", sizeof("PicIndexLock"), 1);
+	int initIndex = CreateMV("PiIn", sizeof("PiIn"), 1, 0x9999);
+	int initIndexLock = ServerCreateLock("PiInLk", sizeof("PiInLk"), 1);
 
 	int mySSN;
 	int i;
 	int cType = 0;
 
 	enum BOOLEAN loop = true;
-	int shutdown = CreateMV("shutdown", sizeof("shutdown"), 1, 0x9999);
+	int shutdown = CreateMV("shut", sizeof("shut"), 1, 0x9999);
 	/* -----------------Shared Data------------------------*/
 
 	/* Number of customers/senators in office and thier locks */
-	int officeSenator = CreateMV("officeSenator", sizeof("officeSenator"), 1, 0x9999);
-	int officeCustomer = CreateMV("officeCustomer", sizeof("officeCustomer"), 1, 0x9999);	
-	int senatorLock = ServerCreateLock("senatorLock", sizeof("senatorLock"), 1);
-	int customerLock = ServerCreateLock("customerLock", sizeof("customerLock"), 1);
+	int officeSenator = CreateMV("OfSe", sizeof("OfSe"), 1, 0x9999);
+	int officeCustomer = CreateMV("OfCu", sizeof("OfCu"), 1, 0x9999);	
+	int senatorLock = ServerCreateLock("SeLk", sizeof("SeLk"), 1);
+	int customerLock = ServerCreateLock("CuLk", sizeof("CuLk"), 1);
 
 	/*Locks, conditions, and data used for waitinng */
-	int clerkWaitLock = ServerCreateLock("clerkWaitLock", sizeof("clerkWaitLock"), 1);
-	int clerkWaitCV = ServerCreateCV("clerkWaitCV", sizeof("clerkWaitCV"), 1);
-	int numPicWait = CreateMV("numPicWait", sizeof("numPicWait"), 1, 0x9999);
+	int clerkWaitLock = ServerCreateLock("ClWaLk", sizeof("ClWaLk"), 1);
+	int clerkWaitCV = ServerCreateCV("ClWaCV", sizeof("ClWaCV"), 1);
+	int numPicWait = CreateMV("NuPiWa", sizeof("NuPiWa"), 1, 0x9999);
 
 	/* Reg and priv line lengths, line locks, and reg and priv line conditions. */
-	int regPCLineLength = CreateMV("regPCLineLength", sizeof("regPCLineLength"), 1, 0x9999);
-	int privPCLineLength = CreateMV("privPCLineLength", sizeof("privPCLineLength"), 1, 0x9999);
-	int acpcLineLock = ServerCreateLock("acpcLineLock", sizeof("acpcLineLock"), 1);
-	int regPCLineCV = ServerCreateCV("regPCLineCV", sizeof("regPCLineCV"), 1);
-	int privPCLineCV = ServerCreateCV("privPCLineCV", sizeof("privPCLineCV"), 1);
+	int regPCLineLength = CreateMV("RgPiLn", sizeof("RgPiLn"), 1, 0x9999);
+	int privPCLineLength = CreateMV("PrPiLn", sizeof("PrPiLn"), 1, 0x9999);
+	int acpcLineLock = ServerCreateLock("ACPCLk", sizeof("ACPCLk"), 1);
+	int regPCLineCV = ServerCreateCV("RgPiCV", sizeof("RgPiCV"), 1);
+	int privPCLineCV = ServerCreateCV("PrPiCV", sizeof("PrPiCV"), 1);
 
 
 	/* Individual clerk locks, conditions, data, data booleans, and states */
-	int picLock = ServerCreateLock("picLock", sizeof("picLock"), NUM_CLERKS);
-	int picCV = ServerCreateCV("picCV", sizeof("picCV"), NUM_CLERKS);
-	int picDataBool = CreateMV("picDataBool", sizeof("picDataBool"), NUM_CLERKS, 0x9999);
-	int picState = CreateMV("picState", sizeof("picState"), NUM_CLERKS, 0x9999);
-	int picData = CreateMV("picData", sizeof("picData"), NUM_CLERKS, 0x9999);
+	int picLock = ServerCreateLock("PiLk", sizeof("PiLk"), NUM_CLERKS);
+	int picCV = ServerCreateCV("PiCV", sizeof("PiCV"), NUM_CLERKS);
+	int picDataBool = CreateMV("PiDaBo", sizeof("PiDaBo"), NUM_CLERKS, 0x9999);
+	int picState = CreateMV("PiSt", sizeof("PiSt"), NUM_CLERKS, 0x9999);
+	int picData = CreateMV("PiDa", sizeof("PiDa"), NUM_CLERKS, 0x9999);
 
 	/* Money data and locks for each clerk type */
-	int picMoney = CreateMV("picMoney", sizeof("picMoney"), 1, 0x9999);
-	int picMoneyLock = ServerCreateLock("picMoneyLock", sizeof("picMoneyLock"), 1);
+	int picMoney = CreateMV("PiMn", sizeof("PiMn"), 1, 0x9999);
+	int picMoneyLock = ServerCreateLock("PiMnLk", sizeof("PiMnLk"), 1);
 
 	/* Individual customer's file state, type, and its lock */
-	int fileLock = ServerCreateLock("fileLock", sizeof("fileLock"), NUM_CUSTOMERS + NUM_SENATORS);
-	int fileState = CreateMV("fileState", sizeof("fileState"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
-	int fileType = CreateMV("fileType", sizeof("fileType"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	int fileLock = ServerCreateLock("FiLk", sizeof("FiLk"), NUM_CUSTOMERS + NUM_SENATORS);
+	int fileState = CreateMV("FiSt", sizeof("FiSt"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
+	int fileType = CreateMV("FiTp", sizeof("FiTp"), NUM_CUSTOMERS + NUM_SENATORS, 0x9999);
 
-	traceLock = ServerCreateLock("traceLock", sizeof("traceLock"), 1);
+	traceLock = ServerCreateLock("trace", sizeof("trace"), 1);
 	
 	/* initializes myIndex */
 	ServerAcquire(initIndexLock, 0);
