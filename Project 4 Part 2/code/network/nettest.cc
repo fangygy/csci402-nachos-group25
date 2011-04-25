@@ -1864,10 +1864,10 @@ void Server() {
 			
 			printf("Server: Before 'if' checking\n");
 			printf("Server: currentMsg: %s\n", currentMsg);
-			if (strcmp(data, "loc") == 0) {
+			if (strcmp(data, "l") == 0) {
 				data = strtok (NULL, " ,.-");
 				act = data;
-				if (strcmp(data, "cre") == 0) {
+				if (strcmp(data, "c") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					
@@ -1879,7 +1879,7 @@ void Server() {
 					
 					printf("Server: Lock Create, machine = %d, name = %s\n", head->clientMachineID, param1);
 					CreateLock_RPC(head->sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "acq") == 0) {
+				} else if (strcmp(data, "a") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					lockIndex = atoi(param1);
@@ -1890,7 +1890,7 @@ void Server() {
 					
 					printf("Server: Lock Acquire, machine = %d, index = %s\n", head->clientMachineID, serverLocks[lockIndex].name);
 					Acquire_RPC(head->sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "rel") == 0) {
+				} else if (strcmp(data, "r") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					lockIndex = atoi(param1);
@@ -1901,7 +1901,7 @@ void Server() {
 					
 					printf("Server: Lock Release, machine = %d, index = %s\n", head->clientMachineID, serverLocks[lockIndex].name);
 					Release_RPC(head->sender, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "des") == 0) {
+				} else if (strcmp(data, "d") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					lockIndex = atoi(param1);
@@ -1917,10 +1917,10 @@ void Server() {
 					if (head->sender)
 						ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 				}
-			} else if (strcmp(data, "con") == 0) {
+			} else if (strcmp(data, "c") == 0) {
 				data = strtok (NULL, " ,.-");
 				act = data;
-				if (strcmp(data, "cre") == 0) {
+				if (strcmp(data, "c") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					length = strlen(param1);
@@ -1931,7 +1931,7 @@ void Server() {
 					
 					printf("Server: Condition Create, machine = %d, name = %s\n", head->clientMachineID, param1);
 					CreateCV_RPC(head->sender, param1, arraySize, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "wai") == 0) {
+				} else if (strcmp(data, "w") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					cvIndex = atoi(param1);
@@ -1950,7 +1950,7 @@ void Server() {
 					
 					printf("Server: Condition Wait, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 					Wait_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "sig") == 0) {
+				} else if (strcmp(data, "s") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					cvIndex = atoi(param1);
@@ -1969,7 +1969,7 @@ void Server() {
 					
 					printf("Server: Condition Signal, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 					Signal_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "bro") == 0) {
+				} else if (strcmp(data, "b") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					cvIndex = atoi(param1);
@@ -1988,7 +1988,7 @@ void Server() {
 					
 					printf("Server: Condition Broadcast, machine = %d, cv = %s, lock = %s\n", head->clientMachineID, serverCVs[cvIndex].name, serverLocks[lockIndex].name);
 					Broadcast_RPC(head->sender, cvIndex, cvIndex2, lockIndex, lockIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "del") == 0) {
+				} else if (strcmp(data, "d") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					cvIndex = atoi(param1);
@@ -2004,11 +2004,11 @@ void Server() {
 					if (head->sender)
 						ServerReply(head->clientMachineID, head->clientMailboxID, BAD_FORMAT);
 				}
-			} else if (strcmp(data, "mon") == 0) {
+			} else if (strcmp(data, "m") == 0) {
 				data = strtok (NULL, " ,.-");
 				act = data;
 				//printf("This far\n");
-				if (strcmp(data, "cre") == 0) {
+				if (strcmp(data, "c") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					
@@ -2022,7 +2022,7 @@ void Server() {
 					
 					printf("Server: MV Create, machine = %d, name = %s, val = %d\n", head->clientMachineID, param1, value);
 					CreateMV_RPC(head->sender, param1, arraySize, value, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "get") == 0) {
+				} else if (strcmp(data, "g") == 0) {
 					data = strtok (NULL, " ,.-");
 					param1 = data;
 					mvIndex = atoi(param1);
@@ -2033,7 +2033,7 @@ void Server() {
 					
 					printf("Server: MV Get, machine = %d, name = %s\n", head->clientMachineID, serverMVs[mvIndex].name);
 					GetMV_RPC(head->sender, mvIndex, mvIndex2, head->clientMachineID, head->clientMailboxID);
-				} else if (strcmp(data, "set") == 0) {
+				} else if (strcmp(data, "s") == 0) {
 					//printf("This farr\n");
 					data = strtok (NULL, " ,.-");
 					param1 = data;
