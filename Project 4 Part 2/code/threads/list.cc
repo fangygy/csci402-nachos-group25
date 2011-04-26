@@ -238,6 +238,13 @@ List::SortedInsertTwo(void *item, int64_t sortKey, int64_t sortKey2)
 		element->next = first;
 		first->prev = element;		//new
 		first = element;
+    } else if (sortKey == first->key) {
+		if (sortKey2 < first->key2) {
+			// item goes on front of list
+			element->next = first;
+			first->prev = element;		//new
+			first = element;
+		}
     } else {		// look for first elt in list bigger than item
         for (ptr = first; ptr->next != NULL; ptr = ptr->next) {
             if (sortKey < ptr->next->key) {
