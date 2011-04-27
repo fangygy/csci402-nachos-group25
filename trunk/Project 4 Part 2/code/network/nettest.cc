@@ -162,7 +162,6 @@ struct Message {
 };
 
 List *messageQ;			// Message Queue
-unsigned int LTR[2];			// Last Timestamp Received Table
 
 char* reverseString(char* myWord) {
 	int len = strlen(myWord);
@@ -1740,6 +1739,7 @@ void Server() {
 	int smallestMachineID;
 	
 	Message* head;
+	unsigned int LTR[NUM_SERVERS];
 	
 	// Initialize LTR Table
 	for(int i = 0; i < NUM_SERVERS; i++) {
