@@ -128,7 +128,7 @@ CHAR_OFFSET = 65;
 	DELETED = 9994;
 	NOT_OWNER = 9995;
 	
-	NUM_SERVERS = 2;
+	NUM_SERVERS = 1;
 	
 	lastServerSeconds = 0;
 	

@@ -11,109 +11,116 @@ I. Requirements:
 	- Implement distributed server functionality
 	
 II. Assumptions:
-		We hoped that everything would go as planned. After designing our code and test cases, we
-	hoped our implementations would go smoothly without too many severe problems that would
-	cause any major setbacks. We worked slowly and took every class and function one step at a time.
-	We did have expectations that things would be rough near the middle of the project phase
-	as we encountered road bumps with understanding out assignment and the syntax we need to know
-	to accomplish them. We might have had some doubts whether or not we would be able to submit this project
-	within the deadline, and assumed using another slipdate as we stumbled with the 
-	implementation of the Fork, Exec, and Exit syscalls since it involved utilizing stacks and
-	page allocations where we had little experience.
+	
+		With the design already laid out before us, provided in class, we had hoped that this project 
+	would be fairly simple. Also, because of our disastrous Project 3, we decided to revert to
+	Project 2 code, with increased NumPhysPages to 4096. Implementing the passport office across multiple clients linked to a single
+	server should fairly smoothly done, although an overhaul on syscalls was necessary. Distributed servers
+	seemed like it should be simple, but two days into the slipdate and we still cannot solve the problems
+	that are occuring. Overall, the latter half of the project did not go as planned.
 
 III. Design:
 
 	- exception.cc
-	- process.cc/h
-	- syscall.h
-	- addrspace.cc/h
+	- nettest.cc
 
 IV. Implementation:
 
 	+ Files Modified
-		+ addrspace.h, addrspace.cc
 		+ exception.cc
 		+ syscall.h
 		+ system.h, system.cc
-		+ Makefile.common
 		+ Makefile (in test directory)
 		+ machine.h
+		+ nettest.cc
 	
 	+ Files added
-		+ process.h, process.cc
-		+ lockTest.c, CVTest.c, forkTest.c, execTest.c, execCVTest.c
+		+ Customer.c, AppClerk.c, PicClerk.c, PassClerk.c, CashClerk.c, Senator.c, Manager.c
+		+ SimpleServerPassport.c, 10Customers.c, 5AppPicClerks.c, 5PassCashClerks.c, 1ManagerSenators.c
 	
 	+ Data Structures added
-		-- in file process.h
-		struct Process {
-			AddrSpace* space;			// The address space of this process
-			char* name;					// A name for debugging
-			SpaceId processId;			// SpaceId of location in processTable
-			int numThreads;				// Number of threads in this process
+		-- in file nettest.cc
+		struct Holder {			// Struct that holds a machineID and mailboxID
+			int machineID;
+			int mailboxID;
 		};
-		-- in file exception.cc
-		struct KernelLock {
-			Lock* lock;					// The lock this KernelLock references
-			AddrSpace* space;			// The space the lock is associated with
-			bool beingAcquired;			// Prevents deletion while being acquired
-			bool isToBeDeleted;			// Used to delete lock after thread releases it
-			bool deleted;				// Used to verify status of lock
-			
-			KernelLock() {
-				lock = NULL;
-				beingAcquired = false;
-				space = NULL;
-				isToBeDeleted = false;
-				deleted = true;
-			}
+		
+		struct InnerLock {		// Lock struct that holds the info for acquisition and release
+			bool exists;
+			Holder holder;
+			List *queue;
+			List *machineIDQueue;
+			List *mailboxIDQueue;
+			Holder clientID[MAX_CLIENTS];
+			int numClients;
 		};
 
-		struct KernelCondition {
-			Condition* condition;		// Condition this KernelCondition refers to
-			AddrSpace* space;			// The space associated with this condition
-			bool beingAcquired;			// Prevents deletion while waiting
-			bool isToBeDeleted;			// Used to delete after waking up from a wait
-			bool deleted;				// Used to verify status of lock
-			
-			KernelCondition() {
-				condition = NULL;
-				beingAcquired = false;
-				space = NULL;
-				isToBeDeleted = false;
-				deleted = true;
-			}
+		struct ServerLock {		// Server lock that holds an array of InnerLocks, for locks with the same name
+			char* name;
+			bool exists;
+			InnerLock lock[ARRAY_MAX];
+		};
+
+		struct InnerCV {		// CV struct that holds the info for condition usage
+			bool exists;
+			int waitingOuterLock;
+			int waitingInnerLock;
+			List* queue;
+			List *machineIDQueue;
+			List *mailboxIDQueue;
+			Holder clientID[MAX_CLIENTS];
+			int numClients;
+		};
+
+		struct ServerCV {		// Server CV that holds an array of InnerCVs, that share a name
+			char* name;
+			bool exists;
+			InnerCV cv[ARRAY_MAX];
+		};
+
+		struct ServerMV {		// Server MV that holds an array of values, for MVs that share a name
+			char* name;
+			int value[ARRAY_MAX];
+		};
+		
+		struct Message {		// Message struct for holding messages that have yet to be parsed
+			int clientMachineID;
+			int clientMailboxID;
+			unsigned int timestamp;
+			char* message;
+			bool sender;
 		};
 	+ Data Structures created
-		-- Syscalls in exception.cc
-		-- AllocateStack(unsigned int vaddr), DeallocateStack, DeallocateProcess
-			- For allocating more stack space or deallocating space
+		-- In nettest.cc
+			- TransServer, for the receiving server that will forward a client message 
+				to all other servers
+			- getTimestamp, which returns the current time for message sending
+			- convertDecToBase, convertBaseToDec, used to convert to different bases and back to decimal,
+				for shortening message length
 V. Testing:
 
 	+ How to test
-		Compile tests with gmake in the test directory.
-		If haven't done so beforehand, gmake programs in userprog directory.
-		To run tests, you must call them in the userprog directory.
-
-		To run lockTest, type:
-		nachos -x ../test/lockTest
-
-		To run execTest or forkTest, type:
-		nachos -x ../test/execTest
-
-		To run execCVTest or CVTest, type:
-		nachos -x ../test/execCVTest
+		- Part 1
+		Compile tests with gmake in the test directory
+		If you haven't done so beforehand, gmake in network directory
+		To run tests, call them in network directory
 		
-		To run execDestroyCVTest or destroyCVTest, type:
-		nachos -x ../test/execDestroyCVTest
+		*NOTE* Make sure to run "nachos -m 0" to set up the Server before running other clients
+		*NOTE* Make sure that NUM_SERVERS in system.cc is set equal to 1
 		
-		To run randTest, type:
-		nachos -x ../test/randTest
+		To run a simple passport office (2 Customers, 1 of everything else)
+		nachos -x ../test/SimpleServerPassport -m 1
 		
-		To run traceTest, type:
-		nachos -x ../test/traceTest
+		To run a full passport office: (In this order on different machines)
+		nachos -x ../test/10Customers.c -m 1
+		nachos -x ../test/10Customers.c -m 2
+		nachos -x ../test/10Customers.c -m 3
+		nachos -x ../test/5AppPicClerks.c -m 4
+		nachos -x ../test/5PassCashClerks.c -m 5
+		nachos -x ../test/1ManagerSenators.c -m 6
 		
-		To run passport tests, type:
-		nachos -x ../test/execPassportTests
+		- Part 2
+		
 
 	+ Test Output
 		All our tests output expected results. For more a more in-depth discussion
