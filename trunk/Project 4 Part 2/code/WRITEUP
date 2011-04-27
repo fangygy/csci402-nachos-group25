@@ -23,6 +23,23 @@ III. Design:
 
 	- exception.cc
 	- nettest.cc
+	
+	Part 1:
+	We converted all of our Passport Office agents (customers, clerks, etc.) into user programs. All lock, condition variable, and monitor
+	variable operations are handled with syscalls on the client-side and RPCs on the server-side.
+	
+	Part 2:
+	We implemented the Total Ordering Algorithm to allow the Passport Office simulation to run with multiple servers. To handle message
+	forwarding between servers, we made a TransServer thread that receives client requests. Clients attach a timestamp to their request
+	message so that the servers know where to place the message in their Message Queues. The TransServer forwards the message to all
+	servers, placing the message in their appropriate position in the Queue. Then each server sends Timestamp messages to all other servers;
+	once the ehad of the Message Queue has a timestamp value that is less than or equal to the earliest timestamp message received by a server,
+	the server will go ahead and process the message.
+	
+	Out Total Ordering Algorithm works most of the time for two servers, but the simulation breaks with any higher number of servers. With more
+	than two servers, clients receive syscall error messages, as if they are performing illegal operations, i.e. acquiring a lock they haven't
+	created. In these cases, the Passport Office simulation does not run to completion.
+	
 
 IV. Implementation:
 
@@ -33,6 +50,8 @@ IV. Implementation:
 		+ Makefile (in test directory)
 		+ machine.h
 		+ nettest.cc
+		+ list.h
+		+ list.cc
 	
 	+ Files added
 		+ Customer.c, AppClerk.c, PicClerk.c, PassClerk.c, CashClerk.c, Senator.c, Manager.c
@@ -90,9 +109,16 @@ IV. Implementation:
 			char* message;
 			bool sender;
 		};
+		
+		-- in list.h/.cc
+		added int64_t key2 in ListElement to allow for two-parameter List insertion.
+		added void List::SortedInsertTwo(void *item, int64_t sortKey, int64_t sortKey2) to perform two-parameter List insertion.
+		This was necessary to add messages into a server's message queue in order, giving timestamp top priority and giving
+		secondary priority to machine ID.
+		
 	+ Data Structures created
 		-- In nettest.cc
-			- TransServer, for the receiving server that will forward a client message 
+			- TransServer thread, for the receiving server that will forward a client message 
 				to all other servers
 			- getTimestamp, which returns the current time for message sending
 			- convertDecToBase, convertBaseToDec, used to convert to different bases and back to decimal,
@@ -143,7 +169,7 @@ V. Testing:
 			- 1ManagerSenators execs 5 Senators and 1 Manager
 			
 			- Runs to completion with 1 Server.
-			- Sometimes runs to completion with 2 Servers.
+			- Runs to completion most of the time with 2 Servers.
 			- Does not run to completion with more than two.
 			
 VI. Discussion:
