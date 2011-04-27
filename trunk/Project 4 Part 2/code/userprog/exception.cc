@@ -91,7 +91,7 @@ KernelCondition conditions[MAX_CONDITIONS];
 
 char* kernelReverseString(char* myWord) {
 	int len = strlen(myWord);
-	char* newWord = new char[len];
+	char* newWord = new char[len + 1];
 
 	for (int i = 0; i < len; i++) {
 		newWord[i] = myWord[len - i - 1];

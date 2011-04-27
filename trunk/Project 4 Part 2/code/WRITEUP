@@ -1,5 +1,5 @@
-Title: Writeup for Project 2, Spring 2011
-Date: 02/27/11
+Title: Writeup for Project 4, Spring 2011
+Date: 04/26/11
 Group Num 25:
 	Antonio Cade		antonioc@usc.edu		7162757897
 	Jasper Lee			jasperkl@usc.edu		3483925510
@@ -7,9 +7,8 @@ Group Num 25:
 
 I. Requirements:
 
-	- Modify the Nachos code to support multiprogramming.
-	- Implement system calls and exception handling.
-	- Use this new system to simulate the passport office done in Project 1
+	- Modify Nachos functionality to support server functionality (one server with passport office)
+	- Implement distributed server functionality
 	
 II. Assumptions:
 		We hoped that everything would go as planned. After designing our code and test cases, we

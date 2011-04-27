@@ -166,7 +166,7 @@ unsigned int LTR[2];			// Last Timestamp Received Table
 
 char* reverseString(char* myWord) {
 	int len = strlen(myWord);
-	char* newWord = new char[len];
+	char* newWord = new char[len + 1];
 
 	for (int i = 0; i < len; i++) {
 		newWord[i] = myWord[len - i - 1];
@@ -184,7 +184,7 @@ char* convertDecToBase(unsigned int num, int base) {
 		return NULL;
 	}
 	if (num == 0) {
-		char* buffer = new char[1];
+		char* buffer = new char[2];
 		buffer[0] = (char)(NUM_OFFSET);
 		buffer[1] = '\0';
 		return buffer;
@@ -210,6 +210,7 @@ char* convertDecToBase(unsigned int num, int base) {
 		// But, since one of our members is so anal about it...
 		if (index > 9) {
 			printf("Told you we shoulda made it bigger than 10.\n");
+			interrupt->Halt();
 		}
 	}
 
@@ -466,7 +467,7 @@ void Acquire_RPC(bool sender, int outerLockIndex, int innerLockIndex, int machin
 		//SEND ERROR MESSAGE BACK HERE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 	
@@ -550,7 +551,7 @@ void Release_RPC(bool sender, int outerLockIndex, int innerLockIndex, int machin
 		//SEND ERROR MESSAGE BACK HERE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 	
@@ -640,7 +641,7 @@ void DestroyLock_RPC(bool sender, int outerLockIndex, int innerLockIndex, int ma
 		//SEND ERROR MESSAGE BACK
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 	
@@ -723,7 +724,7 @@ void CreateCV_RPC(bool sender, char* name, int arraySize, int machineID, int mai
 					// SEND BACK MESSAGE
 					if (sender)
 						ServerReply(machineID, mailboxID, i);
-					interrupt->Halt();
+					//interrupt->Halt();
 					return;
 				}
 			}
@@ -862,7 +863,7 @@ void Wait_RPC(bool sender, int outerConditionIndex, int innerConditionIndex, int
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 	
@@ -881,7 +882,7 @@ void Wait_RPC(bool sender, int outerConditionIndex, int innerConditionIndex, int
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}	
 	
@@ -988,7 +989,7 @@ void Signal_RPC(bool sender, int outerConditionIndex, int innerConditionIndex, i
 	if (!serverLocks[outerLockIndex].lock[innerLockIndex].exists) {
 		printf("Server - Signal_RPC: Machine%d trying to signal on non-existant ServerLock%d\n", machineID, outerLockIndex);
 		printf("MachineID:%d, MailboxID:%d, lockName:%s, conName:%s\n", machineID, mailboxID, serverLocks[outerLockIndex].name, serverCVs[outerLockIndex].name);
-		interrupt->Halt();
+		//interrupt->Halt();
 
 		// SEND BACK ERROR MESSAGE
 		if (sender)
@@ -1022,7 +1023,7 @@ void Signal_RPC(bool sender, int outerConditionIndex, int innerConditionIndex, i
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 
@@ -1042,7 +1043,7 @@ void Signal_RPC(bool sender, int outerConditionIndex, int innerConditionIndex, i
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}	
 	
@@ -1191,7 +1192,7 @@ void Broadcast_RPC(bool sender, int outerConditionIndex, int innerConditionIndex
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 
@@ -1211,7 +1212,7 @@ void Broadcast_RPC(bool sender, int outerConditionIndex, int innerConditionIndex
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}	
 	
@@ -1334,7 +1335,7 @@ void DestroyCV_RPC(bool sender, int outerConditionIndex, int innerConditionIndex
 		// SEND BACK ERROR MESSAGE
 		if (sender)
 			ServerReply(machineID, mailboxID, NOT_CREATED);
-		interrupt->Halt();
+		//interrupt->Halt();
 		return;
 	}
 	
@@ -1759,6 +1760,8 @@ void Server() {
 		char* msg = "";
 		bool sender = false;
 		// Receive message from client (other machine)
+		
+		printf("Server: Waiting to receive message\n");
 		postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 		printf("Server: Got \"%s\" from %d, box %d\n", buffer, inPktHdr.from,inMailHdr.from);
 		fflush(stdout);
@@ -1801,7 +1804,7 @@ void Server() {
 			Message* newMessage = new Message(clientMachineID, clientMailboxID, timestamp, msg, sender);
 			//printf("Server: msg: %s\n", newMessage->message);
 			printf("Server: Made the message object, Appending to Message Q.\n");
-			messageQ->SortedInsertTwo((void*)newMessage, timestamp, clientMachineID);
+			messageQ->SortedInsert((void*)newMessage, timestamp);
 		}
 		
 		printf("Server: Starting Step 3: Update LTR.\n");
