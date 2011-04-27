@@ -105,13 +105,14 @@ V. Testing:
 		If you haven't done so beforehand, gmake in network directory
 		To run tests, call them in network directory
 		
-		*NOTE* Make sure to run "nachos -m 0" to set up the Server before running other clients
 		*NOTE* Make sure that NUM_SERVERS in system.cc is set equal to 1
+		*NOTE* Make sure to run "nachos -m 0" to set up the Server before running other clients
 		
 		To run a simple passport office (2 Customers, 1 of everything else)
 		nachos -x ../test/SimpleServerPassport -m 1
 		
 		To run a full passport office: (In this order on different machines)
+		(30 Customers, 5 of each Clerk, 5 of each Senator, 1 Manager)
 		nachos -x ../test/10Customers.c -m 1
 		nachos -x ../test/10Customers.c -m 2
 		nachos -x ../test/10Customers.c -m 3
@@ -120,62 +121,38 @@ V. Testing:
 		nachos -x ../test/1ManagerSenators.c -m 6
 		
 		- Part 2
+		Compile tests with gmake in the test directory
+		If you haven't done so beforehand, gmake in network directory
+		To run tests, call them in network directory
+		
+		*NOTE* Make sure that "NUM_SERVERS" in system.cc is set equal to 1-5
+		*NOTE* Make sure to run "nachos -m X" (X being 0 - 4 depending on servers) to set up the Server before running other clients
 		
 
 	+ Test Output
-		All our tests output expected results. For more a more in-depth discussion
-		of our test cases, you can reference the TEST_WRITEUP in the test directory.
+		All our tests output expected results. 
 
-		- Our most basic test, execTest, tests both good and bad usage of the Exec syscall. 
-		Calling a bad file name or anything other than a proper program will output an 
-		error message but will not crash Nachos. It will then continue on to call Exec on 
-		the second test, forkTest, which tests our Fork syscall. execTest properly executes 
-		forkTest, thus we know Exec works. 
-		- forkTest tests our Fork functionality by calling Fork on a test function that simply
-		prints out a statement to show it works. forkTest calls Fork twice, so we expected 
-		two output statements from the function, which it did. Afterwards, it would call
-		Fork using bad inputs, which printed out the errors that we expected while not crashing the system.
-		- lockTest and CVTest (the latter of which executes with execCVTest) both test the
-		functionality of all our Lock and Condition Variable related syscalls, including Acquire,
-		Release, Wait, Signal, and Broadcast, along with thier respective Create and Destroy syscalls.
-		The test cases utilize simple functions to test the order of execution using
-		the functions Wait, Signal, and Broadcast along with the usage of Acquire and Release. 
-		All tests output expected results without crashing Nachos unexpectedly.
-		- destroyCVTest tests the functionality of locks and CVs that have been destroyed and the threads that
-		still need those locks/CVs. 2 "Waiter" threads and one "Troll" threads are forked off, and they wait on a CV.
-		A "Signaller" thread broadcasts to awaken them and waits on a new CV. The Troll deletes a lock that
-		Waiter 1 will need, and deletes the CV that the Signaller needs to wake up; it then signals the Signaller's new CV.
-		Waiter 1 will simple exit after failing to acquire the lock it wanted, and the Signaller wakes up properly. It then
-		tries to wait on the same CV, but it cannot because it has been destroyed.
-
-		- All passport tests show that when there are no customers in the simulation (either never entered, or all have left
-		the office), then the program exits normally.
-		- passportTest1 tests two Customers only, to make sure no two Customers get in the same line at the same time.
-		Customers get in line depending on the shortest line, but will always get in line one at a time
-		This test also shows how the regular and privileged lines are managed:
-		That customers are "smart" enough to go into regular lines if both regular and privileged lines are equal lengths,
-		whether they have enough money for it or not, and otherwise will always pick the shortest line if they have the
-		funds for it. If the customer has no funds, then the customer will compare regular lines only.
-		- passportTest2 tests the Manager and reading money from each Clerk. The Manager will read
-		one Clerk's money total at a time, and add that total to his calculated sum.
-		This test also tests that the Clerks all go on break when there are no customers,
-		as there are never any customers, thus no customers in thier lines.
-		- passport3 tests a regular passport runthrough with 5 customers and one of each clerk type. 
-		At the end, it is shown clearly that Customers do not leave the office until they receive thier passport from the cashier,
-		and the one cashier will not begin the next customer until the first one finishes leaving the office.
-		This test also shows that total sales never suffer from a race condition, as the funds correspond to
-		the amount of cash the customers give to the clerks. It can also count as another test to show that
-		the clerks all go on break when they are done with all the customers in thier line.
-		Additionally, this test also demonstrates that the Manager calls back Clerks from break when there are too many
-		customers in their line (as seen near the middle of the output block).
-
+		- SimpleServerPassport execs 2 Customers, 1 of each Clerk, 1 Senator, and 1 Manager. 
+			- Runs to completion with 1 Server.
+			- Sometimes runs to completion with 2 Servers.
+			- Does not run to completion with more than 2.
+		- Full Passport Office is run across multiple Nachos machines
+			- 10Customers execs 10 Customers
+			- 5AppPicClerks execs 5 Application Clerks and 5 Picture Clerks
+			- 5PassCashClerks execs 5 Passport Clerks and 5 Cashiers
+			- 1ManagerSenators execs 5 Senators and 1 Manager
+			
+			- Runs to completion with 1 Server.
+			- Sometimes runs to completion with 2 Servers.
+			- Does not run to completion with more than two.
+			
 VI. Discussion:
-		We expected that bulletproofing out syscalls wouldn't be too difficult through the use of locks and error handling.
-		Our safeguards are very thorough, however we ran into a problem with syscalls that take in virtual addresses. We were not
-		able to implement a way of checking that the input vitrual address was within valid bounds. Other than that, out syscall
-		implementation went about as smoothly as we expected.
 
-		All of our syscalls, along with our passport office, run proplerly and synchronously (aside from the aforementioned problem
-		with bad input virtual addresses). We are able to run multiple passport offices, with and without random context switching.
+		Mostly for part 1, we had to overhaul our syscalls and server functions to allow for arrays of locks, conditions, and
+	monitor variables that share a name, such as appLock[NUM_CLERKS] and picState[NUM_CLERKS] (from previous passport offices).
+	Overall, this went as planned, and only required adding an additional struct within the previously created ServerLocks,
+	ServerCVs, and ServerMVs. This went as expected.
+	
+	
 		
 VII. Miscellaneous:
